@@ -551,7 +551,7 @@ static const char kIndexHtml[] PROGMEM = R"HTML(
         ["timeScale",0.1,8,0.01],
         ["velocityDamping",0.8,1.0,0.001],
         ["maxVelocity",0.1,8,0.1],
-        ["particleCount",50,500,1],
+        ["particleCount",3,500,1],
         ["particleRadius",0.002,0.05,0.001],
         ["restDensity",0,40,0.1],
         ["picFlipRatio",0,1,0.01]
@@ -594,19 +594,20 @@ static const char kIndexHtml[] PROGMEM = R"HTML(
         ["collisionDamping",0.8,1.0,0.001]
       ]],
       ["Turbulence", [
-        ["turbStrength",0,20,0.5],
+        // JS-like panel order
+        ["turbPatternStyle",0,14,1],
+        ["turbStrength",0,10,0.01],
         ["turbScale",0.1,10,0.01],
         ["turbSpeed",0,2,0.01],
-        ["turbRotation",0,6.2831853,0.01],
-        ["turbRotationSpeed",0,1,0.01],
+        ["turbDecayRate",0.9,1.0,0.01],
         ["turbPullFactor",-1,1,0.01],
         ["turbAffectPosition",0,1,1],
         ["turbScaleField",0,1,1],
         ["turbAffectScale",0,1,1],
         ["turbMinScale",0.005,0.015,0.001],
         ["turbMaxScale",0.015,0.03,0.001],
-        ["turbPatternStyle",0,14,1],
-        ["turbDecayRate",0.9,1.0,0.01],
+        ["turbRotation",0,6.2831853,0.01],
+        ["turbRotationSpeed",0,1,0.01],
         ["turbDirectionBiasX",-1,1,0.01],
         ["turbDirectionBiasY",-1,1,0.01],
         ["turbContrast",0,1,0.01],
@@ -653,8 +654,62 @@ static const char kIndexHtml[] PROGMEM = R"HTML(
         [8, "C8"],
         [9, "C9"],
         [10, "C10"]
+      ],
+      turbPatternStyle: [
+        [-1, "NONE (Off)"],
+        [0, "Checkerboard"],
+        [1, "Waves"],
+        [2, "Spiral"],
+        [3, "Vortex"],
+        [4, "Radial"],
+        [5, "Cross"],
+        [6, "Diamond"],
+        [7, "Hexagonal"],
+        [8, "Concentric"],
+        [9, "Grid"],
+        [10, "Noise"],
+        [11, "Turbulent"],
+        [12, "Flow"],
+        [13, "Cellular"],
+        [14, "Random"]
       ]
     };
+
+    const labelOverrides = {
+      turbPatternStyle: "T-PatternStyle",
+      turbStrength: "T-Strength",
+      turbScale: "T-Scale",
+      turbSpeed: "T-Speed",
+      turbDecayRate: "T-Decay",
+      turbPullFactor: "T-Pull Mode",
+      turbAffectPosition: "Position",
+      turbScaleField: "Scale Field",
+      turbAffectScale: "Size",
+      turbMinScale: "T-Min Size",
+      turbMaxScale: "T-Max Size",
+      turbRotation: "T-Rot",
+      turbRotationSpeed: "T-RotSpd",
+      turbDirectionBiasX: "T-DirX",
+      turbDirectionBiasY: "T-DirY",
+      turbContrast: "T-Contrast",
+      turbBiasStrength: "T-Bias Amt",
+      turbPatternFrequency: "T-Freq",
+      turbSeparation: "T-Quantize",
+      turbDomainWarp: "T-DomWarp",
+      turbDomainWarpSpeed: "T-DomWarpSp",
+      turbSymmetryAmount: "T-Symmetry",
+      turbPhase: "T-Phase",
+      turbPhaseSpeed: "T-PhaseSp",
+      turbBlurAmount: "T-Blur"
+    };
+
+    const turbulenceToggleKeys = new Set(["turbAffectPosition", "turbScaleField", "turbAffectScale"]);
+    const turbulenceConditionalRows = {
+      scaleRange: ["turbMinScale", "turbMaxScale"],
+      positionOnly: ["turbPullFactor", "turbDirectionBiasX", "turbDirectionBiasY"]
+    };
+    let lastNonZeroTurbStrength = 4.0;
+    let turbCompatEl = null;
 
     groupedDefs.forEach(([groupName, defs], groupIndex) => {
       const card = document.createElement("details");
@@ -669,21 +724,45 @@ static const char kIndexHtml[] PROGMEM = R"HTML(
       content.className = "card-content";
       card.appendChild(content);
 
+      if (groupName === "Turbulence") {
+        const compatRow = document.createElement("div");
+        compatRow.className = "row";
+        compatRow.innerHTML = `<label>Preset Compatibility</label><div id="turbCompat" style="font-size:12px;opacity:.9;">Checking...</div>`;
+        content.appendChild(compatRow);
+        turbCompatEl = compatRow.querySelector("#turbCompat");
+      }
+
       defs.forEach(([k,min,max,step]) => {
         const row = document.createElement("div");
         row.className = "row";
+        row.dataset.key = k;
         const isSelector = selectorOptions[k] !== undefined;
-        if (isSelector) {
-          row.innerHTML = `<label>${prettyLabel(k)}<span class="val" id="v_${k}"></span></label>
+        const labelText = labelOverrides[k] || prettyLabel(k);
+        if (groupName === "Turbulence" && turbulenceToggleKeys.has(k)) {
+          row.innerHTML = `<label>${labelText}<span class="val" id="v_${k}"></span></label>
+            <button id="${k}" class="btn" type="button">Off</button>`;
+        } else if (isSelector) {
+          row.innerHTML = `<label>${labelText}<span class="val" id="v_${k}"></span></label>
             <select id="${k}"></select>`;
         } else {
-          row.innerHTML = `<label>${prettyLabel(k)}<span class="val" id="v_${k}"></span></label>
+          row.innerHTML = `<label>${labelText}<span class="val" id="v_${k}"></span></label>
             <input id="${k}" type="range" min="${min}" max="${max}" step="${step}"/>`;
         }
         content.appendChild(row);
         const el = row.querySelector(`#${k}`);
         const v = row.querySelector(`#v_${k}`);
-        if (isSelector) {
+        if (groupName === "Turbulence" && turbulenceToggleKeys.has(k)) {
+          el.addEventListener("click", async () => {
+            const newState = !(Number(el.dataset.state || "0") === 1);
+            el.dataset.state = newState ? "1" : "0";
+            el.textContent = newState ? "On" : "Off";
+            el.classList.toggle("active", newState);
+            v.textContent = newState ? "On" : "Off";
+            await fetch(`/api/set?k=${encodeURIComponent(k)}&v=${newState ? 1 : 0}`, {method:"POST"});
+            updateTurbulenceConditionalUI();
+            await pull();
+          });
+        } else if (isSelector) {
           selectorOptions[k].forEach(([value, label]) => {
             const option = document.createElement("option");
             option.value = String(value);
@@ -693,15 +772,38 @@ static const char kIndexHtml[] PROGMEM = R"HTML(
           el.addEventListener("change", async () => {
             const selected = selectorOptions[k].find(([value]) => String(value) === el.value);
             v.textContent = selected ? selected[1] : el.value;
+            if (k === "turbPatternStyle" && Number(el.value) === -1) {
+              const strengthInput = inputs.turbStrength ? inputs.turbStrength[0] : null;
+              if (strengthInput && Number(strengthInput.value) > 0) {
+                lastNonZeroTurbStrength = Number(strengthInput.value);
+              }
+              await fetch(`/api/set?k=turbStrength&v=0`, {method:"POST"});
+              updateTurbulenceConditionalUI();
+              await pull();
+              return;
+            }
+            if (k === "turbPatternStyle") {
+              if (inputs.turbStrength && Number(inputs.turbStrength[0].value) <= 0) {
+                const restore = Math.max(0.01, lastNonZeroTurbStrength || 4.0);
+                await fetch(`/api/set?k=turbStrength&v=${encodeURIComponent(String(restore))}`, {method:"POST"});
+              }
+            }
             await fetch(`/api/set?k=${encodeURIComponent(k)}&v=${encodeURIComponent(el.value)}`, {method:"POST"});
+            updateTurbulenceConditionalUI();
+            await pull();
           });
         } else {
           el.addEventListener("input", async () => {
             v.textContent = el.value;
             await fetch(`/api/set?k=${encodeURIComponent(k)}&v=${encodeURIComponent(el.value)}`, {method:"POST"});
+            if (k === "turbStrength" && Number(el.value) > 0) {
+              lastNonZeroTurbStrength = Number(el.value);
+            }
+            updateTurbulenceConditionalUI();
+            updateTurbulencePresetCompatibility();
           });
         }
-        inputs[k] = [el,v];
+        inputs[k] = [el,v,row];
       });
 
       root.appendChild(card);
@@ -745,15 +847,101 @@ static const char kIndexHtml[] PROGMEM = R"HTML(
       Object.keys(inputs).forEach(k => {
         if (c[k] !== undefined){
           const [el, valEl] = inputs[k];
-          el.value = c[k];
           if (selectorOptions[k]) {
-            const selected = selectorOptions[k].find(([value]) => Number(value) === Number(c[k]));
+            let selectedValue = Number(c[k]);
+            if (k === "turbPatternStyle" && Number(c.turbStrength) <= 0) {
+              selectedValue = -1;
+            }
+            el.value = String(selectedValue);
+            const selected = selectorOptions[k].find(([value]) => Number(value) === selectedValue);
             valEl.textContent = selected ? selected[1] : c[k];
+          } else if (turbulenceToggleKeys.has(k)) {
+            const on = Number(c[k]) >= 0.5;
+            el.dataset.state = on ? "1" : "0";
+            el.textContent = on ? "On" : "Off";
+            el.classList.toggle("active", on);
+            valEl.textContent = on ? "On" : "Off";
           } else {
+            el.value = c[k];
             valEl.textContent = c[k];
           }
         }
       });
+      if (Number(c.turbStrength) > 0) {
+        lastNonZeroTurbStrength = Number(c.turbStrength);
+      }
+      updateTurbulenceConditionalUI();
+      updateTurbulencePresetCompatibility();
+    }
+
+    function setRowVisible(key, visible) {
+      const entry = inputs[key];
+      if (!entry) return;
+      const row = entry[2];
+      if (!row) return;
+      row.style.display = visible ? "" : "none";
+    }
+
+    function updateTurbulenceConditionalUI() {
+      const affectScale = inputs.turbAffectScale ? (Number(inputs.turbAffectScale[0].dataset.state || "0") === 1) : false;
+      const affectPosition = inputs.turbAffectPosition ? (Number(inputs.turbAffectPosition[0].dataset.state || "0") === 1) : false;
+
+      turbulenceConditionalRows.scaleRange.forEach((k) => setRowVisible(k, affectScale));
+      turbulenceConditionalRows.positionOnly.forEach((k) => setRowVisible(k, affectPosition));
+    }
+
+    function inRange(value, min, max) {
+      return Number(value) >= min && Number(value) <= max;
+    }
+
+    function updateTurbulencePresetCompatibility() {
+      if (!turbCompatEl) return;
+      const checks = [
+        ["turbStrength", 0, 10],
+        ["turbScale", 0.1, 10],
+        ["turbSpeed", 0, 2],
+        ["turbDecayRate", 0.9, 1.0],
+        ["turbPullFactor", -1, 1],
+        ["turbMinScale", 0.005, 0.015],
+        ["turbMaxScale", 0.015, 0.03],
+        ["turbRotation", 0, 6.2831853],
+        ["turbRotationSpeed", 0, 1],
+        ["turbDirectionBiasX", -1, 1],
+        ["turbDirectionBiasY", -1, 1],
+        ["turbContrast", 0, 1],
+        ["turbBiasStrength", 0, 2],
+        ["turbPatternFrequency", 0.1, 10],
+        ["turbSeparation", 0, 1],
+        ["turbDomainWarp", 0, 1],
+        ["turbDomainWarpSpeed", 0, 2],
+        ["turbSymmetryAmount", 0, 1],
+        ["turbPhase", 0, 1],
+        ["turbPhaseSpeed", -1, 1],
+        ["turbBlurAmount", 0, 2]
+      ];
+      let invalid = null;
+      for (const [k, min, max] of checks) {
+        if (!inputs[k]) continue;
+        const v = Number(inputs[k][0].value);
+        if (!inRange(v, min, max)) {
+          invalid = `${labelOverrides[k] || k} out of JS range`;
+          break;
+        }
+      }
+      if (!invalid && inputs.turbMinScale && inputs.turbMaxScale) {
+        const minS = Number(inputs.turbMinScale[0].value);
+        const maxS = Number(inputs.turbMaxScale[0].value);
+        if (minS > maxS) {
+          invalid = "T-Min Size must be <= T-Max Size";
+        }
+      }
+      if (invalid) {
+        turbCompatEl.textContent = `Not compatible: ${invalid}`;
+        turbCompatEl.style.color = "#ff8c8c";
+      } else {
+        turbCompatEl.textContent = "Compatible with JS mapped turbulence preset ranges";
+        turbCompatEl.style.color = "#9be29b";
+      }
     }
     
     let debugEnabled = false;

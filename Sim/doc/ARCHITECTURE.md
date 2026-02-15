@@ -289,20 +289,22 @@ uint16_t count_;            // Active particle count
 
 #### Turbulence.cpp
 **Purpose**: Noise-driven force field generation  
-**Algorithm**: Ported from `turbulenceField.js`, uses Perlin/Simplex noise with rotation, scaling, pattern styles
+**Algorithm**: Ported from `turbulenceField.js`, now using Perlin-based field sampling with a full transform pipeline (rotation -> scale -> domain warp -> symmetry), plus pattern shaping and post-processing
 
 **Key Functions**:
-- `apply(count, x, y, vx, vy, timeSec)`: Compute noise-based forces for all particles
-- Internal: `sampleNoiseValue(x, y, timeSec)` → noise value in `[-1, 1]`
-- Internal: Pattern styles (Checkerboard, Waves, Spiral, Vortex, etc.)
+- `apply(x, y, vx, vy, count, dt, timeSec)`: Compute turbulence forces and optional field effects for all particles
+- Internal: `perlin2d()` and `fractalNoise()` for base field generation
+- Internal: `applyPattern()` for style indices `0..14` (checkerboard, waves, spiral, vortex, radial, cross, diamond, hexagonal, concentric, grid, noise, turbulent, flow, cellular, random)
+- Internal: `applyPullContrastSeparation()` and `sampleField()` for pull shaping, contrast/separation, and optional blur
 
-**Parameters** (18 params in `SimConfig`):
-- `turbStrength`: Force magnitude (0=off)
-- `turbScale`: Noise frequency (larger = coarser patterns)
-- `turbSpeed`: Time-based animation speed
-- `turbRotation`: Field rotation angle
-- `turbPatternStyle`: 0-14 (Checkerboard, Waves, Spiral, Vortex, Radial, etc.)
-- Advanced: `turbDomainWarp`, `turbSymmetryAmount`, `turbBlurAmount`, bias/contrast controls
+**Parameters** (25 turbulence params in `SimConfig`):
+- Core: `turbStrength`, `turbScale`, `turbSpeed`
+- Shape/flow: `turbRotation`, `turbRotationSpeed`, `turbPullFactor`, `turbPatternStyle`, `turbPatternFrequency`
+- Field transforms: `turbDomainWarp`, `turbDomainWarpSpeed`, `turbSymmetryAmount`
+- Post-processing: `turbContrast`, `turbSeparation`, `turbBlurAmount`
+- Bias/behavior toggles: `turbDirectionBiasX/Y`, `turbBiasStrength`, `turbDecayRate`, `turbAffectPosition`, `turbScaleField`
+
+**Performance note**: Main loop FPS logs now include average turbulence compute time (`turb X.XX ms`) for ongoing tuning.
 
 **Ported from**: `Sim/src/simulation/forces/turbulenceField.js` (~1456 lines)
 

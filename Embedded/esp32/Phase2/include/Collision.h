@@ -12,7 +12,7 @@ class Collision
 public:
   explicit Collision(SimConfig *cfg) : config_(cfg) {}
 
-  void resolve(float *x, float *y, float *vx, float *vy, uint16_t count, float particleRadius) const;
+  void resolve(float *x, float *y, float *vx, float *vy, const float *particleRadii, uint16_t count, float particleRadius) const;
 
 private:
   SimConfig *config_;

@@ -204,7 +204,8 @@ void loop()
   if (nowMs - gLastRenderMs >= (1000 / 60))
   {
     gLastRenderMs = nowMs;
-    gGridModes.compute(gSimCore, gGridGeometry, gCellValues, MAX_GRID_CELLS);
+    const float nowSecRender = nowMs * 0.001f;
+    gGridModes.compute(gSimCore, gGridGeometry, gCellValues, MAX_GRID_CELLS, nowSecRender);
     renderGrid(gCellValues, gGridGeometry.getCellCount(), gGridGeometry.getCols(), gGridGeometry.getRows(), gConfig.gridGap, gConfig.theme);
     ++gPerfRenderFrameCount;
   }
@@ -214,14 +215,14 @@ void loop()
     const float seconds = (nowMs - gPerfWindowStartMs) / 1000.0f;
     const float simFps = seconds > 0.0f ? (gPerfSimFrameCount / seconds) : 0.0f;
     const float renderFps = seconds > 0.0f ? (gPerfRenderFrameCount / seconds) : 0.0f;
-    Serial.printf("[Phase2 FPS] sim %.1f | render %.1f | avg frame %.2f ms | cells=%u\n",
-                  simFps, renderFps, gAvgFrameMs, (unsigned)gGridGeometry.getCellCount());
+    Serial.printf("[Phase2 FPS] sim %.1f | render %.1f | avg frame %.2f ms | turb %.2f ms | cells=%u\n",
+                  simFps, renderFps, gAvgFrameMs, gSimCore.getAvgTurbulenceMs(), (unsigned)gGridGeometry.getCellCount());
     
     if (IsWebDebugEnabled())
     {
       char buf[128];
-      snprintf(buf, sizeof(buf), "[FPS] sim %.1f | render %.1f | frame %.2f ms | cells=%u",
-               simFps, renderFps, gAvgFrameMs, (unsigned)gGridGeometry.getCellCount());
+      snprintf(buf, sizeof(buf), "[FPS] sim %.1f | render %.1f | frame %.2f ms | turb %.2f ms | cells=%u",
+               simFps, renderFps, gAvgFrameMs, gSimCore.getAvgTurbulenceMs(), (unsigned)gGridGeometry.getCellCount());
       WebDebugLog(buf);
     }
     

@@ -2,7 +2,7 @@
 
 #include <math.h>
 
-void Collision::resolve(float *x, float *y, float *vx, float *vy, uint16_t count, float particleRadius) const
+void Collision::resolve(float *x, float *y, float *vx, float *vy, const float *particleRadii, uint16_t count, float particleRadius) const
 {
   if (!config_->collisionEnabled || count < 2)
   {
@@ -42,8 +42,6 @@ void Collision::resolve(float *x, float *y, float *vx, float *vy, uint16_t count
     }
   }
 
-  const float minDist = particleRadius * 2.0f;
-  const float minDistSq = minDist * minDist;
   const float strength = config_->collisionRepulsion;
   const float damping = config_->collisionDamping;
 
@@ -72,6 +70,10 @@ void Collision::resolve(float *x, float *y, float *vx, float *vy, uint16_t count
           const float dx = x[j] - x[i];
           const float dy = y[j] - y[i];
           const float dsq = dx * dx + dy * dy;
+          const float ri = particleRadii ? particleRadii[i] : particleRadius;
+          const float rj = particleRadii ? particleRadii[j] : particleRadius;
+          const float minDist = (ri + rj);
+          const float minDistSq = minDist * minDist;
           if (dsq <= 1e-12f || dsq >= minDistSq)
           {
             continue;

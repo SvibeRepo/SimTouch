@@ -15,14 +15,19 @@ public:
 
   void addForceAtPoint(float x, float y, float radius, float strength, bool repulse);
   void setGravity(float gx, float gy);
+  float sampleTurbulence01(float x, float y, float tNow) const;
 
   uint16_t getCount() const { return count_; }
   const float *getX() const { return x_; }
   const float *getY() const { return y_; }
   const float *getVx() const { return vx_; }
   const float *getVy() const { return vy_; }
+  const float *getRadii() const { return radii_; }
   float *mutableVx() { return vx_; }
   float *mutableVy() { return vy_; }
+  float *mutableRadii() { return radii_; }
+  float getLastTurbulenceMs() const { return turbulence_.getLastApplyMs(); }
+  float getAvgTurbulenceMs() const { return turbulence_.getAvgApplyMs(); }
 
 private:
   SimConfig *config_;
@@ -34,6 +39,7 @@ private:
   float y_[MAX_PARTICLES];
   float vx_[MAX_PARTICLES];
   float vy_[MAX_PARTICLES];
+  float radii_[MAX_PARTICLES];
   uint16_t count_ = 0;
 };
 

@@ -38,6 +38,7 @@ void SimCore::init()
         y_[idx] = 0.5f + sinf(angle) * ringRadius;
         vx_[idx] = 0.0f;
         vy_[idx] = 0.0f;
+        radii_[idx] = config_->particleRadius;
         ++idx;
       }
     }
@@ -65,6 +66,7 @@ void SimCore::init()
       y_[idx] = 0.5f - halfH + cellY;
       vx_[idx] = 0.0f;
       vy_[idx] = 0.0f;
+      radii_[idx] = config_->particleRadius;
       ++idx;
     }
   }
@@ -98,6 +100,11 @@ void SimCore::addForceAtPoint(float tx, float ty, float radius, float strength, 
   }
 }
 
+float SimCore::sampleTurbulence01(float x, float y, float tNow) const
+{
+  return turbulence_.sampleField01(x, y, tNow);
+}
+
 void SimCore::step(float dt, float timeSec)
 {
   if (count_ != config_->particleCount && config_->particleCount <= MAX_PARTICLES)
@@ -106,8 +113,8 @@ void SimCore::step(float dt, float timeSec)
   }
 
   GravityForces::apply(config_->gravityX, config_->gravityY, dt, vx_, vy_, count_);
-  turbulence_.apply(x_, y_, vx_, vy_, count_, dt, timeSec);
-  collision_.resolve(x_, y_, vx_, vy_, count_, config_->particleRadius);
+  turbulence_.apply(x_, y_, vx_, vy_, radii_, count_, dt, timeSec);
+  collision_.resolve(x_, y_, vx_, vy_, radii_, count_, config_->particleRadius);
 
   const float damping = config_->velocityDamping;
   const float vmax = config_->maxVelocity;

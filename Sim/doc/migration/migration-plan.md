@@ -169,12 +169,12 @@ void loop() {
 
 ### Phase 2B: Turbulence and IMU (P1)
 
-1. `**Turbulence.h/cpp**` -- Port from [turbulenceField.js](Sim/src/simulation/forces/turbulenceField.js). This is the largest and most complex module (~1456 lines). Key optimizations:
-  - Port the custom Perlin/Simplex noise functions (already pure math, no browser deps)
-  - Start with a single `patternStyle` (e.g., "Checkerboard") and add others incrementally
-  - Use `float` throughout (not `double`)
-  - Pre-compute noise lookup tables where possible
-  - Skip `domainWarp`, `symmetry`, `blur` initially
+1. `**Turbulence.h/cpp**` -- Port from [turbulenceField.js](Sim/src/simulation/forces/turbulenceField.js). This is the largest and most complex module (~1456 lines). **Current Phase2 status**:
+  - Perlin-based field sampling is implemented with fixed lookup permutation table (ESP32-friendly)
+  - Pattern styles `0..14` are implemented (checkerboard, waves, spiral, vortex, radial, cross, diamond, hexagonal, concentric, grid, noise, turbulent, flow, cellular, random)
+  - Rotation, pull-factor shaping, domain warp, symmetry, contrast/separation, and blur are implemented
+  - Runtime profiling now reports average turbulence compute time in the FPS log (`turb X.XX ms`)
+  - Uses `float` throughout and fixed-size buffers (no dynamic allocation)
 2. `**ImuForces.h/cpp**` -- Port from [emuForces.js](Sim/src/simulation/forces/emuForces.js). Map QMI8658 accelerometer (x,y,z) to simulation gravity/directional bias. The IMU data path already exists in [Acc.cpp](Embedded/esp32/Phase1/src/Acc.cpp).
 3. `**GridGeometry.h/cpp**` -- Port from [gridGeometry.js](Sim/src/coreGrid/gridGeometry.js). Compute grid cell positions based on target cell count, gap, aspect ratio, and boundary shape. Output: array of cell center coordinates + cell dimensions. This replaces the header-based geometry currently received via UDP.
 
@@ -317,6 +317,7 @@ This registry serves double duty:
 - `Embedded/esp32/Phase2/include/SimConfig.h` now includes the missing core fields and expanded `kParamRegistry` for simulation, boundary, collision, turbulence, and grid/render controls.
 - Added `PARAM_INT8` to support signed offset parameters (`gridCenterOffsetX/Y`).
 - Particle display is still deferred on ESP32 for performance reasons; particle color is represented as a simple boolean (`particleColorWhite`) and opacity is kept as a placeholder parameter for future rendering support.
+- `Embedded/esp32/Phase2/src/Turbulence.cpp` now includes the advanced turbulence pipeline (Perlin/fractal field, style patterns, domain warp, symmetry, pull/contrast/separation, blur) rather than the original minimal hash-noise scaffold.
 
 #### 2. Touch Mapping (CST816S → Simulation Space)
 

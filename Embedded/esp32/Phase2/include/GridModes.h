@@ -9,7 +9,8 @@ class GridModes
 public:
   explicit GridModes(SimConfig *cfg) : config_(cfg) {}
 
-  void compute(const SimCore &sim, const GridGeometry &geom, uint8_t *outValues, uint16_t outCount);
+  void compute(const SimCore &sim, const GridGeometry &geom, uint8_t *outValues, uint16_t outCount, float tNow);
+  void computeNoise(const SimCore &sim, const GridGeometry &geom, uint8_t *outValues, uint16_t outCount, float tNow);
   void computeProximity(const SimCore &sim, const GridGeometry &geom, uint8_t *outValues, uint16_t outCount);
   void computeProximityB(const SimCore &sim, const GridGeometry &geom, uint8_t *outValues, uint16_t outCount);
   void computeDensity(const SimCore &sim, const GridGeometry &geom, uint8_t *outValues, uint16_t outCount);

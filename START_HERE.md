@@ -82,7 +82,7 @@ SimTouch is a **dual-phase project** that creates organic, physics-driven contro
 | Gravity Forces | ✅ Working | GravityForces.cpp |
 | Touch Forces | ✅ Working | TouchForces.cpp |
 | IMU Forces | ✅ Working (opt-in) | ImuForces.cpp |
-| Turbulence | ✅ Working | Turbulence.cpp |
+| Turbulence | ✅ Working (Perlin + patterns + warp/symmetry) | Turbulence.cpp |
 | Grid Rendering | ✅ Working | GridModes.cpp, GridGeometry.cpp |
 | Web Configuration | ✅ Working | ConfigWeb.cpp |
 | Voronoi Field | 🚧 Scaffold Only | Voronoi.cpp |

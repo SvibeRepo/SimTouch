@@ -390,9 +390,23 @@ platformio.ini          → Build configurations
 ### Turbulence (100-159)
 - 100: Turb Strength
 - 101: Turb Rotation
+- 102: Turb Rotation Speed
+- 103: Turb Pull Factor (-1 to +1)
+- 110: Turb Decay Rate
+- 111/112: Turb Direction Bias X/Y
+- 113: Turb Contrast
+- 114: Turb Bias Strength
+- 115: Turb Pattern Frequency
+- 116: Turb Separation
+- 117: Turb Domain Warp
+- 118: Turb Domain Warp Speed
+- 119: Turb Symmetry Amount
 - 109: Turb Pattern Style (0-14)
 - 160: Turb Scale
 - 161: Turb Speed
+- 157: Turb Phase
+- 158: Turb Phase Speed
+- 159: Turb Blur Amount
 
 ### Touch (120-129)
 - 120: Touch Strength
@@ -451,6 +465,13 @@ platformio.ini          → Build configurations
 3. Disable collision: `collisionEnabled = false`
 4. Reduce `targetCellCount` to 100
 5. Check for serial spam (excessive logging slows loop)
+6. Watch turbulence budget in serial (`turb X.XX ms`) and lower `turbBlurAmount` / `turbDomainWarp` first
+
+### Turbulence Too Weak / Too Strong
+- Start with `turbStrength` in the `1.0-4.0` range; increase gradually
+- If motion is chaotic, reduce `turbPullFactor` toward `0` and lower `turbPatternFrequency`
+- For smoother flow, reduce `turbSeparation` and `turbContrast`, then add a small `turbBlurAmount`
+- If particles drift too much in one direction, reset `turbDirectionBiasX/Y` to `0`
 
 ### Display Not Updating
 - Check `UiLoop()` is called in `loop()` (LVGL requires regular ticks)

@@ -85,10 +85,13 @@ void GridModes::clearToZero(uint16_t cells, uint8_t *outValues, uint16_t outCoun
   smoothAndStore(zeroTarget, cells, outValues, outCount);
 }
 
-void GridModes::compute(const SimCore &sim, const GridGeometry &geom, uint8_t *outValues, uint16_t outCount)
+void GridModes::compute(const SimCore &sim, const GridGeometry &geom, uint8_t *outValues, uint16_t outCount, float tNow)
 {
   switch (config_->gridMode)
   {
+  case 0:
+    computeNoise(sim, geom, outValues, outCount, tNow);
+    break;
   case 1:
     computeProximity(sim, geom, outValues, outCount);
     break;
@@ -110,11 +113,30 @@ void GridModes::compute(const SimCore &sim, const GridGeometry &geom, uint8_t *o
   case 8:
     computeOverlap(sim, geom, outValues, outCount);
     break;
-  // 0=Noise and 6=Vorticity are intentionally deferred in Phase2.
+  // 6=Vorticity is intentionally deferred in Phase2.
   default:
     clearToZero(activeCellCount(geom, outCount), outValues, outCount);
     break;
   }
+}
+
+void GridModes::computeNoise(const SimCore &sim, const GridGeometry &geom, uint8_t *outValues, uint16_t outCount, float tNow)
+{
+  const uint16_t cells = activeCellCount(geom, outCount);
+  const GridCell *grid = geom.getCells();
+  const float maxDensity = config_->maxDensity <= 1e-6f ? 1.0f : config_->maxDensity;
+  float target[MAX_GRID_CELLS];
+  memset(target, 0, sizeof(target));
+
+  for (uint16_t c = 0; c < cells; ++c)
+  {
+    const float noise01 = sim.sampleTurbulence01(grid[c].x, grid[c].y, tNow);
+    // JS parity: invert active/inactive polarity and normalize by maxDensity
+    // so "Max Density" controls highlight saturation in Noise mode too.
+    target[c] = (1.0f - noise01) / maxDensity;
+  }
+
+  smoothAndStore(target, cells, outValues, outCount);
 }
 
 void GridModes::computeProximity(const SimCore &sim, const GridGeometry &geom, uint8_t *outValues, uint16_t outCount)
