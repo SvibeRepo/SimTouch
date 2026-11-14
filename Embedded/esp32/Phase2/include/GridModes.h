@@ -25,6 +25,10 @@ private:
   void smoothAndStore(const float *target, uint16_t cells, uint8_t *outValues, uint16_t outCount);
   void clearToZero(uint16_t cells, uint8_t *outValues, uint16_t outCount);
 
+  void computeProximitySplat(const SimCore &sim, const GridGeometry &geom, float *target, uint16_t cells);
+  void computeDensitySplat(const SimCore &sim, const GridGeometry &geom, float *target, uint16_t cells);
+  void computeVelocitySplat(const SimCore &sim, const GridGeometry &geom, float *target, uint16_t cells);
+
   SimConfig *config_;
   float smooth_[MAX_GRID_CELLS] = {0.0f};
 };

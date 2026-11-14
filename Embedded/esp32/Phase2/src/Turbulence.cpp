@@ -338,7 +338,12 @@ float Turbulence::applyPreviewContrastSeparation(float value01) const
   return clamp01(value);
 }
 
-float Turbulence::sampleFieldNoBlur(float x, float y, float time, bool applyPostProcess) const
+namespace
+{
+constexpr uint16_t kHighParticleThreshold = 80;
+}
+
+float Turbulence::sampleFieldNoBlur(float x, float y, float time, bool applyPostProcess, bool fastPath) const
 {
   float px = x;
   float py = y;
@@ -355,8 +360,11 @@ float Turbulence::sampleFieldNoBlur(float x, float y, float time, bool applyPost
     py = (py - centerY) * scale + centerY;
   }
 
-  applyDomainWarp(px, py, time, px, py);
-  applySymmetry(px, py, centerX, centerY, px, py);
+  if (!fastPath)
+  {
+    applyDomainWarp(px, py, time, px, py);
+    applySymmetry(px, py, centerX, centerY, px, py);
+  }
 
   const float baseNoise = perlin2d(px * 3.0f + time * 0.5f, py * 3.0f - time * 0.5f);
   float value = applyPattern(config_->turbPatternStyle, px, py, centerX, centerY, time, baseNoise);
@@ -374,20 +382,20 @@ float Turbulence::sampleFieldNoBlur(float x, float y, float time, bool applyPost
   return post * 2.0f - 1.0f;
 }
 
-float Turbulence::sampleField(float x, float y, float time) const
+float Turbulence::sampleField(float x, float y, float time, bool fastPath) const
 {
-  const float blur = config_->turbBlurAmount;
+  const float blur = fastPath ? 0.0f : config_->turbBlurAmount;
   if (blur <= kEpsilon)
   {
-    return sampleFieldNoBlur(x, y, time, true);
+    return sampleFieldNoBlur(x, y, time, true, fastPath);
   }
 
   const float radius = 0.05f * clamp01(blur * 0.5f);
-  float sum = sampleFieldNoBlur(x, y, time, true);
-  sum += sampleFieldNoBlur(x + radius, y, time, true);
-  sum += sampleFieldNoBlur(x - radius, y, time, true);
-  sum += sampleFieldNoBlur(x, y + radius, time, true);
-  sum += sampleFieldNoBlur(x, y - radius, time, true);
+  float sum = sampleFieldNoBlur(x, y, time, true, false);
+  sum += sampleFieldNoBlur(x + radius, y, time, true, false);
+  sum += sampleFieldNoBlur(x - radius, y, time, true, false);
+  sum += sampleFieldNoBlur(x, y + radius, time, true, false);
+  sum += sampleFieldNoBlur(x, y - radius, time, true, false);
   return sum * 0.2f;
 }
 
@@ -402,16 +410,16 @@ float Turbulence::sampleNoisePreview01(float x, float y, float tNow) const
   const float blur = config_->turbBlurAmount;
   if (blur <= kEpsilon)
   {
-    const float n = sampleFieldNoBlur(x, y, tNow, false);
+    const float n = sampleFieldNoBlur(x, y, tNow, false, false);
     return applyPreviewContrastSeparation(clamp01(n * 0.5f + 0.5f));
   }
 
   const float radius = 0.05f * clamp01(blur * 0.5f);
-  float sum = sampleFieldNoBlur(x, y, tNow, false);
-  sum += sampleFieldNoBlur(x + radius, y, tNow, false);
-  sum += sampleFieldNoBlur(x - radius, y, tNow, false);
-  sum += sampleFieldNoBlur(x, y + radius, tNow, false);
-  sum += sampleFieldNoBlur(x, y - radius, tNow, false);
+  float sum = sampleFieldNoBlur(x, y, tNow, false, false);
+  sum += sampleFieldNoBlur(x + radius, y, tNow, false, false);
+  sum += sampleFieldNoBlur(x - radius, y, tNow, false, false);
+  sum += sampleFieldNoBlur(x, y + radius, tNow, false, false);
+  sum += sampleFieldNoBlur(x, y - radius, tNow, false, false);
   return applyPreviewContrastSeparation(clamp01((sum * 0.2f) * 0.5f + 0.5f));
 }
 
@@ -433,6 +441,8 @@ void Turbulence::apply(float *x, float *y, float *vx, float *vy, float *particle
   const bool affectPos = config_->turbAffectPosition;
   const float decay = config_->turbDecayRate;
 
+  const bool fastPath = (count > kHighParticleThreshold);
+
   for (uint16_t i = 0; i < count; ++i)
   {
     float newVx = vx[i] * decay;
@@ -445,13 +455,13 @@ void Turbulence::apply(float *x, float *y, float *vx, float *vy, float *particle
       newVy += directionBiasY * strength * dt;
     }
 
-    const float n1 = sampleField(x[i], y[i], tNow);
+    const float n1 = sampleField(x[i], y[i], tNow, fastPath);
 
     if (affectPos)
     {
       const float eps = 0.01f;
-      const float nx = sampleField(x[i] + eps, y[i], tNow);
-      const float ny = sampleField(x[i], y[i] + eps, tNow);
+      const float nx = sampleField(x[i] + eps, y[i], tNow, fastPath);
+      const float ny = sampleField(x[i], y[i] + eps, tNow, fastPath);
       const float gradX = (nx - n1) / eps;
       const float gradY = (ny - n1) / eps;
       const float gradMag = sqrtf(gradX * gradX + gradY * gradY);
@@ -492,16 +502,15 @@ void Turbulence::apply(float *x, float *y, float *vx, float *vy, float *particle
     // JS parity: per-particle size modulation.
     if (affectScale && particleRadii)
     {
-      const float particleSize = config_->turbMinScale + n1 * (config_->turbMaxScale - config_->turbMinScale);
-      float finalSize = particleSize;
-      if (finalSize < config_->turbMinScale)
-      {
-        finalSize = config_->turbMinScale;
-      }
-      if (finalSize > config_->turbMaxScale)
-      {
-        finalSize = config_->turbMaxScale;
-      }
+      const float maxSize = config_->particleRadius;
+      float minSize = config_->turbMinScale;
+      if (minSize > maxSize)
+        minSize = maxSize;
+      float finalSize = minSize + n1 * (maxSize - minSize);
+      if (finalSize < minSize)
+        finalSize = minSize;
+      if (finalSize > maxSize)
+        finalSize = maxSize;
       particleRadii[i] = finalSize;
     }
     else if (particleRadii)

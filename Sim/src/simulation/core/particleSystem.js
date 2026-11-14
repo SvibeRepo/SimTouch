@@ -1,6 +1,4 @@
-import { FluidFLIP } from "./fluidFLIP.js";
 import { MouseForces } from "../forces/mouseForces.js";
-import { CollisionSystem } from "../forces/collisionSystem.js";
 import { OrganicBehavior } from "../behaviors/organicBehavior.js";
 import { GravityForces } from "../forces/gravityForces.js";
 import { eventBus } from '../../util/eventManager.js';
@@ -57,38 +55,14 @@ export class ParticleSystem {
     this.turbulence = turbulence || throwError("Turbulence field is required");
     this.voronoi = voronoi || throwError("Voronoi field is required");
 
-    // FLIP system
+    // FLIP controls. The wasm tick owns the solve.
     this.picFlipRatio = picFlipRatio;
     this.flipIterations = 20;
 
-    // Create collision system with particle-specific restitution
-    this.collisionSystem = new CollisionSystem();
-
-    // Store reference to collision system in particle system
-    this.collisionSystem.particleSystem = this;
-
-    // Assign the passed boundary manager
     if (!boundaryManager) {
       throw new Error("ParticleSystem requires a boundaryManager instance.");
     }
     this.boundaryManager = boundaryManager;
-
-    // Get initial boundary for FluidFLIP instantiation
-    const initialBoundary = this.boundaryManager.getPhysicsBoundary();
-    if (!initialBoundary) {
-      throw new Error("ParticleSystem could not get initial boundary from manager.");
-    }
-
-    // Then create FLIP system with boundary reference
-    this.fluid = new FluidFLIP({
-      gridSizeFlip: 32,
-      picFlipRatio: this.picFlipRatio,
-      dt: timeStep,
-      boundary: initialBoundary,
-      restDensity: this.restDensity,
-      gasConstant: this.gasConstant,
-      particleSystem: this,
-    });
 
     // Initialize mouse forces
     this.mouseForces = new MouseForces({});
@@ -226,227 +200,21 @@ export class ParticleSystem {
     this.voronoi.regenerateCells();
   }
 
-  step() {
-    const dt = this.timeStep * this.timeScale;
-
-    // Allow mouse forces to neutralize other forces if active
-    if (this.mouseForces.isActive) {
-      this.mouseForces.neutralizeOtherForces(this);
-    } else {
-      this.mouseForces.restoreOtherForces(this);
-    }
-
-    // Update field generators - no conditional checks needed
-    this.turbulence.update(dt);
-    this.voronoi.update(dt);
-
-    // Apply external forces
-    this.applyExternalForces(dt);
-
-    // Apply organic behavior forces
-    if (this.organicBehavior.currentBehavior !== "None") {
-      this.organicBehavior.updateParticles(this, dt);
-    }
-
-    // Apply FLIP fluid simulation if enabled
-    if (this.picFlipRatio > 0) {
-      this.updateFLIP(dt);
-    }
-
-    // Update positions
-    this.updateParticles(dt);
-
-
-    // Emit event after step calculations are complete
-    // eventBus.emit('simulationStepComplete');
-  }
-
-  applyExternalForces(dt) {
-    // Apply gravity using the controller
-    this.gravity.apply(
-      this.velocitiesX,
-      this.velocitiesY,
-      this.numParticles,
-      dt
-    );
-
-    // Track if organic behavior is active
-    this.organicBehaviorActive =
-      this.fluidBehavior?.enabled ||
-      this.swarmBehavior?.enabled ||
-      this.automataBehavior?.enabled;
-
-    // Apply organic behaviors first
-    if (this.fluidBehavior?.enabled) {
-      this.fluidBehavior.apply(
-        this.particles,
-        this.velocitiesX,
-        this.velocitiesY,
-        dt
-      );
-    } else if (this.swarmBehavior?.enabled) {
-      this.swarmBehavior.apply(
-        this.particles,
-        this.velocitiesX,
-        this.velocitiesY,
-        dt
-      );
-    } else if (this.automataBehavior?.enabled) {
-      this.automataBehavior.apply(
-        this.particles,
-        this.velocitiesX,
-        this.velocitiesY,
-        dt
-      );
-    }
-
-    // Apply turbulence - no conditional checks needed
-    if (
-      this.turbulence.affectScale ||
-      this.turbulence.affectPosition ||
-      this.turbulence.scaleField
-    ) {
-      for (let i = 0; i < this.numParticles; i++) {
-        const pos = [this.particles[i * 2], this.particles[i * 2 + 1]];
-        const vel = [this.velocitiesX[i], this.velocitiesY[i]];
-        [this.velocitiesX[i], this.velocitiesY[i]] =
-          this.turbulence.applyTurbulence(pos, vel, dt, i, this);
-      }
-    }
-
-    // Apply voronoi field - strength check is appropriate but no null check needed
-    if (this.voronoi.strength > 0) {
-      try {
-        for (let i = 0; i < this.numParticles; i++) {
-          const pos = [this.particles[i * 2], this.particles[i * 2 + 1]];
-          const vel = [this.velocitiesX[i], this.velocitiesY[i]];
-          [this.velocitiesX[i], this.velocitiesY[i]] =
-            this.voronoi.applyTurbulence(pos, vel, dt, i, this);
-        }
-      } catch (error) {
-        console.error("Error applying voronoi field:", error);
-        // Reset the voronoi field to recover from error
-        this.voronoi.regenerateCells();
-      }
-    }
-  }
-
-  updateParticles(dt) {
-    for (let i = 0; i < this.numParticles; i++) {
-      // 1. Apply velocity damping
-      this.velocitiesX[i] *= this.velocityDamping;
-      this.velocitiesY[i] *= this.velocityDamping;
-
-      // 2. Check rest state
-      if (this.checkRestState(i, dt)) continue;
-
-      // 3. Update position
-      this.particles[i * 2] += this.velocitiesX[i] * dt;
-      this.particles[i * 2 + 1] += this.velocitiesY[i] * dt;
-
-    }
-
-    // Apply velocity clamping to ensure max velocity is respected
-    // regardless of whether FLIP simulation is used
-    for (let i = 0; i < this.numParticles; i++) {
-      this.velocitiesX[i] = Math.max(-this.maxVelocity, Math.min(this.maxVelocity, this.velocitiesX[i]));
-      this.velocitiesY[i] = Math.max(-this.maxVelocity, Math.min(this.maxVelocity, this.velocitiesY[i]));
-    }
-
-    // Use collision system ONCE - not twice
-    this.collisionSystem.update(
-      this.particles,
-      this.velocitiesX,
-      this.velocitiesY
-    );
-
-    // Finally check boundary collisions for all particles
-    const affectScale = this.turbulence?.affectScale; // Check turbulence scale mode once before the loop
-    for (let i = 0; i < this.numParticles; i++) {
-      const position = [this.particles[i * 2], this.particles[i * 2 + 1]];
-      const velocity = [this.velocitiesX[i], this.velocitiesY[i]];
-      // Determine the correct radius for physics based on affectScale
-      const physicsRadius = affectScale ? this.particleRadii[i] : this.particleRadius;
-
-      // Get current boundary from manager inside the loop
-      const currentBoundary = this.boundaryManager.getPhysicsBoundary();
-      if (!currentBoundary) {
-        console.error(`ParticleSystem.updateParticles: Could not get boundary from manager for particle ${i}! Skipping collision.`);
-        continue; // Skip collision for this particle if boundary is missing
-      }
-
-      // Pass boundary damping to the boundary collision resolver
-      currentBoundary.resolveCollision( // Use currentBoundary
-        position,
-        velocity,
-        physicsRadius, // Use the correctly determined radius
-        this.boundaryDamping
-      );
-
-      // Store updated values
-      this.particles[i * 2] = position[0];
-      this.particles[i * 2 + 1] = position[1];
-      this.velocitiesX[i] = velocity[0];
-      this.velocitiesY[i] = velocity[1];
-    }
-  }
-
-  checkRestState(index, dt) {
-    const vx = this.velocitiesX[index];
-    const vy = this.velocitiesY[index];
-
-    const velocityMagnitude = Math.hypot(vx, vy);
-    const positionChange = velocityMagnitude * dt;
-
-    if (
-      velocityMagnitude < this.velocityThreshold &&
-      positionChange < this.positionThreshold
-    ) {
-      this.velocitiesX[index] = 0;
-      this.velocitiesY[index] = 0;
-      return true;
-    }
-    return false;
-  }
-
-  updateFLIP(dt) {
-    if (this.picFlipRatio > 0) {
-      // Update rest density parameter only
-      this.fluid.setParameters(this.restDensity);
-
-      // Transfer particle velocities to grid
-      this.fluid.transferToGrid(
-        this.particles,
-        this.velocitiesX,
-        this.velocitiesY
-      );
-
-      // Solve incompressibility
-      this.fluid.solveIncompressibility();
-
-      // Transfer back to particles with PIC/FLIP mix
-      this.fluid.transferToParticles(
-        this.particles,
-        this.velocitiesX,
-        this.velocitiesY
-      );
-    }
-  }
-
   // No coordinate conversion needed - already in [0,1] space
   getParticles() {
     // Return flat array of objects with x, y properties
     // This format is what ParticleRenderer expects
 
     const affectScale = this.turbulence?.affectScale; // Check turbulence scale mode
+    const soa = this.x && this.y;
 
     const particlesData = Array.from({ length: this.numParticles }, (_, i) => {
       // Determine the correct radius based on affectScale
       const rawRadius = affectScale ? this.particleRadii[i] : this.particleRadius;
 
       const particleData = {
-        x: this.particles[i * 2],
-        y: this.particles[i * 2 + 1],
+        x: soa ? this.x[i] : this.particles[i * 2],
+        y: soa ? this.y[i] : this.particles[i * 2 + 1],
         vx: this.velocitiesX[i],
         vy: this.velocitiesY[i],
         // Use the determined rawRadius for size calculation
@@ -510,12 +278,6 @@ export class ParticleSystem {
         }
       }
       // --- End P-Size ---
-
-
-      // Update FluidFLIP if restDensity changed
-      if (this.fluid && simParams.collision.restDensity !== undefined) {
-        this.fluid.setParameters(this.restDensity);
-      }
     }
 
     // Update gravity parameters

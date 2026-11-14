@@ -76,14 +76,26 @@ export class ParticleRenderer extends BaseRenderer {
     }
   }
 
-  draw(particles) {
-    if (!particles || !Array.isArray(particles)) {
-      throw new Error("Invalid particles array provided to ParticleRenderer");
+  ensureScratch(count) {
+    if (this.xyScratch && this.xyScratch.length >= count * 2 && this.sizeScratch.length >= count) {
+      return;
+    }
+    const n = Math.max(count, this.xyScratch ? this.xyScratch.length / 2 : 0);
+    this.xyScratch = new Float32Array(n * 2);
+    this.sizeScratch = new Float32Array(n);
+    this.lineScratch = new Float32Array(n * 4);
+  }
+
+  draw(view) {
+    if (!view || typeof view.count !== "number") {
+      throw new Error("ParticleRenderer.draw expects SoA buffers { count, x, y, vx, vy, radius }");
     }
 
-    if (particles.length === 0) {
-      return; // Nothing to draw, but not an error
+    const count = view.count;
+    if (count === 0) {
+      return;
     }
+    this.ensureScratch(count);
 
     // Unbind any VAO to ensure clean attribute state
     this.gl.bindVertexArray(null);
@@ -94,20 +106,24 @@ export class ParticleRenderer extends BaseRenderer {
     }
 
     const defaultSize = this.config.size;
+    const xy = this.xyScratch;
+    const sizes = this.sizeScratch;
+    for (let i = 0; i < count; i++) {
+      const x = view.x ? view.x[i] : view.particles[i * 2];
+      const y = view.y ? view.y[i] : view.particles[i * 2 + 1];
+      xy[i * 2] = x;
+      xy[i * 2 + 1] = y;
+      const raw = view.affectScale ? view.radius[i] : view.baseRadius;
+      sizes[i] = Math.max(1.0, (raw ?? view.baseRadius ?? 0) * (view.renderScale || 1) || defaultSize);
+    }
 
-    // Update position buffer
-    const vertices = new Float32Array(particles.flatMap((p) => [p.x, p.y]));
     this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.positionBuffer);
-    this.gl.bufferData(this.gl.ARRAY_BUFFER, vertices, this.gl.DYNAMIC_DRAW);
+    this.gl.bufferData(this.gl.ARRAY_BUFFER, xy.subarray(0, count * 2), this.gl.DYNAMIC_DRAW);
     this.gl.enableVertexAttribArray(program.attributes.position);
     this.gl.vertexAttribPointer(program.attributes.position, 2, this.gl.FLOAT, false, 0, 0);
 
-    // Extract individual sizes into a Float32Array
-    const sizes = new Float32Array(particles.map((p) => Math.max(1.0, p.size || defaultSize)));
-
-    // Send size data to GPU
     this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.sizeBuffer);
-    this.gl.bufferData(this.gl.ARRAY_BUFFER, sizes, this.gl.DYNAMIC_DRAW);
+    this.gl.bufferData(this.gl.ARRAY_BUFFER, sizes.subarray(0, count), this.gl.DYNAMIC_DRAW);
     this.gl.enableVertexAttribArray(program.attributes.size);
     this.gl.vertexAttribPointer(program.attributes.size, 1, this.gl.FLOAT, false, 0, 0);
     // Explicitly set divisor to 0 for non-instanced attribute
@@ -125,7 +141,7 @@ export class ParticleRenderer extends BaseRenderer {
     this.gl.uniform4fv(program.uniforms.color, finalColor);
 
     // Draw the particles
-    this.gl.drawArrays(this.gl.POINTS, 0, particles.length);
+    this.gl.drawArrays(this.gl.POINTS, 0, count);
 
     // Cleanup GL state
     this.gl.disable(this.gl.BLEND);
@@ -133,29 +149,25 @@ export class ParticleRenderer extends BaseRenderer {
     this.gl.disableVertexAttribArray(program.attributes.size);
 
     // --- START: Velocity Field Rendering ---
-    if (this.showVelocityField && particles.length > 0) {
+    if (this.showVelocityField && count > 0) {
       const lineProgram = this.shaderManager.use('lines');
       if (!lineProgram) {
         console.error("Failed to use 'lines' shader for velocity field rendering");
       } else {
-        const scale = 0.1; // Scale for velocity vectors
-        const vertices = [];
-
-        // Sample every nth particle to avoid too many arrows (optional, can be adjusted)
-        // const stride = Math.max(1, Math.floor(particles.length / 1000));
-        // for (let i = 0; i < particles.length; i += stride) {
-        for (let i = 0; i < particles.length; i++) { // Render for all for now
-          const p = particles[i];
-          const x1 = p.x;
-          const y1 = p.y;
-          // NOTE: Original DebugRenderer had -p.vy. Assuming standard coordinate system now.
-          const x2 = x1 + p.vx * scale;
-          const y2 = y1 + p.vy * scale;
-          vertices.push(x1, y1, x2, y2);
+        const scale = 0.1;
+        const lines = this.lineScratch;
+        for (let i = 0; i < count; i++) {
+          const x1 = view.x ? view.x[i] : view.particles[i * 2];
+          const y1 = view.y ? view.y[i] : view.particles[i * 2 + 1];
+          const o = i * 4;
+          lines[o] = x1;
+          lines[o + 1] = y1;
+          lines[o + 2] = x1 + view.vx[i] * scale;
+          lines[o + 3] = y1 + view.vy[i] * scale;
         }
 
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.velocityLineBuffer);
-        this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(vertices), this.gl.DYNAMIC_DRAW);
+        this.gl.bufferData(this.gl.ARRAY_BUFFER, lines.subarray(0, count * 4), this.gl.DYNAMIC_DRAW);
 
         this.gl.enableVertexAttribArray(lineProgram.attributes.position);
         this.gl.vertexAttribPointer(
@@ -168,7 +180,7 @@ export class ParticleRenderer extends BaseRenderer {
         );
 
         this.gl.uniform4fv(lineProgram.uniforms.color, [1.0, 1.0, 0.0, 0.7]);
-        this.gl.drawArrays(this.gl.LINES, 0, vertices.length / 2);
+        this.gl.drawArrays(this.gl.LINES, 0, count * 2);
         this.gl.disableVertexAttribArray(lineProgram.attributes.position);
       }
     }

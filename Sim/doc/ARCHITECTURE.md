@@ -1,8 +1,12 @@
 # Phase2 Architecture: SimTouch Embedded Implementation
 
 **Status**: Phase 2 Active Development (Autonomous ESP32-S3)  
-**Last Updated**: 2026-02-15  
+**Last Updated**: 2026-11-02  
 **Target Hardware**: LilyGo T-RGB 2.1 (primary), Waveshare ESP32-S3-Touch-LCD-1.28 (secondary)
+
+This document describes the **Phase2 in-tree fork** at `Embedded/esp32/Phase2/`. It is not the public API of **SimTouchCore Library** (`Embedded/SimTouchCore Library/`).
+
+The library is a hardware-free extract (PlatformIO name `SimTouchCore`) linked by the P4 panel. Phase2 keeps its own copies of the modules and has not been synced to the library. Module entries below say when a symbol exists on only one side. Library call order, parameter masks, presets, and host tests are in [SIMTOUCHCORE.md](SIMTOUCHCORE.md). Headers were checked on 2026-11-02.
 
 ---
 
@@ -226,7 +230,7 @@ Embedded/esp32/Phase2/
   5. Enforce boundary constraints
   6. Apply damping & velocity clamping
 - `addForceAtPoint(x, y, radius, strength, repulse)`: External force injection (used by TouchForces)
-- `setGravity(gx, gy)`: Update gravity vector (used by ImuForces)
+- Gravity is `config->gravityX` / `config->gravityY`, read inside `step()` by `GravityForces::apply`. **Phase2** still declares `SimCore::setGravity(gx, gy)`, which writes those two fields. No Phase2 caller uses it. **SimTouchCore Library** does not declare `setGravity`.
 
 **Dependencies**:
 - `Boundary` (constraint enforcement)
@@ -248,7 +252,7 @@ uint16_t count_;            // Active particle count
 **Purpose**: Enforce circular or rectangular boundary constraints  
 **Key Functions**:
 - `enforce(x, y, vx, vy)`: Clamp particle position to boundary, apply damping/restitution/friction
-- `getBoundaryType()`: Returns `BOUNDARY_CIRCULAR` or `BOUNDARY_RECTANGULAR`
+- Shape is `config->boundaryShape` (`0` circular, `1` rectangular). The `BoundaryType` enum and `BOUNDARY_CIRCULAR` / `BOUNDARY_RECTANGULAR` remain on both trees. **Phase2** still has `getBoundaryType()`, which returns that enum from `boundaryShape`. **SimTouchCore Library** does not.
 - `getRadius()`: Get effective boundary radius (for circular mode)
 
 **Modes**:
@@ -349,7 +353,7 @@ float normY = pixelY / SCREEN_HEIGHT;
 
 **Key Functions**:
 - `setAccel(ax, ay, az)`: Update raw accelerometer data
-- `apply()`: Smooth and map to `SimCore::setGravity()`
+- `apply()`: Smooth accelerometer samples and write `config->gravityX` / `gravityY`. **Phase2 only** (`ImuForces.cpp`). It does not call `SimCore::setGravity()`. The library has no `ImuForces` class.
 
 **Mapping**:
 ```cpp
@@ -768,6 +772,8 @@ void SimCore::step(float dt, float timeSec) {
 ### Phase 3: Svibe_Firmware_Slave Integration
 
 When integrating Phase2 simulation into the production suit firmware:
+
+**Current library (2026-11-02):** the hardware-free core already lives at `Embedded/SimTouchCore Library/` and is linked by the P4 firmware (`touch-round-p4`, `lib_deps` symlink). It is not `lib/SimTouch/` inside Phase2, and Phase2 does not compile it. The packaging sketch below is the original plan, not the tree that shipped. See [SIMTOUCHCORE.md](SIMTOUCHCORE.md).
 
 1. **Library Packaging**: Move simulation modules to standalone library
    ```

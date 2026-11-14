@@ -8,7 +8,8 @@
     "start": "concurrently \"npm run server\" \"npm run client\"",
     "server": "node src/com/udp/server/server.js",
     "client": "live-server src --port=8080 --no-browser",
-    "dev": "npm run start"
+    "dev": "npm run start",
+    "build:core": "node scripts/build-core.mjs"
   },
   "dependencies": {
     "cors": "^2.8.5",

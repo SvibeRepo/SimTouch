@@ -1,7 +1,14 @@
 #include "GridModes.h"
 
+#include "Collision.h"
 #include <math.h>
 #include <string.h>
+
+namespace
+{
+constexpr uint16_t kSplatParticleThreshold = 50;
+constexpr int kNeighborhoodRadius = 5;
+}
 
 uint16_t GridModes::activeCellCount(const GridGeometry &geom, uint16_t outCount) const
 {
@@ -139,6 +146,50 @@ void GridModes::computeNoise(const SimCore &sim, const GridGeometry &geom, uint8
   smoothAndStore(target, cells, outValues, outCount);
 }
 
+void GridModes::computeProximitySplat(const SimCore &sim, const GridGeometry &geom, float *target, uint16_t cells)
+{
+  const GridCell *grid = geom.getCells();
+  const float *px = sim.getX();
+  const float *py = sim.getY();
+  const uint16_t pCount = sim.getCount();
+  const uint8_t cols = geom.getCols() == 0 ? 1 : geom.getCols();
+  const uint8_t rows = geom.getRows() == 0 ? 1 : geom.getRows();
+  const float sigma = 0.06f;
+  const float invSigma2 = 1.0f / (sigma * sigma);
+
+  for (uint16_t i = 0; i < pCount; ++i)
+  {
+    const float px_i = px[i];
+    const float py_i = py[i];
+    const int centerCol = (int)(px_i * (float)cols);
+    const int centerRow = (int)(py_i * (float)rows);
+    const int col0 = centerCol - kNeighborhoodRadius;
+    const int col1 = centerCol + kNeighborhoodRadius;
+    const int row0 = centerRow - kNeighborhoodRadius;
+    const int row1 = centerRow + kNeighborhoodRadius;
+
+    for (int r = row0; r <= row1; ++r)
+    {
+      if (r < 0 || r >= (int)rows)
+        continue;
+      for (int c = col0; c <= col1; ++c)
+      {
+        if (c < 0 || c >= (int)cols)
+          continue;
+        const uint16_t idx = (uint16_t)r * cols + (uint16_t)c;
+        if (idx >= cells)
+          continue;
+        const float cx = grid[idx].x;
+        const float cy = grid[idx].y;
+        const float dx = cx - px_i;
+        const float dy = cy - py_i;
+        const float d2 = dx * dx + dy * dy;
+        target[idx] += expf(-d2 * invSigma2);
+      }
+    }
+  }
+}
+
 void GridModes::computeProximity(const SimCore &sim, const GridGeometry &geom, uint8_t *outValues, uint16_t outCount)
 {
   const uint16_t cells = activeCellCount(geom, outCount);
@@ -152,21 +203,32 @@ void GridModes::computeProximity(const SimCore &sim, const GridGeometry &geom, u
   float target[MAX_GRID_CELLS];
   memset(target, 0, sizeof(target));
 
-  for (uint16_t c = 0; c < cells; ++c)
+  if (pCount > kSplatParticleThreshold)
   {
-    float density = 0.0f;
-    const float cx = grid[c].x;
-    const float cy = grid[c].y;
-    for (uint16_t i = 0; i < pCount; ++i)
+    computeProximitySplat(sim, geom, target, cells);
+  }
+  else
+  {
+    for (uint16_t c = 0; c < cells; ++c)
     {
-      float dx = cx - px[i];
-      float dy = cy - py[i];
-      float d2 = dx * dx + dy * dy;
-      density += expf(-d2 * invSigma2);
+      float density = 0.0f;
+      const float cx = grid[c].x;
+      const float cy = grid[c].y;
+      for (uint16_t i = 0; i < pCount; ++i)
+      {
+        float dx = cx - px[i];
+        float dy = cy - py[i];
+        float d2 = dx * dx + dy * dy;
+        density += expf(-d2 * invSigma2);
+      }
+      target[c] = density;
     }
-    target[c] = density / maxDensity;
   }
 
+  for (uint16_t c = 0; c < cells; ++c)
+  {
+    target[c] /= maxDensity;
+  }
   smoothAndStore(target, cells, outValues, outCount);
 }
 
@@ -222,6 +284,47 @@ void GridModes::computeProximityB(const SimCore &sim, const GridGeometry &geom, 
   smoothAndStore(target, cells, outValues, outCount);
 }
 
+void GridModes::computeDensitySplat(const SimCore &sim, const GridGeometry &geom, float *target, uint16_t cells)
+{
+  const GridCell *grid = geom.getCells();
+  const float *px = sim.getX();
+  const float *py = sim.getY();
+  const uint16_t pCount = sim.getCount();
+  const uint8_t cols = geom.getCols() == 0 ? 1 : geom.getCols();
+  const uint8_t rows = geom.getRows() == 0 ? 1 : geom.getRows();
+  const float halfW = 0.5f / (float)cols;
+  const float halfH = 0.5f / (float)rows;
+  const float radius = config_->particleRadius * 2.0f;
+
+  for (uint16_t i = 0; i < pCount; ++i)
+  {
+    const float px_i = px[i];
+    const float py_i = py[i];
+    const int centerCol = (int)(px_i * (float)cols);
+    const int centerRow = (int)(py_i * (float)rows);
+    const int col0 = centerCol - kNeighborhoodRadius;
+    const int col1 = centerCol + kNeighborhoodRadius;
+    const int row0 = centerRow - kNeighborhoodRadius;
+    const int row1 = centerRow + kNeighborhoodRadius;
+
+    for (int r = row0; r <= row1; ++r)
+    {
+      if (r < 0 || r >= (int)rows)
+        continue;
+      for (int c = col0; c <= col1; ++c)
+      {
+        if (c < 0 || c >= (int)cols)
+          continue;
+        const uint16_t idx = (uint16_t)r * cols + (uint16_t)c;
+        if (idx >= cells)
+          continue;
+        const float w = cellContribution(px_i, py_i, grid[idx].x, grid[idx].y, halfW, halfH, radius);
+        target[idx] += w;
+      }
+    }
+  }
+}
+
 void GridModes::computeDensity(const SimCore &sim, const GridGeometry &geom, uint8_t *outValues, uint16_t outCount)
 {
   const uint16_t cells = activeCellCount(geom, outCount);
@@ -238,17 +341,75 @@ void GridModes::computeDensity(const SimCore &sim, const GridGeometry &geom, uin
   float target[MAX_GRID_CELLS];
   memset(target, 0, sizeof(target));
 
-  for (uint16_t c = 0; c < cells; ++c)
+  if (pCount > kSplatParticleThreshold)
   {
-    float density = 0.0f;
-    for (uint16_t i = 0; i < pCount; ++i)
+    computeDensitySplat(sim, geom, target, cells);
+  }
+  else
+  {
+    for (uint16_t c = 0; c < cells; ++c)
     {
-      density += cellContribution(px[i], py[i], grid[c].x, grid[c].y, halfW, halfH, radius);
+      float density = 0.0f;
+      for (uint16_t i = 0; i < pCount; ++i)
+      {
+        density += cellContribution(px[i], py[i], grid[c].x, grid[c].y, halfW, halfH, radius);
+      }
+      target[c] = density;
     }
-    target[c] = density / maxDensity;
   }
 
+  for (uint16_t c = 0; c < cells; ++c)
+  {
+    target[c] /= maxDensity;
+  }
   smoothAndStore(target, cells, outValues, outCount);
+}
+
+void GridModes::computeVelocitySplat(const SimCore &sim, const GridGeometry &geom, float *target, uint16_t cells)
+{
+  const GridCell *grid = geom.getCells();
+  const float *px = sim.getX();
+  const float *py = sim.getY();
+  const float *vx = sim.getVx();
+  const float *vy = sim.getVy();
+  const uint16_t pCount = sim.getCount();
+  const uint8_t cols = geom.getCols() == 0 ? 1 : geom.getCols();
+  const uint8_t rows = geom.getRows() == 0 ? 1 : geom.getRows();
+  const float halfW = 0.5f / (float)cols;
+  const float halfH = 0.5f / (float)rows;
+  const float radius = config_->particleRadius * 2.0f;
+
+  for (uint16_t i = 0; i < pCount; ++i)
+  {
+    const float px_i = px[i];
+    const float py_i = py[i];
+    const float speed = sqrtf(vx[i] * vx[i] + vy[i] * vy[i]);
+    const int centerCol = (int)(px_i * (float)cols);
+    const int centerRow = (int)(py_i * (float)rows);
+    const int col0 = centerCol - kNeighborhoodRadius;
+    const int col1 = centerCol + kNeighborhoodRadius;
+    const int row0 = centerRow - kNeighborhoodRadius;
+    const int row1 = centerRow + kNeighborhoodRadius;
+
+    for (int r = row0; r <= row1; ++r)
+    {
+      if (r < 0 || r >= (int)rows)
+        continue;
+      for (int c = col0; c <= col1; ++c)
+      {
+        if (c < 0 || c >= (int)cols)
+          continue;
+        const uint16_t idx = (uint16_t)r * cols + (uint16_t)c;
+        if (idx >= cells)
+          continue;
+        const float w = cellContribution(px_i, py_i, grid[idx].x, grid[idx].y, halfW, halfH, radius);
+        if (w > 0.0f)
+        {
+          target[idx] += speed * w;
+        }
+      }
+    }
+  }
 }
 
 void GridModes::computeVelocity(const SimCore &sim, const GridGeometry &geom, uint8_t *outValues, uint16_t outCount)
@@ -270,22 +431,33 @@ void GridModes::computeVelocity(const SimCore &sim, const GridGeometry &geom, ui
   float target[MAX_GRID_CELLS];
   memset(target, 0, sizeof(target));
 
-  for (uint16_t c = 0; c < cells; ++c)
+  if (pCount > kSplatParticleThreshold)
   {
-    float accum = 0.0f;
-    for (uint16_t i = 0; i < pCount; ++i)
+    computeVelocitySplat(sim, geom, target, cells);
+  }
+  else
+  {
+    for (uint16_t c = 0; c < cells; ++c)
     {
-      const float w = cellContribution(px[i], py[i], grid[c].x, grid[c].y, halfW, halfH, radius);
-      if (w <= 0.0f)
+      float accum = 0.0f;
+      for (uint16_t i = 0; i < pCount; ++i)
       {
-        continue;
+        const float w = cellContribution(px[i], py[i], grid[c].x, grid[c].y, halfW, halfH, radius);
+        if (w <= 0.0f)
+        {
+          continue;
+        }
+        const float speed = sqrtf(vx[i] * vx[i] + vy[i] * vy[i]);
+        accum += speed * w;
       }
-      const float speed = sqrtf(vx[i] * vx[i] + vy[i] * vy[i]);
-      accum += speed * w;
+      target[c] = accum;
     }
-    target[c] = accum / norm;
   }
 
+  for (uint16_t c = 0; c < cells; ++c)
+  {
+    target[c] /= norm;
+  }
   smoothAndStore(target, cells, outValues, outCount);
 }
 

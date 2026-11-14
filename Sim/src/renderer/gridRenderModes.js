@@ -640,88 +640,70 @@ export class GridRenderModes {
 
   calculateCollision(particleSystem) {
     this.targetValues.fill(0);
-    if (!particleSystem?.collisionSystem) return this.targetValues;
-
-    const collisionSystem = particleSystem.collisionSystem;
-    const particles = particleSystem.getParticles();
+    const particles = particleSystem?.getParticles?.();
     if (!particles?.length) return this.targetValues;
 
-    // Constants
+    // Spatial bins for the viz only — physics bins live in the wasm tick.
+    const gridSize = Math.max(
+      1,
+      Math.min(128, Math.round(particleSystem.collisionGridSize || 10))
+    );
+    const bins = Array.from({ length: gridSize * gridSize }, () => []);
+    for (let i = 0; i < particles.length; i++) {
+      const p = particles[i];
+      if (p.x < 0 || p.x >= 1 || p.y < 0 || p.y >= 1) continue;
+      const cx = Math.min(gridSize - 1, Math.floor(p.x * gridSize));
+      const cy = Math.min(gridSize - 1, Math.floor(p.y * gridSize));
+      bins[cy * gridSize + cx].push(i);
+    }
+
     const tune = 50.0;
-    // const renderScale = particleSystem.renderScale; // No longer needed directly
+    const normalizedRadius = particleSystem.particleRadius;
+    const pixelRadius =
+      normalizedRadius *
+      Math.max(this.dimensions.renderWidth, this.dimensions.renderHeight);
 
-    // Get normalized particle radius from ParticleSystem
-    const normalizedRadius = particleSystem.particleRadius; // Assuming this property exists
-    // Calculate pixel radius dynamically based on dimensions
-    const pixelRadius = normalizedRadius * Math.max(this.dimensions.renderWidth, this.dimensions.renderHeight);
+    const cellCollisions = new Float32Array(this.targetValues.length);
+    const cellWeights = new Float32Array(this.targetValues.length);
 
-    // Track collision intensities for each cell
-    const cellCollisions = new Float32Array(this.targetValues.length).fill(0);
-    const cellWeights = new Float32Array(this.targetValues.length).fill(0);
-
-    // Process each particle
-    for (let i = 0; i < collisionSystem.grid.length; i++) {
-      const collisionCell = collisionSystem.grid[i];
+    for (let i = 0; i < bins.length; i++) {
+      const collisionCell = bins[i];
       if (collisionCell.length < 2) continue;
 
-      // Calculate cell center in render space
-      const gridSize = collisionSystem.gridSize;
-      const x = i % gridSize;
-      const y = Math.floor(i / gridSize);
-      const normalizedX = (x + 0.5) / gridSize;
-      const normalizedY = (y + 0.5) / gridSize;
-      // Use dynamic dimensions
-      const renderX = normalizedX * this.dimensions.renderWidth;
-      const renderY = (1 - normalizedY) * this.dimensions.renderHeight;
-
-      // Process particle pairs in this cell
       for (let j = 0; j < collisionCell.length; j++) {
-        const p1 = collisionCell[j];
+        const particle1 = particles[collisionCell[j]];
         for (let k = j + 1; k < collisionCell.length; k++) {
-          const p2 = collisionCell[k];
+          const particle2 = particles[collisionCell[k]];
 
-          // Get particle data
-          const particle1 = particles[p1];
-          const particle2 = particles[p2];
-
-          // Calculate relative velocity
           const dvx = particle2.vx - particle1.vx;
           const dvy = particle2.vy - particle1.vy;
           const relativeSpeed = Math.sqrt(dvx * dvx + dvy * dvy);
 
-          // Get particle positions in render space using dynamic dimensions
           const p1x = particle1.x * this.dimensions.renderWidth;
           const p1y = (1 - particle1.y) * this.dimensions.renderHeight;
           const p2x = particle2.x * this.dimensions.renderWidth;
           const p2y = (1 - particle2.y) * this.dimensions.renderHeight;
 
-          // Use the rendered size (diameter) from getParticles()
-          // const p1Radius = particle1.size / 8; // REMOVED old calculation
-          // const p2Radius = particle2.size / 8; // REMOVED old calculation
-          const p1Radius = pixelRadius; // Use dynamic radius
-          const p2Radius = pixelRadius; // Use dynamic radius (assuming same radius for all for now)
+          const p1Radius = pixelRadius;
+          const p2Radius = pixelRadius;
 
-          // Calculate collision intensity based on overlap and relative speed
           const dx = p2x - p1x;
           const dy = p2y - p1y;
           const dist = Math.sqrt(dx * dx + dy * dy);
           const minDist = p1Radius + p2Radius;
 
           if (dist < minDist * 2) {
-            // Calculate overlap-based collision intensity
             const overlap = Math.max(0, minDist * 2 - dist);
             const collisionIntensity = (overlap / (minDist * 2)) * relativeSpeed;
 
-            // Find all cells that this collision affects
             this.gridMap.forEach((cell) => {
               const { x, y, width, height } = cell.bounds;
               const cellArea = width * height;
 
-              // Calculate overlap with both particles
               const p1Overlap = this.calculateCircleRectOverlap(
                 p1x,
                 p1y,
-                p1Radius, // Use dynamic radius
+                p1Radius,
                 x,
                 y,
                 width,
@@ -731,7 +713,7 @@ export class GridRenderModes {
               const p2Overlap = this.calculateCircleRectOverlap(
                 p2x,
                 p2y,
-                p2Radius, // Use dynamic radius
+                p2Radius,
                 x,
                 y,
                 width,
@@ -739,16 +721,10 @@ export class GridRenderModes {
               );
 
               if (p1Overlap > 0 || p2Overlap > 0) {
-                // Calculate weight based on total overlap
                 let weight = ((p1Overlap + p2Overlap) / cellArea) * 100;
-
-                // Apply smooth scaling
                 weight = Math.pow(weight / 100, 1.5) * 100;
-
-                // Scale the weight to match our visualization range
                 weight = Math.min(weight * 0.25, 100);
 
-                // Add weighted collision contribution
                 cellCollisions[cell.index] += collisionIntensity * weight * tune;
                 cellWeights[cell.index] += weight;
               }
@@ -758,7 +734,6 @@ export class GridRenderModes {
       }
     }
 
-    // Calculate final collision values
     for (let i = 0; i < this.targetValues.length; i++) {
       if (cellWeights[i] > 0) {
         this.targetValues[i] = cellCollisions[i] / cellWeights[i];

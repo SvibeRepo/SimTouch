@@ -524,12 +524,15 @@ export class MouseForces {
   applyImpulseAt(particleSystem, x, y, mode = null) {
     const { particles, velocitiesX, velocitiesY, numParticles } =
       particleSystem;
+    // Prefer SoA views when the wasm tick owns positions.
+    const posX = particleSystem.x;
+    const posY = particleSystem.y;
     // Get inverse of velocity damping to counteract system damping
-    const dampingCompensation = 1 / particleSystem.velocityDamping;
+    const dampingCompensation = 1 / Math.max(particleSystem.velocityDamping, 1e-6);
 
     for (let i = 0; i < numParticles; i++) {
-      const px = particles[i * 2];
-      const py = particles[i * 2 + 1];
+      const px = posX ? posX[i] : particles[i * 2];
+      const py = posY ? posY[i] : particles[i * 2 + 1];
       const dx = px - x;
       const dy = py - y;
       const dist = Math.hypot(dx, dy);

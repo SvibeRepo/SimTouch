@@ -25,8 +25,8 @@ private:
   float applyPattern(uint8_t style, float x, float y, float centerX, float centerY, float time, float baseNoise) const;
   float applyPullContrastSeparation(float value01) const;
   float applyPreviewContrastSeparation(float value01) const;
-  float sampleFieldNoBlur(float x, float y, float time, bool applyPostProcess) const;
-  float sampleField(float x, float y, float time) const;
+  float sampleFieldNoBlur(float x, float y, float time, bool applyPostProcess, bool fastPath) const;
+  float sampleField(float x, float y, float time, bool fastPath = false) const;
   float sampleNoisePreview01(float x, float y, float tNow) const;
   void initPermutation();
   float clamp01(float v) const;

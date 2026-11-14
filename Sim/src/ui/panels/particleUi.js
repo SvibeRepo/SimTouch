@@ -29,6 +29,9 @@ export class ParticleUi extends BaseUi {
     this.collisionDampingController = this.gui.add(this.main.simParams.simulation, "velocityDamping", 0.8, 1.0, 0.001).name("P-VeloDamp")
       .onChange((value) => { eventBus.emit('uiControlChanged', { paramPath: 'simulation.velocityDamping', value }); });
 
+    this.engineController = this.gui.add(this.main.simParams.simulation, "engine", ["js", "rust"]).name("Engine")
+      .onChange((value) => { eventBus.emit('uiControlChanged', { paramPath: 'simulation.engine', value }); });
+
     this.collisionDampingController.domElement.style.marginBottom = "12px";
 
     // Bind Opacity to simParams
