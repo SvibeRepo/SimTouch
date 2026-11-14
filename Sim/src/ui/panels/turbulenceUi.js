@@ -198,7 +198,7 @@ export class TurbulenceUi extends BaseUi {
     this.turbulenceScaleController = this.gui.add(turbulenceParams, "scale", 0.1, 10, 0.01).name("T-Scale")
       .onChange(value => eventBus.emit('uiControlChanged', { paramPath: 'turbulence.scale', value }));
 
-    this.turbulenceSpeedController = this.gui.add(turbulenceParams, "speed", 0, 2).name("T-Speed")
+    this.turbulenceSpeedController = this.gui.add(turbulenceParams, "speed", 0, 3).name("T-Speed")
       .onChange(value => eventBus.emit('uiControlChanged', { paramPath: 'turbulence.speed', value }));
 
     this.turbulenceDecayRateController = this.gui.add(turbulenceParams, "decayRate", 0.9, 1).name("T-Decay")
@@ -238,7 +238,6 @@ export class TurbulenceUi extends BaseUi {
 
     this.turbulenceMinScaleController = scaleRangeFolder.add(turbulenceParams, "minScale", 0.005, 0.015, 0.001).name("T-Min Size")
       .onChange(value => eventBus.emit('uiControlChanged', { paramPath: 'turbulence.minScale', value }));
-
     this.turbulenceMaxScaleController = scaleRangeFolder.add(turbulenceParams, "maxScale", 0.015, 0.03, 0.001).name("T-Max Size")
       .onChange(value => eventBus.emit('uiControlChanged', { paramPath: 'turbulence.maxScale', value }));
 
@@ -364,8 +363,8 @@ export class TurbulenceUi extends BaseUi {
     this.patternOffsetFolder = patternOffsetFolder;
 
     // Add offset X and Y controls - now just for display purposes
-    this.turbulenceOffsetXController = patternOffsetFolder.add(turbulenceField, "patternOffsetX", -1, 1, 0.01).name("T-OffsetX");
-    this.turbulenceOffsetYController = patternOffsetFolder.add(turbulenceField, "patternOffsetY", -1, 1, 0.01).name("T-OffsetY");
+    this.turbulenceOffsetXController = patternOffsetFolder.add(turbulenceField, "patternOffsetX", -2, 2, 0.01).name("T-OffsetX");
+    this.turbulenceOffsetYController = patternOffsetFolder.add(turbulenceField, "patternOffsetY", -2, 2, 0.01).name("T-OffsetY");
 
 
     // Close the Pattern Offset folder by default

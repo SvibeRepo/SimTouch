@@ -1,6 +1,3 @@
-import { NeighborSearch } from "./neighborSearch.js";
-import { OrganicForces } from "../forces/organicForces.js";
-import { AutomataRules } from "./automataRules.js";
 import { eventBus } from '../../util/eventManager.js';
 import { debugManager } from '../../util/debugManager.js';
 
@@ -69,11 +66,6 @@ export class OrganicBehavior {
         base: 1.5,
       },
     };
-
-    this.forces = new OrganicForces(this.forceScales);
-    this.neighborSearch = new NeighborSearch();
-    this.automataRules = new AutomataRules();
-
 
     if (this.db) {
       console.log(
@@ -154,98 +146,6 @@ export class OrganicBehavior {
     }
     if (this.db) console.log(`OrganicBehavior updated params via event: ${this.currentBehavior}`);
   }
-
-  updateParticles(particleSystem, dt) {
-    if (this.currentBehavior === "None") return;
-
-    const currentParams = this.params[this.currentBehavior];
-    if (!currentParams) return;
-
-    const particles = [];
-    for (let i = 0; i < particleSystem.particles.length; i += 2) {
-      const particle = {
-        x: particleSystem.particles[i],
-        y: particleSystem.particles[i + 1],
-        vx: particleSystem.velocitiesX[i / 2],
-        vy: particleSystem.velocitiesY[i / 2],
-        index: i / 2,
-        state:
-          this.currentBehavior === "Automata"
-            ? this.automataRules.getParticleState(i / 2)
-            : 0.5,
-      };
-      particles.push(particle);
-
-      // Debug particles in top region
-      // if (this.debugEnabled && particle.y > 0.7) {
-      //   if(this.db) console.log(`Particle ${i / 2} at y=${particle.y.toFixed(3)}`);
-      // }
-    }
-
-    const neighbors = this.neighborSearch.findNeighbors(
-      particles,
-      currentParams.radius
-    );
-
-    // Reset chain data when switching to Chain behavior
-    if (this.currentBehavior === "Chain" && this.lastBehavior !== "Chain") {
-      if (this.db) console.log("Resetting chain data on all particles");
-      // Reset chain data on all particles
-      particles.forEach(p => {
-        p.chainData = { links: [] };
-      });
-    }
-    this.lastBehavior = this.currentBehavior;
-
-    // Handle Automata state updates
-    if (this.currentBehavior === "Automata") {
-      if (!this.automataRules.particleStates.size) {
-        this.automataRules.initializeStates(particles);
-      }
-      this.automataRules.updateStates(particles, neighbors, currentParams);
-    }
-
-    const forces = this.forces.calculateForces(
-      particles,
-      neighbors,
-      currentParams
-    );
-
-
-    if (this.db) console.log(`${this.currentBehavior} update:`, {
-      particles: particles.length,
-      neighbors: neighbors.size,
-      states:
-        this.currentBehavior === "Automata"
-          ? this.automataRules.particleStates.size
-          : "N/A",
-    });
-
-
-    forces.forEach((force, idx) => {
-      // if (this.db && particles[idx].y > 0.7) {
-      //   console.log(
-      //     `Force at y=${particles[idx].y.toFixed(3)}: (${force.x.toFixed(
-      //       3
-      //     )}, ${force.y.toFixed(3)})`
-      //   );
-      // }
-      particleSystem.velocitiesX[idx] += force.x * dt;
-      particleSystem.velocitiesY[idx] += force.y * dt;
-    });
-  }
-
-  // logUpdate(particleSystem, neighbors, forces) {
-  //   const stats = {
-  //     behavior: this.currentBehavior,
-  //     particles: particleSystem.getParticles().length,
-  //     activeNeighborhoods: neighbors.size,
-  //     maxForce: Math.max(
-  //       ...Array.from(forces.values()).map((f) => Math.hypot(f.x, f.y))
-  //     ),
-  //   };
-  //   if(this.db) console.log("Behavior Update:", stats);
-  // }
 
   reset() {
     // Reset any stored particle state

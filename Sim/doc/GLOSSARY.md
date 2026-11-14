@@ -23,8 +23,11 @@ The **native C++ embedded implementation** running autonomously on ESP32-S3. Fea
 - Web-based configuration interface (AsyncWebServer + WebSocket)
 - Display rendering with FastLED color palettes
 
-Location: `Embedded/esp32/Phase2/`  
+Location: `Embedded/esp32/Phase2/` (in-tree fork; it does not compile SimTouchCore Library)  
 Status: Active development (core features complete, advanced features scaffolded)
+
+### SimTouchCore Library
+The **hardware-free particle core** extracted from Phase2. PlatformIO library at `Embedded/SimTouchCore Library/` (`library.json` name `SimTouchCore`). The P4 panel links this tree. Phase2 keeps separate copies of the same module names under `Embedded/esp32/Phase2/` and has not been synced to the library. Public API, masks, presets, and symbols removed from the library only: [SIMTOUCHCORE.md](SIMTOUCHCORE.md).
 
 ### Phase 3
 **Integration into production suit firmware** (`Svibe_Firmware_Slave`). Features:
@@ -32,6 +35,8 @@ Status: Active development (core features complete, advanced features scaffolded
 - 338-cell output mapped to 338 haptic modules
 - Coexists with Unity control, local touch, and demo modes
 - Unified LVGL UI with simulation configuration screen
+
+The P4 panel already links SimTouchCore Library. The suit-slave integration described here is still the Phase 3 plan.
 
 Location: `Svibe_Firmware_Slave/` (separate repo/project)  
 Status: Planned (integration after Phase2 completion)
@@ -296,7 +301,7 @@ A **pair of files** (header + implementation) implementing a specific feature.
 **Modules that inject forces into SimCore**: TouchForces, ImuForces.
 - Read hardware state (touch coords, IMU accel)
 - Convert to normalized forces in [0,1] space
-- Call `SimCore::addForceAtPoint()` or `SimCore::setGravity()`
+- Call `SimCore::addForceAtPoint()` for a touch impulse. Gravity is `config->gravityX` / `gravityY` (`SimCore::step` reads them). Phase2 `ImuForces::apply()` writes those fields. `SimCore::setGravity()` still exists on the **Phase2 fork only**; SimTouchCore Library removed it.
 
 ---
 

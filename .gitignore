@@ -3,3 +3,5 @@ package-lock.json
 *.log
 .qodo
 Embedded/LilyGo-T-RGB-main/
+Embedded/SimTouchCore Library/
+.superpowers/

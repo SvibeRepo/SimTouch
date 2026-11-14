@@ -79,7 +79,6 @@ struct SimConfig
   bool turbScaleField = false;
   bool turbAffectScale = true;
   float turbMinScale = 0.008f;
-  float turbMaxScale = 0.03f;
   uint8_t turbPatternStyle = 0;
   float turbDecayRate = 1.0f;
   float turbDirectionBiasX = 0.0f;
@@ -146,8 +145,7 @@ static const ParamDef kParamRegistry[] = {
     {104, "Turb Affect Position", "Turbulence", PARAM_BOOL, 0.0f, 1.0f, 1.0f, (uint16_t)offsetof(SimConfig, turbAffectPosition)},
     {105, "Turb Scale Field", "Turbulence", PARAM_BOOL, 0.0f, 1.0f, 1.0f, (uint16_t)offsetof(SimConfig, turbScaleField)},
     {106, "Turb Affect Scale", "Turbulence", PARAM_BOOL, 0.0f, 1.0f, 1.0f, (uint16_t)offsetof(SimConfig, turbAffectScale)},
-    {107, "Turb Min Scale", "Turbulence", PARAM_FLOAT, 0.005f, 0.015f, 0.001f, (uint16_t)offsetof(SimConfig, turbMinScale)},
-    {108, "Turb Max Scale", "Turbulence", PARAM_FLOAT, 0.015f, 0.03f, 0.001f, (uint16_t)offsetof(SimConfig, turbMaxScale)},
+    {107, "Turb Min Scale", "Turbulence", PARAM_FLOAT, 0.002f, 0.15f, 0.001f, (uint16_t)offsetof(SimConfig, turbMinScale)},
     {109, "Turb Pattern Style", "Turbulence", PARAM_UINT8, 0.0f, 14.0f, 1.0f, (uint16_t)offsetof(SimConfig, turbPatternStyle)},
     {110, "Turb Decay Rate", "Turbulence", PARAM_FLOAT, 0.9f, 1.0f, 0.01f, (uint16_t)offsetof(SimConfig, turbDecayRate)},
     {111, "Turb Direction Bias X", "Turbulence", PARAM_FLOAT, -1.0f, 1.0f, 0.01f, (uint16_t)offsetof(SimConfig, turbDirectionBiasX)},

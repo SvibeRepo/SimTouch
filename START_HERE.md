@@ -14,7 +14,8 @@ SimTouch is a **dual-phase project** that creates organic, physics-driven contro
 
 ### Documentation (Read These First!)
 - **This file** (`START_HERE.md`) - Quick orientation (5-minute read)
-- `Sim/doc/ARCHITECTURE.md` - Phase2 codebase architecture map
+- `Sim/doc/ARCHITECTURE.md` - Phase2 in-tree fork (not the SimTouchCore Library API)
+- `Sim/doc/SIMTOUCHCORE.md` - SimTouchCore Library versus that Phase2 fork
 - `Sim/doc/GLOSSARY.md` - Domain-specific terms and abbreviations
 - `Sim/doc/QUICK_REFERENCE.md` - Command cheat sheet and troubleshooting
 - `Sim/doc/migration/migration-plan.md` - Comprehensive migration strategy (may be slightly outdated)
@@ -28,6 +29,7 @@ SimTouch is a **dual-phase project** that creates organic, physics-driven contro
 
 ### Reference Implementations
 - **JavaScript Sim**: `Sim/src/` - Original algorithms (for validation & porting reference)
+- **SimTouchCore Library**: `Embedded/SimTouchCore Library/` - hardware-free core linked by the P4 panel. Phase2 does not build this tree.
 - **Phase1 Firmware**: `Embedded/esp32/Phase1/` - Legacy UDP slave mode (deprecated for new work)
 
 ## 🏗️ Current Architecture (Phase2)
@@ -112,7 +114,7 @@ SimTouch is a **dual-phase project** that creates organic, physics-driven contro
 
 ### First-Time Setup
 1. Read `Sim/doc/migration/migration-plan.md` (comprehensive but may be slightly outdated)
-2. Read `Sim/doc/ARCHITECTURE.md` (up-to-date Phase2 structure)
+2. Read `Sim/doc/ARCHITECTURE.md` (Phase2 fork) and `Sim/doc/SIMTOUCHCORE.md` (library used by P4)
 3. Review `.cursor/rules/project-conventions.mdc` (coding standards, scope limitations)
 4. Open `Embedded/esp32/Phase2/` in PlatformIO
 
@@ -183,7 +185,7 @@ SimTouch is a **dual-phase project** that creates organic, physics-driven contro
 When starting a new chat session:
 
 1. **Read this file first** for quick orientation
-2. **Check `Sim/doc/ARCHITECTURE.md`** for detailed Phase2 structure
+2. **Check `Sim/doc/ARCHITECTURE.md`** for the Phase2 fork, and **`Sim/doc/SIMTOUCHCORE.md`** for the library the P4 panel links
 3. **Review recent git changes**: `git status` and `git log -5` for context
 4. **Scan open files** in the IDE for user's current focus
 5. **Ask clarifying questions** before making assumptions

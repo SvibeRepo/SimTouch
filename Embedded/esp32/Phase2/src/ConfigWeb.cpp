@@ -57,7 +57,6 @@ static String BuildConfigJson()
   s += "\"turbScaleField\":" + String(gConfig->turbScaleField ? 1 : 0) + ",";
   s += "\"turbAffectScale\":" + String(gConfig->turbAffectScale ? 1 : 0) + ",";
   s += "\"turbMinScale\":" + String(gConfig->turbMinScale, 4) + ",";
-  s += "\"turbMaxScale\":" + String(gConfig->turbMaxScale, 4) + ",";
   s += "\"turbPatternStyle\":" + String(gConfig->turbPatternStyle) + ",";
   s += "\"turbDecayRate\":" + String(gConfig->turbDecayRate, 3) + ",";
   s += "\"turbDirectionBiasX\":" + String(gConfig->turbDirectionBiasX, 3) + ",";
@@ -280,12 +279,7 @@ static bool SetParam(const String &key, float value)
   }
   if (key == "turbMinScale")
   {
-    gConfig->turbMinScale = constrain(value, 0.005f, 0.015f);
-    return true;
-  }
-  if (key == "turbMaxScale")
-  {
-    gConfig->turbMaxScale = constrain(value, 0.015f, 0.03f);
+    gConfig->turbMinScale = constrain(value, 0.002f, 0.15f);
     return true;
   }
   if (key == "turbPatternStyle")
@@ -604,8 +598,7 @@ static const char kIndexHtml[] PROGMEM = R"HTML(
         ["turbAffectPosition",0,1,1],
         ["turbScaleField",0,1,1],
         ["turbAffectScale",0,1,1],
-        ["turbMinScale",0.005,0.015,0.001],
-        ["turbMaxScale",0.015,0.03,0.001],
+        ["turbMinScale",0.002,0.15,0.001],
         ["turbRotation",0,6.2831853,0.01],
         ["turbRotationSpeed",0,1,0.01],
         ["turbDirectionBiasX",-1,1,0.01],
@@ -686,7 +679,6 @@ static const char kIndexHtml[] PROGMEM = R"HTML(
       turbScaleField: "Scale Field",
       turbAffectScale: "Size",
       turbMinScale: "T-Min Size",
-      turbMaxScale: "T-Max Size",
       turbRotation: "T-Rot",
       turbRotationSpeed: "T-RotSpd",
       turbDirectionBiasX: "T-DirX",
@@ -705,7 +697,7 @@ static const char kIndexHtml[] PROGMEM = R"HTML(
 
     const turbulenceToggleKeys = new Set(["turbAffectPosition", "turbScaleField", "turbAffectScale"]);
     const turbulenceConditionalRows = {
-      scaleRange: ["turbMinScale", "turbMaxScale"],
+      scaleRange: ["turbMinScale"],
       positionOnly: ["turbPullFactor", "turbDirectionBiasX", "turbDirectionBiasY"]
     };
     let lastNonZeroTurbStrength = 4.0;
@@ -902,8 +894,7 @@ static const char kIndexHtml[] PROGMEM = R"HTML(
         ["turbSpeed", 0, 2],
         ["turbDecayRate", 0.9, 1.0],
         ["turbPullFactor", -1, 1],
-        ["turbMinScale", 0.005, 0.015],
-        ["turbMaxScale", 0.015, 0.03],
+        ["turbMinScale", 0.002, 0.15],
         ["turbRotation", 0, 6.2831853],
         ["turbRotationSpeed", 0, 1],
         ["turbDirectionBiasX", -1, 1],
@@ -928,11 +919,11 @@ static const char kIndexHtml[] PROGMEM = R"HTML(
           break;
         }
       }
-      if (!invalid && inputs.turbMinScale && inputs.turbMaxScale) {
+      if (!invalid && inputs.turbMinScale && inputs.particleRadius) {
         const minS = Number(inputs.turbMinScale[0].value);
-        const maxS = Number(inputs.turbMaxScale[0].value);
-        if (minS > maxS) {
-          invalid = "T-Min Size must be <= T-Max Size";
+        const particleSize = Number(inputs.particleRadius[0].value);
+        if (minS > particleSize) {
+          invalid = "T-Min Size must be <= P-Size";
         }
       }
       if (invalid) {

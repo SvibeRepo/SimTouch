@@ -1135,7 +1135,6 @@ export class TurbulenceField {
         // Now uses normalized coordinate processing
         const n1 = this.noise2D(x, y, this.time, true);
 
-        // Use minScale and maxScale to determine the range of particle sizes
         // n1 is a value between 0 and 1 from the noise function
         const particleSize = this.minScale + n1 * (this.maxScale - this.minScale);
 
