@@ -2,15 +2,13 @@
 
 Direction for the next steps. When `START_HERE.md`, `doc/migration/`, `doc/SIMTOUCHCORE.md`, `core/cpp/doc/NEXT.md`, or a plan under `.superpowers/plans/` disagrees with this file about what to build next, follow this file.
 
-## Now (2026-11-15, after the merge)
+## Now (2026-11-15, JavaScript tick restored)
 
-`master` is `2dc08f1` (`Merge branch 'rust'`), matching `origin/master`. The layout move and the Rust tick are on `master`: pattern lab at `applications/web`, JavaScript sources at `core/javascript`, Rust crate at `core/rust`, C++ library nested at `core/cpp` (its own git repo, gitignored here). Phase1 and Phase2 sit under `applications/embedded/`. Branch `rust` remains at `87716de` (the pre-merge tip).
+`master` is the Rust layout (`2dc08f1`). Branch `JavaScript` at `364fdc7` keeps the pre-merge tree. Branch `JavaRustCpp` runs both ticks: `particleSystem.step()` when `sim.engine` is `js`, and `rustCore.step(dt)` otherwise. The default engine is `rust`. Switching to `js` detaches the wasm position views first, and both paths draw through `particleBuffers`.
 
-The page runs the Rust/wasm tick. `sim.engine === "js"` only warns and still steps wasm. The JavaScript sources are in place through the `src/simulation` junction; the tick itself is not wired. Rust already matched the JavaScript tick on the earlier tree. That tree, plus the synced README link, is branch `JavaScript` at `364fdc7` (master after syncing `origin/master`, before merging `rust`). Current `master` is the Rust layout, not that snapshot.
+Three parameter tables still disagree: lab UI labels / JSON, Rust’s 107-float pack, and the C++ / suit registry (`STP1`, suit indices). The P4 suit stays the slave of a shared field chart. Its mask and rectangular domain stay as they are. `spec/` is still only a shelf README.
 
-Three parameter tables still disagree: lab UI labels / JSON, Rust’s 107-float pack, and the C++ / suit registry (`STP1`, suit indices). The P4 suit (`touch-round-p4`) already runs `core/cpp` with a working mask, rectangular domain, and NVS presets; for development it stays the slave of a shared field chart, not the source of the chart. `spec/` is still only a shelf README.
-
-Next concrete step: order item 1 (JavaScript tick).
+Next concrete step: order item 2 (shared field chart).
 
 ## Products
 
