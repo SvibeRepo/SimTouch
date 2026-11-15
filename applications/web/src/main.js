@@ -409,34 +409,41 @@ export class Main {
   render() {
     this.frame++;
     const sim = this.simParams.simulation;
-    const dt = (sim.timeStep ?? this.particleSystem.timeStep) * (sim.timeScale ?? this.particleSystem.timeScale);
-    if (sim.engine === "js" && !this._warnedRetiredJs) {
-      console.warn("[sim-core] the JavaScript physics tick was removed; running the wasm tick");
-      this._warnedRetiredJs = true;
+
+    if (sim.engine === "js") {
+      this.particleSystem.mouseForces.update(this.particleSystem);
+      this.emuForces.apply(this.particleSystem.timeStep);
+      this.turbulenceField.update(this.particleSystem.timeStep);
+      this.voronoiField.update(this.particleSystem.timeStep);
+      this.particleSystem.step();
+      this.gridGenRenderer.draw();
+      this.particleRenderer.draw(this.particleSystem.getParticles());
+    } else {
+      const dt = (sim.timeStep ?? this.particleSystem.timeStep) * (sim.timeScale ?? this.particleSystem.timeScale);
+      if (this.rustCore?.ready) {
+        this.rustCore.prepare(this.particleSystem);
+      } else if (!this._warnedMissingWasm) {
+        console.error("[sim-core] wasm tick is not loaded. Run npm run build:core.");
+        this._warnedMissingWasm = true;
+      }
+
+      this.particleSystem.mouseForces.update(this.particleSystem);
+      this.emuForces.apply(dt);
+
+      if (this.rustCore?.ready) {
+        const mouse = this.particleSystem.mouseForces;
+        if (mouse.isActive) mouse.neutralizeOtherForces(this.particleSystem);
+        else mouse.restoreOtherForces(this.particleSystem);
+        this.rustCore.sync(this);
+        this.rustCore.step(dt);
+        this.rustCore.attach(this.particleSystem);
+        this.rustCore.writeBack(this.turbulenceField);
+      }
+
+      this.gridGenRenderer.draw();
+      this.particleRenderer.draw(particleBuffers(this.particleSystem, this.simParams.turbulence.affectScale));
     }
 
-    if (this.rustCore?.ready) {
-      this.rustCore.prepare(this.particleSystem);
-    } else if (!this._warnedMissingWasm) {
-      console.error("[sim-core] wasm tick is not loaded. Run npm run build:core.");
-      this._warnedMissingWasm = true;
-    }
-
-    this.particleSystem.mouseForces.update(this.particleSystem);
-    this.emuForces.apply(dt);
-
-    if (this.rustCore?.ready) {
-      const mouse = this.particleSystem.mouseForces;
-      if (mouse.isActive) mouse.neutralizeOtherForces(this.particleSystem);
-      else mouse.restoreOtherForces(this.particleSystem);
-      this.rustCore.sync(this);
-      this.rustCore.step(dt);
-      this.rustCore.attach(this.particleSystem);
-      this.rustCore.writeBack(this.turbulenceField);
-    }
-
-    this.gridGenRenderer.draw();
-    this.particleRenderer.draw(particleBuffers(this.particleSystem, this.simParams.turbulence.affectScale));
     const error = this.gl.getError();
     if (error) {
       console.error("WebGL Error:", error);
