@@ -10,31 +10,35 @@ alwaysApply: true
 
 **CRITICAL: Read these files FIRST at the start of each chat session:**
 
-1. **START_HERE.md** (root) - Quick project orientation, 5-minute read
-2. **Sim/doc/ARCHITECTURE.md** - Detailed Phase2 architecture reference
-3. **Sim/doc/GLOSSARY.md** - Domain-specific terms, abbreviations, concepts
-4. **Sim/doc/QUICK_REFERENCE.md** - Command cheat sheet and troubleshooting
-5. **Sim/doc/migration/migration-plan.md** - Comprehensive migration strategy (may be slightly outdated)
+1. **doc/GOALS.md** — direction for the next steps. Follow it when an older plan or START_HERE disagrees about what to build.
+2. **START_HERE.md** (root) - Quick project orientation, 5-minute read
+3. **doc/ARCHITECTURE.md** - Detailed Phase2 architecture reference
+4. **doc/GLOSSARY.md** - Domain-specific terms, abbreviations, concepts
+5. **doc/QUICK_REFERENCE.md** - Command cheat sheet and troubleshooting
+6. **doc/migration/migration-plan.md** - Comprehensive migration strategy (may be slightly outdated)
 
 These documents provide essential context about the project structure, current state, design decisions, terminology, and common workflows.
 
-## Agent Scope: Phase2 Only
+## Agent Scope
 
-- **All firmware work targets Phase2 only.** The active codebase is `Embedded/esp32/Phase2/`.
-- Do not modify, reference, or propose changes to Phase1 (`Embedded/esp32/Phase1/`) or other legacy firmware paths.
-- When editing embedded code, build configs, or firmware-related files, work exclusively within `Embedded/esp32/Phase2/`.
-- Sim (`Sim/`) and shared docs may be used for reference or coordination, but firmware changes stay in Phase2.
+- Suit-library physics lives in `core/cpp` (the PlatformIO library, its own git repo) and is exercised by `core/cpp/examples/waveshare_esp32p4_3.4c`. The pattern lab in `applications/web` is where that behavior is watched. The order of work is `doc/GOALS.md`.
+- What to build next is `doc/GOALS.md`. The page runs the Rust tick until goal 1 restores the JavaScript tick.
+- `applications/embedded/phase2` is kept, including its copied physics. Do not port it onto `core/cpp` as part of ordinary library work.
+- `applications/embedded/phase1` is the display slave of the pattern lab. The simulation runs in the browser. Do not link it to `core/cpp`.
+- `core/cpp` is gitignored here. Commit library changes in that nested repository (`SvibeRepo/SimTouchCore-Library`).
 
 ## Project Architecture (Phase2)
 
-### Core Structure
+### Phase2 tree (kept)
 ```
-Embedded/esp32/Phase2/
-├── include/          # Module headers (SimCore, Boundary, Collision, Turbulence, etc.)
-├── src/              # Implementation files (1:1 with headers)
-├── data/             # LittleFS web assets (HTML/CSS/JS for config UI)
-└── platformio.ini    # Build configs (phase2_lilygo, phase2_waveshare, phase2_lilygo_v9)
+applications/embedded/phase2/
+├── include/
+├── src/
+├── data/
+└── platformio.ini
 ```
+
+Phase2 is not the library. The library is `core/cpp/`.
 
 ### Key Modules
 - **SimCore.cpp**: Central particle system (50-200 particles, 60Hz fixed timestep)
@@ -62,18 +66,21 @@ Input (Touch/IMU) → Forces → SimCore.step() → Particles [0,1] space
 ## Documentation & Plans
 
 - **START_HERE.md** (root): Quick orientation guide for AI agents and new developers
-- **Sim/doc/ARCHITECTURE.md**: Detailed Phase2 architecture, module reference, data flow
-- **Sim/doc/migration/migration-plan.md**: Comprehensive migration strategy, hardware specs, design decisions
-- All migration plans and documentation must be stored in `Sim/doc/migration/`.
-- When creating new planning documents, place them in `Sim/doc/migration/` (e.g., `Sim/doc/migration/phase2a-notes.md`).
+- **doc/ARCHITECTURE.md**: Detailed Phase2 architecture, module reference, data flow
+- **doc/migration/migration-plan.md**: Comprehensive migration strategy, hardware specs, design decisions
+- All migration plans and documentation must be stored in `doc/migration/`.
+- When creating new planning documents, place them in `doc/migration/` (e.g., `doc/migration/phase2a-notes.md`).
 
 ## Project Structure
 
-- **Phase 1 firmware**: `Embedded/esp32/Phase1/` (legacy, reference-only)
-- **Phase 2 firmware**: `Embedded/esp32/Phase2/` (active development, migration target)
-- **JavaScript simulation**: `Sim/src/` (reference for porting algorithms)
-- **Project documentation**: `Sim/doc/`
-- **Migration docs**: `Sim/doc/migration/`
+- **Phase 1 firmware**: `applications/embedded/phase1/` (display slave of the pattern lab)
+- **Phase 2 firmware**: `applications/embedded/phase2/` (kept; library work does not land here)
+- **JavaScript sources**: `core/javascript/`
+- **Rust tick**: `core/rust/`
+- **Pattern lab**: `applications/web/`
+- **C++ library**: `core/cpp/` (separate git repo)
+- **Project documentation**: `doc/`
+- **Migration docs**: `doc/migration/`
 
 ## Configuration System
 
@@ -171,7 +178,7 @@ Input (Touch/IMU) → Forces → SimCore.step() → Particles [0,1] space
 4. Monitor serial output for FPS and validation logs
 
 ### Validating Against JS Sim
-1. Run JS Sim: `cd Sim && npm run dev` → `http://localhost:8080/sim.html`
+1. Run JS Sim: `cd applications/web && npm run dev` → `http://localhost:8080/sim.html`
 2. Set identical parameters in both JS and ESP32 web UI
 3. Visually compare particle behavior and grid output
 4. Check that physics matches (boundary enforcement, collision, forces)
@@ -208,13 +215,13 @@ Input (Touch/IMU) → Forces → SimCore.step() → Particles [0,1] space
 ## Best Practices
 
 ### When Starting a Task
-1. Read `START_HERE.md` and `Sim/doc/ARCHITECTURE.md` for context
+1. Read `START_HERE.md` and `doc/ARCHITECTURE.md` for context
 2. Check `git status` and `git log -5` for recent changes
 3. Identify which modules are affected by the task
 4. Read relevant header files before editing implementation files
 
 ### When Adding Features
-1. Check if JS Sim has reference implementation in `Sim/src/`
+1. Check if JS Sim has reference implementation in `core/javascript/`
 2. Port algorithms to C++ following memory constraints (fixed-size arrays)
 3. Add configuration parameters to `SimConfig.h` if needed
 4. Test incrementally (build, upload, monitor serial output)
