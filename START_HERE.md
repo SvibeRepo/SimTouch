@@ -1,5 +1,7 @@
 # START HERE: SimTouch Project Quick Orientation
 
+> **Direction:** [`doc/GOALS.md`](doc/GOALS.md) is the goal list for the next steps. The phase story below is the older Phase2 orientation. When they disagree, follow `doc/GOALS.md`.
+
 Welcome to **SimTouch** - a particle simulation engine designed for embedded haptic systems. This document provides fast context for AI assistants and new developers at the start of each session.
 
 ## 🎯 Project Purpose
