@@ -439,14 +439,16 @@ export class ParticleSystem {
     // This format is what ParticleRenderer expects
 
     const affectScale = this.turbulence?.affectScale; // Check turbulence scale mode
+    const posX = this.x;
+    const posY = this.y;
 
     const particlesData = Array.from({ length: this.numParticles }, (_, i) => {
       // Determine the correct radius based on affectScale
       const rawRadius = affectScale ? this.particleRadii[i] : this.particleRadius;
 
       const particleData = {
-        x: this.particles[i * 2],
-        y: this.particles[i * 2 + 1],
+        x: posX ? posX[i] : this.particles[i * 2],
+        y: posY ? posY[i] : this.particles[i * 2 + 1],
         vx: this.velocitiesX[i],
         vy: this.velocitiesY[i],
         // Use the determined rawRadius for size calculation
