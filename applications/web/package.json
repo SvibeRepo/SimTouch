@@ -7,7 +7,7 @@
   "scripts": {
     "start": "concurrently \"npm run server\" \"npm run client\"",
     "server": "node src/com/udp/server/server.js",
-    "client": "live-server src --port=8080 --no-browser",
+    "client": "node scripts/link-javascript-core.mjs && live-server src --port=8080 --no-browser",
     "dev": "npm run start",
     "build:core": "node scripts/build-core.mjs"
   },

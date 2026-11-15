@@ -2,6 +2,7 @@ node_modules/
 package-lock.json
 *.log
 .qodo
-Embedded/LilyGo-T-RGB-main/
-Embedded/SimTouchCore Library/
+applications/embedded/LilyGo-T-RGB-main/
+core/cpp/
+applications/web/src/simulation
 .superpowers/

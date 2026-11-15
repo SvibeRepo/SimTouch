@@ -209,7 +209,7 @@ CRGB color = ColorFromPalette(Palettes[theme], cellValues[i], 255, BLEND);
 ### Compare with JS Sim
 1. **Start JS Sim**:
    ```bash
-   cd Sim
+   cd applications/web
    npm run dev
    ```
    Open `http://localhost:8080/sim.html`
@@ -490,9 +490,9 @@ platformio.ini          → Build configurations
 
 ### Documentation
 - `START_HERE.md`: Project orientation
-- `Sim/doc/ARCHITECTURE.md`: Detailed architecture
-- `Sim/doc/GLOSSARY.md`: Terms and abbreviations
-- `Sim/doc/migration/migration-plan.md`: Migration strategy
+- `doc/ARCHITECTURE.md`: Detailed architecture
+- `doc/GLOSSARY.md`: Terms and abbreviations
+- `doc/migration/migration-plan.md`: Migration strategy
 - `.cursor/rules/project-conventions.mdc`: Coding standards
 
 ### Libraries
