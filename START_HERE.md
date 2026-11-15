@@ -1,5 +1,7 @@
 # START HERE: SimTouch Project Quick Orientation
 
+> **Direction:** [`doc/GOALS.md`](doc/GOALS.md) is the goal list for the next steps. The phase story below is the older Phase2 orientation. When they disagree, follow `doc/GOALS.md`.
+
 Welcome to **SimTouch** - a particle simulation engine designed for embedded haptic systems. This document provides fast context for AI assistants and new developers at the start of each session.
 
 ## 🎯 Project Purpose
@@ -14,21 +16,24 @@ SimTouch is a **dual-phase project** that creates organic, physics-driven contro
 
 ### Documentation (Read These First!)
 - **This file** (`START_HERE.md`) - Quick orientation (5-minute read)
-- `Sim/doc/ARCHITECTURE.md` - Phase2 codebase architecture map
-- `Sim/doc/GLOSSARY.md` - Domain-specific terms and abbreviations
-- `Sim/doc/QUICK_REFERENCE.md` - Command cheat sheet and troubleshooting
-- `Sim/doc/migration/migration-plan.md` - Comprehensive migration strategy (may be slightly outdated)
+- `doc/ARCHITECTURE.md` - Phase2 in-tree fork (not the SimTouchCore Library API)
+- `doc/SIMTOUCHCORE.md` - SimTouchCore Library versus that Phase2 fork
+- `doc/GLOSSARY.md` - Domain-specific terms and abbreviations
+- `doc/QUICK_REFERENCE.md` - Command cheat sheet and troubleshooting
+- `doc/migration/migration-plan.md` - Comprehensive migration strategy (may be slightly outdated)
 - `.cursor/rules/project-conventions.mdc` - AI agent rules (Phase2 scope, coding standards)
 
 ### Active Codebase (Phase2 - Current Work)
-- **Source**: `Embedded/esp32/Phase2/src/` - Application layer (Main.cpp, ConfigWeb.cpp, etc.)
-- **Headers**: `Embedded/esp32/Phase2/include/` - Simulation modules (SimCore.h, Boundary.h, Turbulence.h, etc.)
-- **Config**: `Embedded/esp32/Phase2/platformio.ini` - Build configurations for LilyGo & Waveshare targets
-- **Web UI**: `Embedded/esp32/Phase2/data/` - Self-hosted configuration interface (HTML/CSS/JS)
+- **Source**: `applications/embedded/phase2/src/` - Application layer (Main.cpp, ConfigWeb.cpp, etc.)
+- **Headers**: `applications/embedded/phase2/include/` - Simulation modules (SimCore.h, Boundary.h, Turbulence.h, etc.)
+- **Config**: `applications/embedded/phase2/platformio.ini` - Build configurations for LilyGo & Waveshare targets
+- **Web UI**: `applications/embedded/phase2/data/` - Self-hosted configuration interface (HTML/CSS/JS)
 
 ### Reference Implementations
-- **JavaScript Sim**: `Sim/src/` - Original algorithms (for validation & porting reference)
-- **Phase1 Firmware**: `Embedded/esp32/Phase1/` - Legacy UDP slave mode (deprecated for new work)
+- **JavaScript sources**: `core/javascript/` - Original algorithms (for validation & porting reference)
+- **Pattern lab**: `applications/web/` - Browser host linked to `core/javascript` and `core/rust`
+- **SimTouchCore Library**: `core/cpp/` - hardware-free core linked by the P4 panel. Phase2 does not build this tree.
+- **Phase1 Firmware**: `applications/embedded/phase1/` - Legacy UDP slave mode (deprecated for new work)
 
 ## 🏗️ Current Architecture (Phase2)
 
@@ -111,10 +116,10 @@ SimTouch is a **dual-phase project** that creates organic, physics-driven contro
 ## 🚀 Common Workflows
 
 ### First-Time Setup
-1. Read `Sim/doc/migration/migration-plan.md` (comprehensive but may be slightly outdated)
-2. Read `Sim/doc/ARCHITECTURE.md` (up-to-date Phase2 structure)
+1. Read `doc/migration/migration-plan.md` (comprehensive but may be slightly outdated)
+2. Read `doc/ARCHITECTURE.md` (Phase2 fork) and `doc/SIMTOUCHCORE.md` (library used by P4)
 3. Review `.cursor/rules/project-conventions.mdc` (coding standards, scope limitations)
-4. Open `Embedded/esp32/Phase2/` in PlatformIO
+4. Open `applications/embedded/phase2/` in PlatformIO
 
 ### Making Changes
 1. **Simulation Logic**: Edit `include/*.h` and `src/*.cpp`
@@ -135,7 +140,7 @@ SimTouch is a **dual-phase project** that creates organic, physics-driven contro
 4. Parameter changes apply in real-time
 
 ### Validating Against JS Sim
-1. Run JS Sim: `cd Sim && npm run dev` → `http://localhost:8080/sim.html`
+1. Run JS Sim: `cd applications/web && npm run dev` → `http://localhost:8080/sim.html`
 2. Set identical parameters in both JS and ESP32
 3. Visually compare particle behavior and grid output
 4. Use UDP path for remote control (Phase 2D feature)
@@ -154,9 +159,9 @@ SimTouch is a **dual-phase project** that creates organic, physics-driven contro
 - All simulation logic in normalized `[0,1]` space
 
 ### Scope Limitations
-- **Phase2 only**: Work exclusively in `Embedded/esp32/Phase2/`
-- **No Phase1 changes**: Phase1 is legacy, reference-only
-- **No Sim/ code changes**: JavaScript Sim is stable, port from it (don't modify)
+- **Library-first**: Develop simulation behavior in `core/cpp` and validate in `applications/web`
+- **Phase2 fork**: `applications/embedded/phase2/` is kept as a separate copy; ordinary library work does not land there
+- **Phase1**: `applications/embedded/phase1/` is the pattern-lab display slave only; do not link it to `core/cpp`
 
 ## 📊 Performance Targets
 
@@ -183,7 +188,7 @@ SimTouch is a **dual-phase project** that creates organic, physics-driven contro
 When starting a new chat session:
 
 1. **Read this file first** for quick orientation
-2. **Check `Sim/doc/ARCHITECTURE.md`** for detailed Phase2 structure
+2. **Check `doc/ARCHITECTURE.md`** for the Phase2 fork, and **`doc/SIMTOUCHCORE.md`** for the library the P4 panel links
 3. **Review recent git changes**: `git status` and `git log -5` for context
 4. **Scan open files** in the IDE for user's current focus
 5. **Ask clarifying questions** before making assumptions

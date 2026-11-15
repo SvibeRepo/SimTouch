@@ -6,7 +6,7 @@ This project's aim is to develop a particle simulation engine designed to genera
 
 The development follows a **two-phase strategy**:
 
-1.  **Phase 1 (Current): JavaScript Prototyping Environment (`Sim/`)**
+1.  **Phase 1 (Current): JavaScript Prototyping Environment (`applications/web/`)**
     - This environment uses JavaScript and WebGL2 for rapid development and visualization of the core simulation algorithms. It leverages the immediate feedback loop of web development for efficient tuning of physics and behaviors, which is difficult in typical embedded workflows (compile, upload, flash).
     - The core simulation logic is written with portability in mind, minimizing external dependencies, suitable for refactoring to C++/embedded environments.
 2.  **Phase 2 (Future): Embedded Deployment**
@@ -44,7 +44,7 @@ While the [Waveshare ESP32-S3-Touch-LCD-1.28](https://www.waveshare.com/wiki/ESP
   - The embedded device runs the simulation natively.
   - Handles inputs directly (touchscreen, sensors like IMU, audio).
   - Outputs control signals for connected actuator arrays.
-  - The JS application (`Sim/`) transitions to a remote control/configuration tool via UDP/API.
+  - The JS application (`applications/web/`) transitions to a remote control/configuration tool via UDP/API.
 
 ## Requirements
 
@@ -58,7 +58,7 @@ While the [Waveshare ESP32-S3-Touch-LCD-1.28](https://www.waveshare.com/wiki/ESP
 git clone https://github.com/MagicMods/SimTouch.git
 
 # Navigate to the simulation directory
-cd Sim
+cd applications/web
 
 # Install dependencies
 npm install
@@ -79,22 +79,14 @@ Then open your browser to `http://localhost:8080/sim.html` to view the simulatio
 
 ## Project Structure
 
-- `Sim/` - Phase 1: JavaScript Prototyping Environment
-  - `src/` - Source code
-    - `main.js` - Main application entry point
-    - `simulation/` - Core simulation logic (portable)
-    - `coreGrid/` - Core grid geometry and management (portable)
-    - `input/` - Input handling and modulation
-    - `com/` - Communication logic (UDP, Serial)
-    - `renderer/` - WebGL rendering components (JS only)
-    - `shader/` - GLSL shader code (JS only)
-    - `ui/` - User interface components (JS only)
-    - `sound/` - Sound processing and visualization
-    - `util/` - Utility functions
-    - `presets/` - Simulation parameter presets
-  - `sim.html` - HTML entry point
-  - `package.json` - Node.js dependencies
-- `Embedded/esp32/Phase1` - Waveshare ESP32-S3-Touch 1.28 SLAVE firmware.
+- `applications/web/` - Pattern lab (browser host, WebGL UI, npm scripts)
+- `core/javascript/` - Portable simulation sources (linked into the pattern lab)
+- `core/rust/` - Rust simulation tick (WASM build for the pattern lab)
+- `core/cpp/` - SimTouchCore C++ library (separate git repo, gitignored here)
+- `applications/embedded/phase1` - Waveshare ESP32-S3-Touch 1.28 display slave firmware
+- `applications/embedded/phase2/` - Kept Phase2 fork (standalone ESP32 sim; not the library)
+- `doc/` - Architecture, glossary, and reference docs
+- `spec/`, `fixtures/`, `tools/` - Shared spec, test fixtures, and headless tooling (README shelves only)
 - `memoLTM/` - Internal AI collaboration and project documentation.
 - `README.md` - This file
 - `.cursor/rules` - Cursor IDE AI enabled specific rules, derived from [RIPER-5](https://forum.cursor.com/t/i-created-an-amazing-mode-called-riper-5-mode-fixes-claude-3-7-drastically/65516) and [cursorkleosr](https://github.com/kleosr/cursorkleosr/). Still under development but good base to start with. It enables tight control over AI model's behavior and agentic workflow effectively dramatically boosting productivity. You need to tune it to your own workflow and logic. Use the model to reflect on it's own failures and figure out a strategy to correct it's own behavior via rules and memoLTM/learnings.md. Experimental but very effective. Works great with geminy2.5 pro and Claude3.7

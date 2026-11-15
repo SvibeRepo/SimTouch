@@ -1,0 +1,12 @@
+{
+	"folders": [
+		{
+			"path": "../../applications/embedded/phase1"
+		}
+	],
+	"settings": {
+		"files.associations": {
+			"cstdint": "cpp"
+		}
+	}
+}
