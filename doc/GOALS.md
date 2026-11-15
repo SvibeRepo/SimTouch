@@ -2,13 +2,15 @@
 
 Direction for the next steps. When `START_HERE.md`, `doc/migration/`, `doc/SIMTOUCHCORE.md`, `core/cpp/doc/NEXT.md`, or a plan under `.superpowers/plans/` disagrees with this file about what to build next, follow this file.
 
-## Now (2026-11-15, shared field chart)
+## Now (2026-11-15, shared slice compare)
 
-`master` is the Rust layout (`2dc08f1`). Branch `JavaScript` at `364fdc7` keeps the pre-merge tree. Branch `JavaRustCpp` runs both ticks: `particleSystem.step()` when `sim.engine` is `js`, and `rustCore.step(dt)` otherwise. The default engine is `rust`. Switching to `js` detaches the wasm position views first, and both paths draw through `particleBuffers`.
+`master` is the Rust layout (`2dc08f1`). Branch `JavaScript` at `364fdc7` keeps the pre-merge tree. Branch `JavaRustCpp` runs both ticks: `particleSystem.step()` when `sim.engine` is `js`, and `rustCore.step(dt)` otherwise. The default engine is `rust`.
 
-The shared slice chart is `spec/fields.json` (33 fields: gravity, damping, collision, boundary, turbulence). Its `index` is the shared name. The Rust pack slot and the suit index stay local columns on each row. `node tools/check-fields.mjs` checks those columns. The suit mask and rectangular domain stay as they are.
+The shared slice chart is `spec/fields.json` (33 fields). Its `index` is the shared name. The Rust pack slot and the suit index stay local columns. The suit mask and rectangular domain stay as they are.
 
-Next concrete step: order item 3 (shared slice compare).
+`fixtures/gravity-step.json` is one interior step (gravity, velocity damping, position). Collision and turbulence affects are off. `node --import ./tools/lab-register.mjs tools/compare-slice.mjs` steps the JavaScript tick and `core/cpp`, and the positions match within `1e-5`.
+
+Next concrete step: widen that compare. The fixture does not yet step collision or turbulence, and it does not step the Rust tick.
 
 ## Products
 
