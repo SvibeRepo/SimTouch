@@ -2,4 +2,11 @@ node_modules/
 package-lock.json
 *.log
 .qodo
-Embedded/LilyGo-T-RGB-main/
+.pio/
+target/
+applications/embedded/LilyGo-T-RGB-main/
+applications/web/src/simcore/pkg/
+applications/web/src/simulation
+core/cpp/
+.superpowers/
+.vscode/
