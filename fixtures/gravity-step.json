@@ -1,29 +1,36 @@
 {
-  "name": "gravity-one-step",
+  "name": "gravity-collision-turbulence-one-step",
   "dt": 0.016666666666666666,
   "timeScale": 1,
-  "particleRadius": 0.01,
+  "particleRadius": 0.02,
   "maxVelocity": 1,
   "tolerance": 0.00001,
-  "note": "Particles stay inside the default circle (radius 0.5 * boundary scale 1.03). Collision is off. Turbulence affect flags are off, so both ticks skip the noise field. One step is gravity, then velocity damping, then position.",
+  "note": "One interior step on the circular domain (radius 0.5 * boundary scale 1.03). The two particles overlap, so collision runs. Turbulence affect-position is on: velocity is decayed, then a direction bias is added. Pull is 0, so the noise samplers do not change velocity. Gravity, velocity damping, and position still run.",
   "particles": [
-    {"x": 0.4, "y": 0.5, "vx": 0.1, "vy": 0.0},
-    {"x": 0.62, "y": 0.48, "vx": -0.05, "vy": 0.02}
+    {"x": 0.5, "y": 0.5, "vx": 0.12, "vy": 0.0},
+    {"x": 0.528, "y": 0.5, "vx": -0.04, "vy": 0.03}
   ],
   "fields": {
     "gravityX": 0.2,
     "gravityY": -0.5,
     "velocityDamping": 0.98,
-    "collisionEnabled": 0,
+    "collisionEnabled": 1,
+    "collisionGrid": 10,
+    "collisionRepulsion": 0.5,
+    "collisionRestitution": 0.8,
     "boundaryMode": 0,
     "boundaryShape": 0,
     "boundaryDamping": 0.8,
     "boundaryRestitution": 1,
     "boundaryRepulsion": 0,
-    "turbStrength": 0,
-    "turbAffectPosition": 0,
+    "turbStrength": 0.8,
+    "turbPull": 0,
+    "turbDecay": 0.95,
+    "turbDirX": 0.4,
+    "turbDirY": -0.2,
+    "turbBiasStrength": 0,
+    "turbAffectPosition": 1,
     "turbAffectScale": 0,
-    "turbScaleField": 0,
-    "turbDecay": 1
+    "turbScaleField": 0
   }
 }

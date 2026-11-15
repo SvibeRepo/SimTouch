@@ -318,6 +318,60 @@ impl Engine {
             );
         }
     }
+
+    /// Overlay one shared-slice value onto the live pack. Slot numbers stay
+    /// `params::id`. Returns false when the slot is not part of that slice.
+    pub fn set_pack_slot(&mut self, slot: usize, value: f32) -> bool {
+        let flag = value >= 0.5;
+        let p = &mut self.params;
+        match slot {
+            id::GRAVITY_X => p.gravity_x = value,
+            id::GRAVITY_Y => p.gravity_y = value,
+            id::VELOCITY_DAMPING => p.velocity_damping = value,
+            id::COLLISION_ENABLED => p.collision_enabled = flag,
+            id::COLLISION_GRID => {
+                p.collision_grid = (value.round() as usize).clamp(1, 32);
+            }
+            id::COLLISION_REPULSION => p.collision_repulsion = value,
+            id::COLLISION_RESTITUTION => p.collision_restitution = value,
+            id::BOUNDARY_SHAPE => p.boundary_shape = if value <= 0.0 { 0 } else { 1 },
+            id::BOUNDARY_MODE => p.boundary_mode = if value <= 0.0 { 0 } else { 1 },
+            id::BOUNDARY_RESTITUTION => p.boundary_restitution = value,
+            id::BOUNDARY_DAMPING => p.boundary_damping = value,
+            id::BOUNDARY_REPULSION => p.boundary_repulsion = value,
+            id::ROTATION => self.rotation = value,
+            id::TURB_STRENGTH => p.turb_strength = value,
+            id::TURB_SCALE => p.turb_scale = value,
+            id::TURB_SPEED => p.turb_speed = value,
+            id::TURB_ROT_SPEED => p.turb_rot_speed = value,
+            id::TURB_PULL => p.turb_pull = value,
+            id::TURB_DECAY => p.turb_decay = value,
+            id::TURB_FREQ => p.turb_freq = value,
+            id::TURB_PATTERN => {
+                p.turb_pattern = if value <= 0.0 {
+                    0
+                } else if value >= 14.0 {
+                    14
+                } else {
+                    value as u8
+                };
+            }
+            id::TURB_CONTRAST => p.turb_contrast = value,
+            id::TURB_SEPARATION => p.turb_separation = value,
+            id::TURB_WARP => p.turb_warp = value,
+            id::TURB_WARP_SPEED => p.turb_warp_speed = value,
+            id::TURB_SYMMETRY => p.turb_symmetry = value,
+            id::TURB_MIN_SCALE => p.turb_min_scale = value,
+            id::TURB_BIAS_STRENGTH => p.turb_bias_strength = value,
+            id::TURB_DIR_X => p.turb_dir_x = value,
+            id::TURB_DIR_Y => p.turb_dir_y = value,
+            id::TURB_AFFECT_POSITION => p.turb_affect_position = flag,
+            id::TURB_AFFECT_SCALE => p.turb_affect_scale = flag,
+            id::TURB_SCALE_FIELD => p.turb_scale_field = flag,
+            _ => return false,
+        }
+        true
+    }
 }
 
 fn wrap_tau(a: f32) -> f32 {
