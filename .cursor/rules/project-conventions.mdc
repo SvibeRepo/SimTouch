@@ -10,18 +10,19 @@ alwaysApply: true
 
 **CRITICAL: Read these files FIRST at the start of each chat session:**
 
-1. **START_HERE.md** (root) - Quick project orientation, 5-minute read
-2. **doc/ARCHITECTURE.md** - Detailed Phase2 architecture reference
-3. **doc/GLOSSARY.md** - Domain-specific terms, abbreviations, concepts
-4. **doc/QUICK_REFERENCE.md** - Command cheat sheet and troubleshooting
-5. **doc/migration/migration-plan.md** - Comprehensive migration strategy (may be slightly outdated)
+1. **doc/GOALS.md** — direction for the next steps. Follow it when an older plan or START_HERE disagrees about what to build.
+2. **START_HERE.md** (root) - Quick project orientation, 5-minute read
+3. **doc/ARCHITECTURE.md** - Detailed Phase2 architecture reference
+4. **doc/GLOSSARY.md** - Domain-specific terms, abbreviations, concepts
+5. **doc/QUICK_REFERENCE.md** - Command cheat sheet and troubleshooting
+6. **doc/migration/migration-plan.md** - Comprehensive migration strategy (may be slightly outdated)
 
 These documents provide essential context about the project structure, current state, design decisions, terminology, and common workflows.
 
 ## Agent Scope
 
-- New simulation behavior is developed in `core/cpp` (the PlatformIO library, its own git repo) and exercised by `core/cpp/examples/waveshare_esp32p4_3.4c`. The pattern lab in `applications/web` is where that behavior is watched.
-- A draft may land in `core/javascript` first when it can be tried from the pattern lab without also changing `core/rust` and `core/cpp` in the same change. The page runs the Rust tick until the JavaScript tick is restored.
+- Suit-library physics lives in `core/cpp` (the PlatformIO library, its own git repo) and is exercised by `core/cpp/examples/waveshare_esp32p4_3.4c`. The pattern lab in `applications/web` is where that behavior is watched. The order of work is `doc/GOALS.md`.
+- What to build next is `doc/GOALS.md`. The page runs the Rust tick until goal 1 restores the JavaScript tick.
 - `applications/embedded/phase2` is kept, including its copied physics. Do not port it onto `core/cpp` as part of ordinary library work.
 - `applications/embedded/phase1` is the display slave of the pattern lab. The simulation runs in the browser. Do not link it to `core/cpp`.
 - `core/cpp` is gitignored here. Commit library changes in that nested repository (`SvibeRepo/SimTouchCore-Library`).
