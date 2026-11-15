@@ -1,0 +1,29 @@
+{
+  "name": "gravity-one-step",
+  "dt": 0.016666666666666666,
+  "timeScale": 1,
+  "particleRadius": 0.01,
+  "maxVelocity": 1,
+  "tolerance": 0.00001,
+  "note": "Particles stay inside the default circle (radius 0.5 * boundary scale 1.03). Collision is off. Turbulence affect flags are off, so both ticks skip the noise field. One step is gravity, then velocity damping, then position.",
+  "particles": [
+    {"x": 0.4, "y": 0.5, "vx": 0.1, "vy": 0.0},
+    {"x": 0.62, "y": 0.48, "vx": -0.05, "vy": 0.02}
+  ],
+  "fields": {
+    "gravityX": 0.2,
+    "gravityY": -0.5,
+    "velocityDamping": 0.98,
+    "collisionEnabled": 0,
+    "boundaryMode": 0,
+    "boundaryShape": 0,
+    "boundaryDamping": 0.8,
+    "boundaryRestitution": 1,
+    "boundaryRepulsion": 0,
+    "turbStrength": 0,
+    "turbAffectPosition": 0,
+    "turbAffectScale": 0,
+    "turbScaleField": 0,
+    "turbDecay": 1
+  }
+}
