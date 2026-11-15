@@ -206,6 +206,10 @@ impl Engine {
                     self.vy[i],
                     dt,
                     &p,
+                    self.time,
+                    self.rotation,
+                    self.bias_x,
+                    self.bias_y,
                 );
                 self.vx[i] = nvx;
                 self.vy[i] = nvy;

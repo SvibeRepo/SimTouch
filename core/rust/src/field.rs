@@ -387,6 +387,20 @@ pub fn blur_pass(field: &mut [f32], aux: &mut [f32], radius: i32) {
     }
 }
 
+pub fn sample_analytic(
+    p: &Params,
+    x: f32,
+    y: f32,
+    time: f32,
+    rotation: f32,
+    bias_x: f32,
+    bias_y: f32,
+) -> f32 {
+    let (px, py, cx, cy) = process_xy(x, y, p, time, rotation, bias_x, bias_y);
+    let raw = pattern_value(p.turb_pattern, px, py, cx, cy, p, time);
+    apply_phase(raw, p, time)
+}
+
 pub fn sample_force(
     field: &[f32],
     x: f32,
@@ -395,6 +409,10 @@ pub fn sample_force(
     vy: f32,
     dt: f32,
     p: &Params,
+    time: f32,
+    rotation: f32,
+    bias_x: f32,
+    bias_y: f32,
 ) -> (f32, f32, f32) {
     let drive = p.turb_affect_position || p.turb_scale_field;
     let active = drive || p.turb_affect_scale;
@@ -412,12 +430,20 @@ pub fn sample_force(
         nvx += p.turb_dir_x * p.turb_strength * dt;
         nvy += p.turb_dir_y * p.turb_strength * dt;
     }
-    let n1 = bilinear_sample(field, FIELD_N, x, y);
+    let analytic = p.turb_blur == 0.0 && p.turb_contrast == 0.0 && p.turb_separation == 0.0;
+    let sample = |sx: f32, sy: f32| {
+        if analytic {
+            sample_analytic(p, sx, sy, time, rotation, bias_x, bias_y)
+        } else {
+            bilinear_sample(field, FIELD_N, sx, sy)
+        }
+    };
+    let n1 = sample(x, y);
     if p.turb_affect_position && p.turb_pull != 0.0 {
         // Match the JS epsilon so soft grids still produce usable gradients.
         let eps = 0.01;
-        let gx = (bilinear_sample(field, FIELD_N, x + eps, y) - n1) / eps;
-        let gy = (bilinear_sample(field, FIELD_N, x, y + eps) - n1) / eps;
+        let gx = (sample(x + eps, y) - n1) / eps;
+        let gy = (sample(x, y + eps) - n1) / eps;
         let mag = (gx * gx + gy * gy).sqrt();
         if mag > 1e-5 {
             let mut nx = gx / mag;
@@ -455,6 +481,33 @@ pub fn radius_from_noise(noise: f32, min_scale: f32, max_scale: f32) -> f32 {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn analytic_checkerboard_matches_javascript_phase() {
+        let mut p = Params::default();
+        p.turb_pattern = pattern::CHECKERBOARD;
+        p.turb_freq = 2.0;
+        p.turb_speed = 0.0;
+        p.turb_scale = 1.0;
+        p.turb_contrast = 0.0;
+        p.turb_separation = 0.0;
+        p.turb_blur = 0.0;
+        p.turb_pull = 0.5;
+        p.turb_offset_x = 0.0;
+        p.turb_offset_y = 0.0;
+        p.turb_phase = 0.0;
+        p.turb_amplitude = 1.0;
+        p.boundary_shape = crate::params::boundary_shape::CIRCULAR;
+        let x = 0.35_f32;
+        let y = 0.40_f32;
+        let raw = (x * 2.0).sin() * (y * 2.0).sin();
+        let expected = (raw * std::f32::consts::TAU).sin();
+        let got = sample_analytic(&p, x, y, 0.0, 0.0, 0.0, 0.0);
+        assert!(
+            (got - expected).abs() < 1e-5,
+            "analytic checkerboard {got} expected {expected}"
+        );
+    }
 
     #[test]
     fn bilinear_sample_reads_cell_center() {
