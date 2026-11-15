@@ -12,7 +12,7 @@ import c10 from "./gradients/c10.js";
 import { comManager } from "../com/comManager.js";
 import { debugManager } from '../util/debugManager.js';
 export class Gradients {
-  // Use FastLED palettes as presets
+  // 256-entry 8-bit tables. Stored preset ids stay c0–c10.
   static PRESETS = {
     c0,
     c1,
@@ -25,6 +25,21 @@ export class Gradients {
     c8,
     c9,
     c10,
+  };
+
+  // Display names for c0–c10. Same order as the Waveshare tune page (param 146).
+  static THEME_LABELS = {
+    c0: "Fire",
+    c1: "Magenta",
+    c2: "Sunset",
+    c3: "Grove",
+    c4: "Violet",
+    c5: "Twilight",
+    c6: "Emerald",
+    c7: "Aurora",
+    c8: "Gold",
+    c9: "Ice",
+    c10: "Gray",
   };
 
   constructor(presetName = "c0") {
@@ -49,9 +64,15 @@ export class Gradients {
     const oldPreset = this.currentPreset;
     this.currentPreset = presetName;
 
-    // Deep clone the preset points to avoid modifying the original
-    this.points = JSON.parse(JSON.stringify(Gradients.PRESETS[presetName]));
-    this.update();
+    // 256 8-bit samples. Index is the cell byte. RGB565 packing of these is sim_palettes.cpp.
+    const preset = Gradients.PRESETS[presetName];
+    this.points = preset;
+    for (let i = 0; i < 256; i++) {
+      const sample = preset[i];
+      this.values[i].r = sample[0] / 255;
+      this.values[i].g = sample[1] / 255;
+      this.values[i].b = sample[2] / 255;
+    }
 
     // If preset actually changed, send notification over socket
     if (oldPreset !== presetName) {
@@ -102,6 +123,15 @@ export class Gradients {
 
   getPresetNames() {
     return Object.keys(Gradients.PRESETS);
+  }
+
+  // lil-gui options: label → stored preset id (c0–c10).
+  getPresetOptions() {
+    const options = {};
+    for (const name of this.getPresetNames()) {
+      options[Gradients.THEME_LABELS[name] || name] = name;
+    }
+    return options;
   }
 
   getCurrentPreset() {
