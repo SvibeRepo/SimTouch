@@ -4,7 +4,7 @@
 **Last Updated**: 2026-11-02  
 **Target Hardware**: LilyGo T-RGB 2.1 (primary), Waveshare ESP32-S3-Touch-LCD-1.28 (secondary)
 
-This document describes the **Phase2 in-tree fork** at `Embedded/esp32/Phase2/`. It is not the public API of **SimTouchCore Library** (`Embedded/SimTouchCore Library/`).
+This document describes the **Phase2 in-tree fork** at `applications/embedded/phase2/`. It is not the public API of **SimTouchCore Library** (`core/cpp/`).
 
 The library is a hardware-free extract (PlatformIO name `SimTouchCore`) linked by the P4 panel. Phase2 keeps its own copies of the modules and has not been synced to the library. Module entries below say when a symbol exists on only one side. Library call order, parameter masks, presets, and host tests are in [SIMTOUCHCORE.md](SIMTOUCHCORE.md). Headers were checked on 2026-11-02.
 
@@ -92,7 +92,7 @@ Configuration Layer
 ### File Organization
 
 ```
-Embedded/esp32/Phase2/
+applications/embedded/phase2/
 ├── include/                    # Module headers
 │   ├── SimConfig.h            # Central config struct + parameter registry
 │   ├── SimCore.h              # Particle system API
@@ -310,7 +310,7 @@ uint16_t count_;            // Active particle count
 
 **Performance note**: Main loop FPS logs now include average turbulence compute time (`turb X.XX ms`) for ongoing tuning.
 
-**Ported from**: `Sim/src/simulation/forces/turbulenceField.js` (~1456 lines)
+**Ported from**: `core/javascript/forces/turbulenceField.js` (~1456 lines)
 
 ---
 
@@ -773,7 +773,7 @@ void SimCore::step(float dt, float timeSec) {
 
 When integrating Phase2 simulation into the production suit firmware:
 
-**Current library (2026-11-02):** the hardware-free core already lives at `Embedded/SimTouchCore Library/` and is linked by the P4 firmware (`touch-round-p4`, `lib_deps` symlink). It is not `lib/SimTouch/` inside Phase2, and Phase2 does not compile it. The packaging sketch below is the original plan, not the tree that shipped. See [SIMTOUCHCORE.md](SIMTOUCHCORE.md).
+**Current library (2026-11-02):** the hardware-free core already lives at `core/cpp/` and is linked by the P4 firmware (`touch-round-p4`, `lib_deps` symlink). It is not `lib/SimTouch/` inside Phase2, and Phase2 does not compile it. The packaging sketch below is the original plan, not the tree that shipped. See [SIMTOUCHCORE.md](SIMTOUCHCORE.md).
 
 1. **Library Packaging**: Move simulation modules to standalone library
    ```
@@ -857,4 +857,4 @@ When integrating Phase2 simulation into the production suit firmware:
 
 **End of Architecture Document**  
 For quick start, see: `START_HERE.md`  
-For migration strategy, see: `Sim/doc/migration/migration-plan.md`
+For migration strategy, see: `doc/migration/migration-plan.md`

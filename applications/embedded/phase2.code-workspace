@@ -1,0 +1,15 @@
+{
+	"folders": [
+		{
+			"path": "../.."
+		},
+		{
+			"path": "../../../Svibe_Firmware/Svibe_Firmware_Slave"
+		},
+		{
+			"name": "Phase2",
+			"path": "../../applications/embedded/phase2"
+		}
+	],
+	"settings": {}
+}

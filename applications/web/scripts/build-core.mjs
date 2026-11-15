@@ -94,19 +94,22 @@ if (process.platform === "win32" && !hasMsvcLinker) {
   }
 }
 
+const repoRoot = join(simRoot, "..", "..");
+const crateDir = join(repoRoot, "core", "rust");
+const outDir = join(simRoot, "src", "simcore", "pkg");
+
 const args = [
   "build",
-  "sim-core",
   "--target",
   "web",
   "--out-dir",
-  "../src/simcore/pkg",
+  outDir,
   "--out-name",
   "sim_core",
 ];
 
 const result = spawnSync(wasmPack, args, {
-  cwd: simRoot,
+  cwd: crateDir,
   env,
   stdio: "inherit",
   shell: false,
