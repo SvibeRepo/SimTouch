@@ -90,4 +90,41 @@ impl SimCore {
     pub fn bias_velocity_y(&self) -> f32 {
         self.inner.bias_vy
     }
+
+    pub fn set_cells(&mut self, rects: &[f32]) {
+        self.inner.set_cells(rects);
+    }
+
+    pub fn grid_eval(
+        &mut self,
+        mode: u32,
+        width: f32,
+        height: f32,
+        particle_radius: f32,
+        render_scale: f32,
+        affect_scale: bool,
+        collision_grid: u32,
+    ) {
+        self.inner.grid_eval(
+            mode,
+            width,
+            height,
+            particle_radius,
+            render_scale,
+            affect_scale,
+            collision_grid,
+        );
+    }
+
+    pub fn grid_values_ptr(&self) -> u32 {
+        self.inner.grid_value_buf().as_ptr() as u32
+    }
+
+    pub fn field_ptr(&self) -> u32 {
+        self.inner.field().as_ptr() as u32
+    }
+
+    pub fn field_size(&self) -> u32 {
+        self.inner.field().len() as u32
+    }
 }

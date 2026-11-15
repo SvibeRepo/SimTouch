@@ -1,6 +1,33 @@
 import { debugManager } from './debugManager.js';
 import { eventBus } from './eventManager.js';
 
+/** Match core/rust/src/field.rs bilinear_sample. Preview ny is already simulation Y. */
+function bilinearSampleField(grid, n, x, y) {
+    if (!grid || n === 0 || grid.length < n * n) return 0;
+    const nF = n;
+    let fx = x * nF - 0.5;
+    let fy = y * nF - 0.5;
+    if (fx < 0) fx = 0;
+    else if (fx > nF - 1.0001) fx = nF - 1.0001;
+    if (fy < 0) fy = 0;
+    else if (fy > nF - 1.0001) fy = nF - 1.0001;
+    const x0 = Math.floor(fx);
+    const y0 = Math.floor(fy);
+    const x1 = Math.min(x0 + 1, n - 1);
+    const y1 = Math.min(y0 + 1, n - 1);
+    const tx = fx - x0;
+    const ty = fy - y0;
+    const i00 = grid[y0 * n + x0];
+    const i10 = grid[y0 * n + x1];
+    const i01 = grid[y1 * n + x0];
+    const i11 = grid[y1 * n + x1];
+    const a = i00 * (1 - tx) + i10 * tx;
+    const b = i01 * (1 - tx) + i11 * tx;
+    return a * (1 - ty) + b * ty;
+}
+
+const WASM_FIELD_N = 128;
+
 export class NoisePreviewManager {
 
     constructor(main, previewSize, patterns) {
@@ -664,11 +691,19 @@ export class NoisePreviewManager {
                 Math.max(2, Math.floor(3 / dynamicScaleFactor)) :
                 Math.max(1, Math.floor(2 / dynamicScaleFactor));
 
+            const rustCore = this.main?.rustCore;
+            const useWasmField =
+                this.main?.simParams?.simulation?.engine === "rust" &&
+                !!rustCore?.ready;
+            const field = useWasmField ? rustCore.fieldView() : null;
+
             for (let y = 0; y < effectiveHeight; y++) {
                 for (let x = 0; x < effectiveWidth; x++) {
                     const nx = x / effectiveWidth;
                     const ny = 1 - (y / effectiveHeight);
-                    const noiseValue = this.turbulenceField.noise2D(nx, ny, this.turbulenceField.time, applyBlur);
+                    const noiseValue = field
+                        ? bilinearSampleField(field, WASM_FIELD_N, nx, ny)
+                        : this.turbulenceField.noise2D(nx, ny, this.turbulenceField.time, applyBlur);
 
                     const targetX = Math.floor(x * (renderWidth / effectiveWidth));
                     const targetY = Math.floor(y * (renderHeight / effectiveHeight));

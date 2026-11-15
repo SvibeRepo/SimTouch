@@ -12,17 +12,26 @@ export const GridField = {
   OVERLAP: "Overlap",
 };
 
+/** Mode ids match `Object.values(GridField)` and core/rust/src/grid.rs. */
+export const GRID_MODE_IDS = Object.values(GridField);
+
 export class GridRenderModes {
-  constructor({ gridParams, gridMap, dimensions }) {
+  constructor({ gridParams, gridMap, dimensions, rustCore = null, simParams = null }) {
     this.gridParams = gridParams;
     this.gridMap = gridMap;
     this.dimensions = dimensions;
+    this.rustCore = rustCore;
+    this.simParams = simParams;
 
     // Create value buffer - Use cellCount instead of target
     const initialCellCount = gridParams?.cellCount || 0;
     this.values = new Float32Array(initialCellCount);
     this.targetValues = new Float32Array(initialCellCount);
     this.currentValues = new Float32Array(initialCellCount).fill(0);
+
+    this.cellRects = null;
+    this.cellCount = 0;
+    this.cellsDirty = false;
 
     // Smoothing configuration - simplified
     this.smoothing = {
@@ -69,15 +78,86 @@ export class GridRenderModes {
     }
   }
 
+  /** Pack pixel-space cell rects (x,y,width,height) for wasm set_cells. */
+  markCellsDirty(gridMap) {
+    const map = gridMap || this.gridMap || [];
+    const n = map.length;
+    if (!this.cellRects || this.cellRects.length < n * 4) {
+      this.cellRects = new Float32Array(Math.max(n, 1) * 4);
+    }
+    for (let i = 0; i < n; i++) {
+      const b = map[i].bounds;
+      const o = i * 4;
+      this.cellRects[o] = b.x;
+      this.cellRects[o + 1] = b.y;
+      this.cellRects[o + 2] = b.width;
+      this.cellRects[o + 3] = b.height;
+    }
+    this.cellCount = n;
+    this.cellsDirty = true;
+  }
+
+  flushCellsIfNeeded() {
+    if (!this.cellsDirty || !this.rustCore?.ready || !this.cellRects) return;
+    this.rustCore.setCells(this.cellRects.subarray(0, this.cellCount * 4));
+    this.cellsDirty = false;
+  }
+
+  canUseRustGrid() {
+    return this.simParams?.simulation?.engine === "rust" && !!this.rustCore?.ready;
+  }
+
+  modeId() {
+    const id = GRID_MODE_IDS.indexOf(this.currentMode);
+    return id >= 0 ? id : 0;
+  }
+
   getValues(particleSystem) {
-    // Calculate new target values
-    this.calculateTargetValues(particleSystem);
+    if (this.canUseRustGrid()) {
+      this.calculateTargetValuesRust(particleSystem);
+    } else {
+      this.calculateTargetValues(particleSystem);
+    }
 
-    // Apply smoothing
     this.smoothValues();
-
-    // Return the smoothed current values instead of target values
     return this.currentValues;
+  }
+
+  calculateTargetValuesRust(particleSystem) {
+    this.flushCellsIfNeeded();
+    if (!particleSystem || !this.dimensions) {
+      this.targetValues.fill(0);
+      return this.targetValues;
+    }
+
+    const width = this.dimensions.renderWidth;
+    const height = this.dimensions.renderHeight;
+    const particleRadius = particleSystem.particleRadius ?? 0.01;
+    const renderScale = particleSystem.renderScale ?? 4000;
+    const affectScale = !!this.simParams?.turbulence?.affectScale;
+    const collisionGrid = Math.max(
+      1,
+      Math.min(128, Math.round(particleSystem.collisionGridSize || this.simParams?.collision?.gridSizeCollision || 10))
+    );
+
+    this.rustCore.gridEval(
+      this.modeId(),
+      width,
+      height,
+      particleRadius,
+      renderScale,
+      affectScale,
+      collisionGrid
+    );
+
+    const src = this.rustCore.gridValues();
+    const n = this.targetValues.length;
+    if (src && n > 0) {
+      this.targetValues.set(src.subarray(0, n));
+    } else {
+      this.targetValues.fill(0);
+    }
+    return this.targetValues;
   }
 
   calculateTargetValues(particleSystem) {

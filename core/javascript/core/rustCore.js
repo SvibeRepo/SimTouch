@@ -159,6 +159,8 @@ export class RustCore {
     this.vx = null;
     this.vy = null;
     this.radius = null;
+    this._gridValues = null;
+    this._field = null;
   }
 
   async init() {
@@ -199,7 +201,6 @@ export class RustCore {
     this.core.set_count(count);
     this.count = count;
     this.attach(particleSystem);
-    this.pack(count);
   }
 
   copyFromJs(particleSystem) {
@@ -221,13 +222,6 @@ export class RustCore {
     particleSystem.velocitiesY = this.vy;
     particleSystem.particleRadii = this.radius;
     particleSystem.particles = this.interleaved;
-  }
-
-  pack(count) {
-    for (let i = 0; i < count; i++) {
-      this.interleaved[i * 2] = this.x[i];
-      this.interleaved[i * 2 + 1] = this.y[i];
-    }
   }
 
   detach(particleSystem) {
@@ -408,5 +402,46 @@ export class RustCore {
     field._currentBiasOffsetY = this.core.bias_offset_y();
     field._biasVelocityX = this.core.bias_velocity_x();
     field._biasVelocityY = this.core.bias_velocity_y();
+  }
+
+  setCells(rects) {
+    if (!this.ready) return;
+    this.core.set_cells(rects);
+  }
+
+  gridEval(mode, width, height, particleRadius, renderScale, affectScale, collisionGrid) {
+    if (!this.ready) return;
+    this.core.grid_eval(
+      mode,
+      width,
+      height,
+      particleRadius,
+      renderScale,
+      !!affectScale,
+      collisionGrid >>> 0
+    );
+  }
+
+  gridValues() {
+    if (!this.ready) return null;
+    const buffer = this.memory.buffer;
+    if (!this._gridValues || this._gridValues.buffer !== buffer) {
+      this._gridValues = new Float32Array(buffer, this.core.grid_values_ptr(), CAPACITY);
+    }
+    return this._gridValues;
+  }
+
+  fieldView() {
+    if (!this.ready) return null;
+    const buffer = this.memory.buffer;
+    if (!this._field || this._field.buffer !== buffer) {
+      const size = this.core.field_size();
+      this._field = new Float32Array(buffer, this.core.field_ptr(), size);
+    }
+    return this._field;
+  }
+
+  fieldSize() {
+    return this.ready ? this.core.field_size() : 0;
   }
 }

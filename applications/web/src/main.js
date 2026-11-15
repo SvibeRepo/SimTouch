@@ -278,6 +278,7 @@ export class Main {
     );
 
     this.rustCore = new RustCore();
+    this.gridGenRenderer.setRustContext(this.rustCore, this.simParams);
 
     eventBus.on('gridChanged', this.handleGridUIChange.bind(this));
     eventBus.on('uiControlChanged', this.handleSimUIChange.bind(this));
@@ -290,6 +291,7 @@ export class Main {
       await this.shaderManager.init();
       try {
         await this.rustCore.init();
+        this.gridGenRenderer.setRustContext(this.rustCore, this.simParams);
       } catch (error) {
         console.error("[sim-core] wasm tick failed to load; staying on the JavaScript tick", error);
       }

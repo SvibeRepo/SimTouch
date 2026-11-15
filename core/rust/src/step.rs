@@ -3,6 +3,7 @@
 use crate::collision::CollisionBins;
 use crate::field::{self, FIELD_AREA};
 use crate::flip::FlipGrid;
+use crate::grid::Grid;
 use crate::organic;
 use crate::params::{id, Params, PARAM_COUNT};
 use crate::voronoi;
@@ -44,6 +45,7 @@ pub struct Engine {
     org_state_init: Vec<u8>,
     org_link_count: Vec<u16>,
     org_links: Vec<u16>,
+    grid: Grid,
 }
 
 impl Engine {
@@ -84,6 +86,7 @@ impl Engine {
             org_state_init: vec![0; capacity],
             org_link_count: vec![0; capacity],
             org_links: vec![0; capacity * organic::MAX_LINKS],
+            grid: Grid::new(capacity),
         }
     }
 
@@ -375,6 +378,56 @@ impl Engine {
             _ => return false,
         }
         true
+    }
+
+    /// Upload cell rectangles as `x, y, width, height` in render pixel space.
+    /// At most [`crate::grid::MAX_CELLS`] rectangles are kept. The value buffer
+    /// is not resized, so [`Self::grid_value_buf`] stays put.
+    pub fn set_cells(&mut self, rects: &[f32]) {
+        self.grid.set_cells(rects);
+    }
+
+    /// Write one float per uploaded cell. Does not step particles.
+    pub fn grid_eval(
+        &mut self,
+        mode: u32,
+        width: f32,
+        height: f32,
+        particle_radius: f32,
+        render_scale: f32,
+        affect_scale: bool,
+        collision_grid: u32,
+    ) {
+        let count = self.count;
+        self.grid.eval(
+            mode,
+            width,
+            height,
+            particle_radius,
+            render_scale,
+            affect_scale,
+            collision_grid,
+            &self.x,
+            &self.y,
+            &self.vx,
+            &self.vy,
+            &self.radius,
+            count,
+            &self.field,
+        );
+    }
+
+    pub fn grid_values(&self) -> &[f32] {
+        self.grid.active_values()
+    }
+
+    pub fn grid_value_buf(&self) -> &[f32] {
+        self.grid.value_buf()
+    }
+
+    /// Fixed 128×128 turbulence field. The allocation does not move after [`Self::new`].
+    pub fn field(&self) -> &[f32] {
+        &self.field
     }
 }
 

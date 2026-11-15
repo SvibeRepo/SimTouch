@@ -83,10 +83,7 @@ export class GridUi extends BaseUi {
     const gradient = this.main.gridGenRenderer.gradient;
 
     // Add theme selector at the top level
-    const presetOptions = {};
-    gradient.getPresetNames().forEach((name) => {
-      presetOptions[name] = name;
-    });
+    const presetOptions = gradient.getPresetOptions();
 
     this.themeController = this.gui
       .add({ theme: gradient.getCurrentPreset() }, "theme", presetOptions)

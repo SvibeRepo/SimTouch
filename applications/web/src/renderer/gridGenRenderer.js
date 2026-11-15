@@ -18,6 +18,9 @@ export class GridGenRenderer extends BaseRenderer {
     this.dimensionManager = dimensionManager;
     this.boundaryManager = boundaryManager;
     this.particleSystem = particleSystem;
+    this.rustCore = null;
+    this.simParams = null;
+    this.cellsDirtyPending = false;
 
     // Initialize this.grid with the initial config object reference
     this.grid = gridConfig || {}; // Use passed config or default to empty object
@@ -110,6 +113,21 @@ export class GridGenRenderer extends BaseRenderer {
 
   get db() {
     return debugManager.get('gridGenRenderer');
+  }
+
+  /** Wire rust wasm tick + simParams so GridRenderModes can eval on the rust path. */
+  setRustContext(rustCore, simParams) {
+    this.rustCore = rustCore;
+    this.simParams = simParams;
+    if (this.renderModes) {
+      this.renderModes.rustCore = rustCore;
+      this.renderModes.simParams = simParams;
+      if (this.cellsDirtyPending && this.gridMap?.length) {
+        this.renderModes.markCellsDirty(this.gridMap);
+        this.renderModes.flushCellsIfNeeded();
+        this.cellsDirtyPending = false;
+      }
+    }
   }
 
   initBuffers() {
@@ -263,11 +281,15 @@ export class GridGenRenderer extends BaseRenderer {
         canvas: this.gl.canvas,         // Pass canvas
         coordTransforms: {},            // Empty for now
         maxDensityRef: () => this.maxDensity, // CORRECTED: Pass internal maxDensity getter
-        dimensions: this.currentDimensions // Pass current dimensions
+        dimensions: this.currentDimensions, // Pass current dimensions
+        rustCore: this.rustCore,
+        simParams: this.simParams,
       });
       modeChanged = true; // Mode was set on creation
     } else {
       const previousMode = this.renderModes.currentMode;
+      this.renderModes.rustCore = this.rustCore;
+      this.renderModes.simParams = this.simParams;
       this.renderModes.updateGrid({
         gridParams: this.grid,
         gridGeometry: this.gridGeometry,
@@ -276,6 +298,15 @@ export class GridGenRenderer extends BaseRenderer {
       });
       // Check if mode was somehow altered during update (unlikely but safe)
       if (this.renderModes.currentMode !== previousMode) modeChanged = true;
+    }
+
+    // Pack cell rects once per geometry rebuild; upload when wasm is ready.
+    this.renderModes.markCellsDirty(this.gridMap);
+    if (this.rustCore?.ready) {
+      this.renderModes.flushCellsIfNeeded();
+      this.cellsDirtyPending = false;
+    } else {
+      this.cellsDirtyPending = true;
     }
 
     // Emit event *after* renderModes is ready and potentially updated

@@ -582,6 +582,9 @@ export class MouseForces {
 
     const { particles, velocitiesX, velocitiesY, numParticles } =
       particleSystem;
+    // Prefer SoA views when the wasm tick owns positions.
+    const posX = particleSystem.x;
+    const posY = particleSystem.y;
     const dragMag = Math.hypot(dx, dy);
     if (dragMag === 0) return;
 
@@ -590,8 +593,8 @@ export class MouseForces {
     const ndy = dy / dragMag;
 
     for (let i = 0; i < numParticles; i++) {
-      const px = particles[i * 2];
-      const py = particles[i * 2 + 1];
+      const px = posX ? posX[i] : particles[i * 2];
+      const py = posY ? posY[i] : particles[i * 2 + 1];
       const dist = Math.hypot(px - x, py - y);
 
       if (dist < this.impulseRadius) {

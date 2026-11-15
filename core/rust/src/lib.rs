@@ -2,6 +2,7 @@ mod boundary;
 mod collision;
 mod field;
 mod flip;
+mod grid;
 mod organic;
 mod params;
 mod step;
