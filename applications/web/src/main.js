@@ -411,13 +411,17 @@ export class Main {
     const sim = this.simParams.simulation;
 
     if (sim.engine === "js") {
+      // Rust attach leaves x/y on the wasm arrays. The JavaScript tick writes
+      // the interleaved buffer, and getParticles prefers x/y while they are set,
+      // so the picture stays on the last Rust frame until those views are dropped.
+      if (this.rustCore?.ready) this.rustCore.detach(this.particleSystem);
       this.particleSystem.mouseForces.update(this.particleSystem);
       this.emuForces.apply(this.particleSystem.timeStep);
       this.turbulenceField.update(this.particleSystem.timeStep);
       this.voronoiField.update(this.particleSystem.timeStep);
       this.particleSystem.step();
       this.gridGenRenderer.draw();
-      this.particleRenderer.draw(this.particleSystem.getParticles());
+      this.particleRenderer.draw(particleBuffers(this.particleSystem, this.simParams.turbulence.affectScale));
     } else {
       const dt = (sim.timeStep ?? this.particleSystem.timeStep) * (sim.timeScale ?? this.particleSystem.timeScale);
       if (this.rustCore?.ready) {
