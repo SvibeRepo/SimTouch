@@ -88,6 +88,13 @@ fn main() {
         }
     }
 
+    // Offset and blur are off the shared chart. Defaults are 0.5 / -0.5 and 0.
+    // The JavaScript compare uses origin 0 and no blur. gravity-step never
+    // samples the field (pull is 0), so this pin does not change that fixture.
+    engine.params.turb_offset_x = 0.0;
+    engine.params.turb_offset_y = 0.0;
+    engine.params.turb_blur = 0.0;
+
     for i in 0..count {
         engine.x[i] = num(take(&mut it, "x"));
         engine.y[i] = num(take(&mut it, "y"));
