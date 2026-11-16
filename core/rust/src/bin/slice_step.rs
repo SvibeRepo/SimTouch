@@ -80,6 +80,8 @@ fn main() {
     engine.params.boundary_radius = 0.5 * 1.03;
     engine.params.boundary_cx = 0.5;
     engine.params.boundary_cy = 0.5;
+    // 0 on the slider is PIC. This slice is the ballistic particle step.
+    engine.params.flip_ratio = -1.0;
 
     for (index, value) in slots {
         if !engine.set_pack_slot(index, value) {

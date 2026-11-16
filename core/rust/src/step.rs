@@ -476,7 +476,7 @@ mod tests {
         engine.params.turb_affect_scale = false;
         engine.params.turb_scale_field = false;
         engine.params.voronoi_strength = 0.0;
-        engine.params.flip_ratio = 0.0;
+        engine.params.flip_ratio = -1.0;
         engine.params.organic_behavior = behavior::NONE;
         engine.params.gravity_x = 0.0;
         engine.params.gravity_y = 0.0;
@@ -508,14 +508,14 @@ mod tests {
         engine.y[1] = 0.5;
         engine.vx[0] = 0.5;
         engine.vx[1] = -0.5;
-        engine.params.flip_ratio = 1.0;
+        engine.params.flip_ratio = 0.0;
         engine.params.flip_iterations = 8;
         engine.params.flip_grid = 32;
         let before = engine.vx[0];
         engine.step(1.0 / 60.0);
         assert!(
             (engine.vx[0] - before).abs() > 1e-3,
-            "PIC should replace opposing velocities, vx={}",
+            "PIC at ratio 0 should replace opposing velocities, vx={}",
             engine.vx[0]
         );
     }
@@ -753,7 +753,7 @@ mod tests {
         engine.params.turb_affect_scale = false;
         engine.params.turb_scale_field = false;
         engine.params.voronoi_strength = 0.0;
-        engine.params.flip_ratio = 0.0;
+        engine.params.flip_ratio = -1.0;
         engine.params.gravity_x = 0.0;
         engine.params.gravity_y = 0.0;
         engine.params.organic_behavior = behavior::SWARM;
@@ -793,7 +793,7 @@ mod tests {
         engine.params.boundary_repulsion = 0.0;
         engine.params.gravity_x = 0.0;
         engine.params.gravity_y = 0.0;
-        engine.params.flip_ratio = 0.0;
+        engine.params.flip_ratio = -1.0;
         engine.params.voronoi_strength = 0.0;
         engine.params.organic_behavior = behavior::SWARM;
         engine.params.organic_radius = 66.405;
@@ -851,6 +851,190 @@ mod tests {
         assert!(
             peak > 0.02,
             "positive crests should grow toward T-Max Size, peak={peak}"
+        );
+    }
+
+    fn park_on_rim(engine: &mut Engine, angle: f32) {
+        let radius = engine.params.particle_radius;
+        let safe = engine.params.boundary_radius - radius - 0.001;
+        engine.x[0] = engine.params.boundary_cx + angle.cos() * safe;
+        engine.y[0] = engine.params.boundary_cy + angle.sin() * safe;
+        engine.vx[0] = 0.0;
+        engine.vy[0] = 0.0;
+        engine.radius[0] = radius;
+    }
+
+    fn rim_dist(engine: &Engine) -> f32 {
+        let dx = engine.x[0] - engine.params.boundary_cx;
+        let dy = engine.y[0] - engine.params.boundary_cy;
+        (dx * dx + dy * dy).sqrt()
+    }
+
+    /// A particle parked on the diagonal sits in a PIC cell whose center is
+    /// outside the circle. That cell was marked solid and its velocity forced
+    /// to 0, so gravity, repulsion, and turbulence never integrated. Flip 0
+    /// skips that pass and does move.
+    #[test]
+    fn flip_one_releases_rim_particle_under_inward_force() {
+        let steps = 30;
+        let dt = 1.0 / 60.0;
+        let run = |flip: f32, repulsion: f32, gravity: bool, turb: bool| {
+            let mut engine = quiet(1);
+            engine.params.flip_ratio = flip;
+            engine.params.flip_grid = 32;
+            engine.params.flip_iterations = 20;
+            engine.params.boundary_radius = 0.5;
+            engine.params.boundary_repulsion = repulsion;
+            engine.params.particle_radius = 0.01;
+            engine.params.max_velocity = 1.0;
+            park_on_rim(&mut engine, std::f32::consts::FRAC_PI_4);
+            if gravity {
+                let dx = engine.params.boundary_cx - engine.x[0];
+                let dy = engine.params.boundary_cy - engine.y[0];
+                let d = (dx * dx + dy * dy).sqrt().max(1e-6);
+                engine.params.gravity_x = dx / d * 4.0;
+                engine.params.gravity_y = dy / d * 4.0;
+                engine.params.gravity_enabled = true;
+            }
+            if turb {
+                engine.params.turb_affect_position = true;
+                engine.params.turb_strength = 8.0;
+                engine.params.turb_pull = 1.0;
+                engine.params.turb_scale = 3.0;
+                engine.params.turb_decay = 1.0;
+                engine.params.turb_blur = 0.0;
+            }
+            let start = rim_dist(&engine);
+            for _ in 0..steps {
+                engine.step(dt);
+            }
+            let dist = rim_dist(&engine);
+            (start - dist, dist)
+        };
+
+        let drop = |label: &str, flip: f32, repulsion: f32, gravity: bool, turb: bool| {
+            let (inward, dist) = run(flip, repulsion, gravity, turb);
+            assert!(
+                inward > 0.02,
+                "{label} should leave the wall, inward={inward} dist={dist}"
+            );
+        };
+        drop("flip 0 gravity", 0.0, 0.0, true, false);
+        drop("flip 1 gravity", 1.0, 0.0, true, false);
+        drop("flip 0 repulsion", 0.0, 1.0, false, false);
+        drop("flip 1 repulsion", 1.0, 1.0, false, false);
+        drop("flip 0 turbulence", 0.0, 0.0, false, true);
+        drop("flip 1 turbulence", 1.0, 0.0, false, true);
+    }
+
+    #[test]
+    fn flip_one_pile_leaves_wall_when_gravity_reverses() {
+        let mut engine = Engine::new(200);
+        let count = 160;
+        engine.set_count(count);
+        engine.params.flip_ratio = 1.0;
+        engine.params.flip_grid = 32;
+        engine.params.flip_iterations = 20;
+        engine.params.gravity_enabled = true;
+        engine.params.gravity_y = -1.5;
+        engine.params.velocity_damping = 0.98;
+        engine.params.velocity_threshold = 0.001;
+        engine.params.position_threshold = 0.0001;
+        engine.params.collision_enabled = true;
+        engine.params.collision_repulsion = 0.5;
+        engine.params.collision_restitution = 0.8;
+        engine.params.collision_grid = 10;
+        engine.params.particle_radius = 0.012;
+        engine.params.boundary_radius = 0.5;
+        engine.params.boundary_damping = 0.95;
+        engine.params.boundary_restitution = 0.8;
+        engine.params.boundary_repulsion = 0.1;
+        engine.params.max_velocity = 1.0;
+        engine.params.turb_strength = 0.0;
+        engine.params.turb_affect_position = false;
+        engine.params.organic_behavior = behavior::NONE;
+        let mut seed = 1u32;
+        for i in 0..count {
+            seed = seed.wrapping_mul(1664525).wrapping_add(1013904223);
+            let ang = ((seed >> 8) as f32 / 16_777_216.0) * std::f32::consts::TAU;
+            seed = seed.wrapping_mul(1664525).wrapping_add(1013904223);
+            let rad = 0.05 + ((seed >> 8) as f32 / 16_777_216.0) * 0.40;
+            engine.x[i] = 0.5 + ang.cos() * rad;
+            engine.y[i] = 0.5 + ang.sin() * rad;
+            engine.vx[i] = 0.0;
+            engine.vy[i] = 0.0;
+            engine.radius[i] = 0.012;
+        }
+        let dt = 1.0 / 60.0;
+        for _ in 0..180 {
+            engine.step(dt);
+        }
+        let on_bottom = |e: &Engine| {
+            (0..count)
+                .filter(|&i| {
+                    let dx = e.x[i] - 0.5;
+                    let dy = e.y[i] - 0.5;
+                    let dist = (dx * dx + dy * dy).sqrt();
+                    e.y[i] < 0.28 && dist > 0.42
+                })
+                .count()
+        };
+        let piled = on_bottom(&engine);
+        engine.params.gravity_y = 1.5;
+        for _ in 0..120 {
+            engine.step(dt);
+        }
+        let still = on_bottom(&engine);
+        assert!(
+            piled > 20,
+            "particles should settle on the bottom under gravity, count={piled}"
+        );
+        assert!(
+            still * 2 < piled,
+            "a reversed gravity should pull the pile off the wall, before={piled} after={still}"
+        );
+
+        engine.params.gravity_y = -1.5;
+        for _ in 0..120 {
+            engine.step(dt);
+        }
+        let stuck_again = on_bottom(&engine);
+        assert!(stuck_again > 20, "pile should reform, count={stuck_again}");
+        engine.params.gravity_x = 0.0;
+        engine.params.gravity_y = 0.0;
+        engine.params.velocity_damping = 1.0;
+        let mut pushed = [0usize; 200];
+        let mut touched = 0usize;
+        let mut mean_before = 0.0f32;
+        for i in 0..count {
+            let dx = engine.x[i] - 0.5;
+            let dy = engine.y[i] - 0.5;
+            let dist = (dx * dx + dy * dy).sqrt();
+            if dist > 0.40 {
+                let d = dist.max(1e-6);
+                engine.vx[i] = -dx / d * 0.5;
+                engine.vy[i] = -dy / d * 0.5;
+                pushed[touched] = i;
+                touched += 1;
+                mean_before += dist;
+            }
+        }
+        assert!(touched > 10, "expected rim particles to push, count={touched}");
+        mean_before /= touched as f32;
+        for _ in 0..20 {
+            engine.step(dt);
+        }
+        let mut mean_after = 0.0f32;
+        for i in 0..touched {
+            let idx = pushed[i];
+            let dx = engine.x[idx] - 0.5;
+            let dy = engine.y[idx] - 0.5;
+            mean_after += (dx * dx + dy * dy).sqrt();
+        }
+        mean_after /= touched as f32;
+        assert!(
+            mean_before - mean_after > 0.05,
+            "an inward push should release the rim, before={mean_before} after={mean_after}"
         );
     }
 

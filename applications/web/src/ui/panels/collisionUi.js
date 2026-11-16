@@ -16,6 +16,9 @@ export class CollisionUi extends BaseUi {
 
   initCollisionControls() {
 
+    this.collisionEnabledController = this.gui.add(this.main.simParams.collision, "enabled").name("C-Enabled")
+      .onChange((value) => { eventBus.emit('uiControlChanged', { paramPath: 'collision.enabled', value }); });
+
     this.collisionRepulsionController = this.gui.add(this.main.simParams.collision, "repulsion", 0, 5, 0.01).name("C-Repulse")
       .onChange((value) => { eventBus.emit('uiControlChanged', { paramPath: 'collision.repulsion', value }); });
 
@@ -27,6 +30,9 @@ export class CollisionUi extends BaseUi {
     this.collisionGridSizeController = this.gui.add(this.main.simParams.collision, "gridSizeCollision", 8, 128, 1).name("C-GridRez")
       .onChange((value) => { eventBus.emit('uiControlChanged', { paramPath: 'collision.gridSizeCollision', value }); });
 
+    this.collisionDampingController = this.gui.add(this.main.simParams.collision, "damping", 0.8, 1.0, 0.001).name("C-Damping")
+      .onChange((value) => { eventBus.emit('uiControlChanged', { paramPath: 'collision.damping', value }); });
+
     this.restDensityController = this.gui.add(this.main.simParams.simulation, "restDensity", 0, 40, 0.1).name("C-RestDens")
       .onChange((value) => { eventBus.emit('uiControlChanged', { paramPath: 'simulation.restDensity', value }); });
 
@@ -36,9 +42,11 @@ export class CollisionUi extends BaseUi {
 
   getControlTargets() {
     const targets = {};
+    targets["C-Enabled"] = this.collisionEnabledController;
     targets["C-Repulse"] = this.collisionRepulsionController;
     targets["C-GridRez"] = this.collisionGridSizeController;
     targets["C-Bounce"] = this.collisionBounceController;
+    targets["C-Damping"] = this.collisionDampingController;
     targets["C-RestDens"] = this.restDensityController;
 
 

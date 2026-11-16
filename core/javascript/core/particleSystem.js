@@ -261,8 +261,8 @@ export class ParticleSystem {
       this.organicBehavior.updateParticles(this, dt);
     }
 
-    // Apply FLIP fluid simulation if enabled
-    if (this.picFlipRatio > 0) {
+    // 0 is PIC, 1 is FLIP. Negative leaves particle velocities alone.
+    if (this.picFlipRatio >= 0) {
       this.updateFLIP(dt);
     }
 
@@ -431,8 +431,13 @@ export class ParticleSystem {
   }
 
   updateFLIP(dt) {
-    if (this.picFlipRatio > 0) {
-      // Update rest density parameter only
+    if (this.picFlipRatio >= 0) {
+      // The slider writes this.picFlipRatio. 0 is PIC, 1 is FLIP.
+      this.fluid.picFlipRatio = this.picFlipRatio;
+      this.fluid.dt = dt;
+      this.fluid.restDensity = this.restDensity;
+      this.fluid.gasConstant = this.gasConstant;
+      this.fluid.initializeBoundary();
       this.fluid.setParameters(this.restDensity);
 
       // Transfer particle velocities to grid

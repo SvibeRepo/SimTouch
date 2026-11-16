@@ -87,7 +87,7 @@ export class ParamUi extends BaseUi {
       });
     this.timeScaleController.domElement.style.marginBottom = "12px";
 
-    this.ratioPicFlip = this.gui.add(this.main.simParams.simulation, "picFlipRatio", 0, 1, 0.01).name("PicFlipRatio")
+    this.ratioPicFlip = this.gui.add(this.main.simParams.simulation, "picFlipRatio", 0, 1, 0.01).name("PIC → FLIP")
       .onChange((value) => { eventBus.emit('uiControlChanged', { paramPath: 'simulation.picFlipRatio', value }); });
 
   }

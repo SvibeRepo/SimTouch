@@ -1,11 +1,13 @@
 //! PIC/FLIP on a fixed collocated grid. Width defaults to 32.
 //!
+//! The slider is the FLIP fraction. 0 is pure PIC (the cell average). 1 is pure
+//! FLIP (the particle keeps its velocity plus the change in the grid). Values
+//! in between are `(1 - ratio) * PIC + ratio * FLIP`. About 0.95 is the usual
+//! mix: 5% PIC, 95% FLIP. A negative ratio leaves velocities alone.
+//!
 //! Transfer matches the browser `FluidFLIP`: nearest-cell splat and sample.
-//! The JS solver computed pressure but multiplied the gradient by an undefined
-//! `pressureScale`, which NaN'd grid velocities and then read back as 0 via
-//! `value || 0`. That made PicFlipRatio=1 freeze particles. We keep the
-//! Poisson solve for future tuning but default the velocity pressure scale to
-//! 0 so isolated particles keep gravity and mouse impulses (identity PIC).
+//! The pressure gradient stays at scale 0, so an isolated particle's PIC read
+//! is its own splatted velocity.
 
 use crate::params::{boundary_shape, Params};
 
@@ -15,6 +17,10 @@ pub const FLIP_AREA: usize = FLIP_MAX * FLIP_MAX;
 pub struct FlipGrid {
     pub u: Vec<f32>,
     pub v: Vec<f32>,
+    /// Grid velocity after the splat and before the pressure solve. FLIP adds
+    /// only the difference from this snapshot.
+    prev_u: Vec<f32>,
+    prev_v: Vec<f32>,
     pub weight: Vec<f32>,
     pub pressure: Vec<f32>,
     pub divergence: Vec<f32>,
@@ -26,6 +32,8 @@ impl FlipGrid {
         Self {
             u: vec![0.0; FLIP_AREA],
             v: vec![0.0; FLIP_AREA],
+            prev_u: vec![0.0; FLIP_AREA],
+            prev_v: vec![0.0; FLIP_AREA],
             weight: vec![0.0; FLIP_AREA],
             pressure: vec![0.0; FLIP_AREA],
             divergence: vec![0.0; FLIP_AREA],
@@ -34,20 +42,34 @@ impl FlipGrid {
     }
 }
 
+/// A cell is solid only when the whole cell sits outside the boundary.
+/// Classifying by the cell center marks rim cells solid while a particle
+/// center is still inside the circle. PIC then samples a zeroed cell and the
+/// particle stops taking gravity, repulsion, and turbulence until something
+/// else moves it into a fluid cell.
+fn cell_outside(col: usize, row: usize, n: usize, p: &Params) -> bool {
+    let n_f = n as f32;
+    let min_x = col as f32 / n_f;
+    let max_x = (col as f32 + 1.0) / n_f;
+    let min_y = row as f32 / n_f;
+    let max_y = (row as f32 + 1.0) / n_f;
+    if p.boundary_shape == boundary_shape::RECTANGULAR {
+        return max_x <= p.rect_min_x
+            || min_x >= p.rect_max_x
+            || max_y <= p.rect_min_y
+            || min_y >= p.rect_max_y;
+    }
+    let nearest_x = p.boundary_cx.clamp(min_x, max_x);
+    let nearest_y = p.boundary_cy.clamp(min_y, max_y);
+    let dx = nearest_x - p.boundary_cx;
+    let dy = nearest_y - p.boundary_cy;
+    dx * dx + dy * dy > p.boundary_radius * p.boundary_radius
+}
+
 fn mark_solid(grid: &mut FlipGrid, n: usize, p: &Params) {
-    let h = 1.0 / n as f32;
     for row in 0..n {
         for col in 0..n {
-            let x = (col as f32 + 0.5) * h;
-            let y = (row as f32 + 0.5) * h;
-            let solid = if p.boundary_shape == boundary_shape::RECTANGULAR {
-                x < p.rect_min_x || x > p.rect_max_x || y < p.rect_min_y || y > p.rect_max_y
-            } else {
-                let dx = x - p.boundary_cx;
-                let dy = y - p.boundary_cy;
-                dx * dx + dy * dy > p.boundary_radius * p.boundary_radius
-            };
-            grid.solid[row * n + col] = if solid { 1 } else { 0 };
+            grid.solid[row * n + col] = if cell_outside(col, row, n, p) { 1 } else { 0 };
         }
     }
 }
@@ -194,12 +216,12 @@ fn solve(grid: &mut FlipGrid, n: usize, p: &Params, dt: f32) {
     }
 }
 
-fn sample_cell(grid: &FlipGrid, x: f32, y: f32, n: usize) -> (f32, f32) {
+fn sample_uv(u: &[f32], v: &[f32], x: f32, y: f32, n: usize) -> (f32, f32) {
     let n_f = n as f32;
     let gx = (x * n_f).floor().clamp(0.0, n_f - 1.0) as usize;
     let gy = (y * n_f).floor().clamp(0.0, n_f - 1.0) as usize;
     let idx = gy * n + gx;
-    (grid.u[idx], grid.v[idx])
+    (u[idx], v[idx])
 }
 
 pub fn apply(
@@ -212,34 +234,81 @@ pub fn apply(
     p: &Params,
     dt: f32,
 ) {
-    if p.flip_ratio <= 0.0 || count == 0 {
+    if p.flip_ratio < 0.0 || count == 0 {
         return;
     }
     let n = p.flip_grid.clamp(4, FLIP_MAX);
     mark_solid(grid, n, p);
     splat(grid, x, y, vx, vy, count, n);
+    let cells = n * n;
+    grid.prev_u[..cells].copy_from_slice(&grid.u[..cells]);
+    grid.prev_v[..cells].copy_from_slice(&grid.v[..cells]);
     solve(grid, n, p, dt);
+    let alpha = p.flip_ratio.clamp(0.0, 1.0);
     let max_v = p.max_velocity;
     for i in 0..count {
         if !(0.0..1.0).contains(&x[i]) || !(0.0..1.0).contains(&y[i]) {
             continue;
         }
-        let (grid_vx, grid_vy) = sample_cell(grid, x[i], y[i], n);
-        let old_vx = vx[i];
-        let old_vy = vy[i];
-        let (nx, ny) = if p.flip_ratio >= 1.0 {
-            (grid_vx, grid_vy)
-        } else if p.flip_ratio <= 0.0 {
-            (old_vx + grid_vx, old_vy + grid_vy)
-        } else {
-            let flip_vx = old_vx + grid_vx;
-            let flip_vy = old_vy + grid_vy;
-            (
-                p.flip_ratio * grid_vx + (1.0 - p.flip_ratio) * flip_vx,
-                p.flip_ratio * grid_vy + (1.0 - p.flip_ratio) * flip_vy,
-            )
-        };
+        let (grid_vx, grid_vy) = sample_uv(&grid.u, &grid.v, x[i], y[i], n);
+        let (prev_vx, prev_vy) = sample_uv(&grid.prev_u, &grid.prev_v, x[i], y[i], n);
+        let pic_vx = grid_vx;
+        let pic_vy = grid_vy;
+        let flip_vx = vx[i] + (grid_vx - prev_vx);
+        let flip_vy = vy[i] + (grid_vy - prev_vy);
+        let nx = (1.0 - alpha) * pic_vx + alpha * flip_vx;
+        let ny = (1.0 - alpha) * pic_vy + alpha * flip_vy;
         vx[i] = nx.clamp(-max_v, max_v);
         vy[i] = ny.clamp(-max_v, max_v);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::params::Params;
+
+    fn opposing(ratio: f32) -> (f32, f32) {
+        let mut grid = FlipGrid::new();
+        let mut p = Params::default();
+        p.flip_ratio = ratio;
+        p.flip_grid = 32;
+        p.boundary_radius = 0.5;
+        p.max_velocity = 1.0;
+        let x = [0.5_f32, 0.5];
+        let y = [0.5_f32, 0.5];
+        let mut vx = [0.4_f32, -0.4];
+        let mut vy = [0.0_f32, 0.0];
+        apply(&mut grid, &x, &y, &mut vx, &mut vy, 2, &p, 1.0 / 60.0);
+        (vx[0], vx[1])
+    }
+
+    #[test]
+    fn slider_blends_pic_at_zero_into_flip_at_one() {
+        let (pic_a, pic_b) = opposing(0.0);
+        assert!(
+            pic_a.abs() < 1e-4 && pic_b.abs() < 1e-4,
+            "ratio 0 is PIC, the cell average, got {pic_a} {pic_b}"
+        );
+        let (mid_a, mid_b) = opposing(0.5);
+        assert!(
+            (mid_a - 0.2).abs() < 1e-4 && (mid_b + 0.2).abs() < 1e-4,
+            "ratio 0.5 is halfway, got {mid_a} {mid_b}"
+        );
+        let (sweet_a, sweet_b) = opposing(0.95);
+        assert!(
+            (sweet_a - 0.38).abs() < 1e-4 && (sweet_b + 0.38).abs() < 1e-4,
+            "ratio 0.95 is 5% PIC and 95% FLIP, got {sweet_a} {sweet_b}"
+        );
+        let (flip_a, flip_b) = opposing(1.0);
+        assert!(
+            (flip_a - 0.4).abs() < 1e-4 && (flip_b + 0.4).abs() < 1e-4,
+            "ratio 1 is FLIP and keeps each particle, got {flip_a} {flip_b}"
+        );
+        let (off_a, off_b) = opposing(-1.0);
+        assert!(
+            (off_a - 0.4).abs() < 1e-4 && (off_b + 0.4).abs() < 1e-4,
+            "a negative ratio leaves velocities alone, got {off_a} {off_b}"
+        );
     }
 }

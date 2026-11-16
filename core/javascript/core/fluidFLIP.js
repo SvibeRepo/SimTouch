@@ -9,8 +9,9 @@ export class FluidFLIP {
     overRelaxation = 1.5,
     boundary = null,
     restDensity = 2.0,
+    gasConstant = 2.0,
+    pressureScale = 0,
     particleSystem = null,
-    ...params
   } = {}) {
     this.gridSizeFlip = gridSizeFlip;
     this.h = 1.0 / this.gridSizeFlip;
@@ -20,6 +21,10 @@ export class FluidFLIP {
     this.overRelaxation = overRelaxation;
     this.boundary = boundary;
     this.restDensity = restDensity;
+    this.gasConstant = gasConstant;
+    // Rust keeps this at 0. An undefined scale NaN'd the grid, and `|| 0` on
+    // readback then replaced every particle velocity with 0 at PicFlipRatio=1.
+    this.pressureScale = pressureScale;
     this.particleSystem = particleSystem;
 
     const size = this.gridSizeFlip * this.gridSizeFlip;
@@ -30,6 +35,8 @@ export class FluidFLIP {
     this.pressure = new Array(size).fill(0);
     this.divergence = new Array(size).fill(0);
     this.solid = new Array(size).fill(false);
+    this.prevU = new Array(size).fill(0);
+    this.prevV = new Array(size).fill(0);
 
     this.initializeBoundary();
   }
@@ -50,7 +57,6 @@ export class FluidFLIP {
 
   initializeBoundary() {
     const n = this.gridSizeFlip;
-    const h = this.h;
 
     if (!this.boundary) {
       console.warn("No boundary provided for FluidFLIP initialization");
@@ -66,16 +72,19 @@ export class FluidFLIP {
       const centerY = this.boundary.centerY;
       const radius = this.boundary.getRadius();
 
-      // Mark solid cells outside circle
+      // Solid only when the whole cell is outside the circle. A center test
+      // marks rim cells solid while the particle is still inside.
       for (let i = 0; i < n; i++) {
         for (let j = 0; j < n; j++) {
-          const x = (j + 0.5) * h;
-          const y = (i + 0.5) * h;
-          const dx = x - centerX;
-          const dy = y - centerY;
-          const distSq = dx * dx + dy * dy;
-
-          this.solid[i * n + j] = distSq > radius * radius ? 1 : 0;
+          const minX = j / n;
+          const maxX = (j + 1) / n;
+          const minY = i / n;
+          const maxY = (i + 1) / n;
+          const nearestX = Math.min(maxX, Math.max(minX, centerX));
+          const nearestY = Math.min(maxY, Math.max(minY, centerY));
+          const dx = nearestX - centerX;
+          const dy = nearestY - centerY;
+          this.solid[i * n + j] = dx * dx + dy * dy > radius * radius ? 1 : 0;
         }
       }
     } else if (boundaryType === "RECTANGULAR") {
@@ -86,14 +95,13 @@ export class FluidFLIP {
       const minY = details.minY;
       const maxY = details.maxY;
 
-      // Mark solid cells outside rectangle
       for (let i = 0; i < n; i++) {
         for (let j = 0; j < n; j++) {
-          const x = (j + 0.5) * h;
-          const y = (i + 0.5) * h;
-
-          // Cell is solid if outside the boundary
-          const isOutside = x < minX || x > maxX || y < minY || y > maxY;
+          const cellMinX = j / n;
+          const cellMaxX = (j + 1) / n;
+          const cellMinY = i / n;
+          const cellMaxY = (i + 1) / n;
+          const isOutside = cellMaxX <= minX || cellMinX >= maxX || cellMaxY <= minY || cellMinY >= maxY;
           this.solid[i * n + j] = isOutside ? 1 : 0;
         }
       }
@@ -174,33 +182,21 @@ export class FluidFLIP {
 
       // Get grid velocities
       const center = gy * n + gx;
-      const gridVx = this.u[center] || 0;
-      const gridVy = this.v[center] || 0;
+      const gridVx = this.u[center];
+      const gridVy = this.v[center];
+      const prevVx = this.prevU[center];
+      const prevVy = this.prevV[center];
 
-      // Store old velocities
       const oldVx = velocitiesX[i];
       const oldVy = velocitiesY[i];
+      const alpha = Math.min(1, Math.max(0, this.picFlipRatio));
+      const picVx = gridVx;
+      const picVy = gridVy;
+      const flipVx = oldVx + (gridVx - prevVx);
+      const flipVy = oldVy + (gridVy - prevVy);
 
-
-      if (this.picFlipRatio <= 0) {
-        velocitiesX[i] = oldVx + gridVx;
-        velocitiesY[i] = oldVy + gridVy;
-      }
-      else if (this.picFlipRatio >= 1.0) {
-        // Pure PIC - use grid velocity directly
-        velocitiesX[i] = gridVx;
-        velocitiesY[i] = gridVy;
-      }
-      else {
-        // Blend PIC and FLIP
-        const picVx = gridVx;
-        const picVy = gridVy;
-        const flipVx = oldVx + gridVx;
-        const flipVy = oldVy + gridVy;
-
-        velocitiesX[i] = this.picFlipRatio * picVx + (1 - this.picFlipRatio) * flipVx;
-        velocitiesY[i] = this.picFlipRatio * picVy + (1 - this.picFlipRatio) * flipVy;
-      }
+      velocitiesX[i] = (1 - alpha) * picVx + alpha * flipVx;
+      velocitiesY[i] = (1 - alpha) * picVy + alpha * flipVy;
       velocitiesX[i] = Math.max(-maxVelocity, Math.min(maxVelocity, velocitiesX[i]));
       velocitiesY[i] = Math.max(-maxVelocity, Math.min(maxVelocity, velocitiesY[i]));
     }
@@ -209,6 +205,24 @@ export class FluidFLIP {
   solveIncompressibility() {
     const n = this.gridSizeFlip;
     const h = this.h;
+
+    for (let i = 0; i < n * n; i++) {
+      this.prevU[i] = this.u[i];
+      this.prevV[i] = this.v[i];
+    }
+
+    // Identity PIC: the splatted cell average is the grid velocity. Applying
+    // the pressure gradient needs a real pressure scale; the old undefined
+    // scale wrote NaN, and the gas clamp then damped whatever survived.
+    if (!(this.pressureScale > 0)) {
+      for (let i = 0; i < n * n; i++) {
+        if (this.solid[i]) {
+          this.u[i] = 0;
+          this.v[i] = 0;
+        }
+      }
+      return;
+    }
 
     // Compute divergence
     for (let i = 0; i < n; i++) {

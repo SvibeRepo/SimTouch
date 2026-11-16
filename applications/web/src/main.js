@@ -58,7 +58,7 @@ export class Main {
       boundary: {
         mode: "BOUNCE",
         shape: "CIRCULAR",
-        scale: 1.03,
+        scale: 1,
         damping: 0.8,
         restitution: 1.0,
         repulsion: 0,
@@ -108,7 +108,7 @@ export class Main {
         symmetryAmount: 0.0,
         phase: 0.0,
         phaseSpeed: -1,
-        blurAmount: 0.8,
+        blurAmount: 0,
         _displayBiasAccelX: 0,
         _displayBiasAccelY: 0
       },

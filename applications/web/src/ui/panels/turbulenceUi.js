@@ -274,13 +274,13 @@ export class TurbulenceUi extends BaseUi {
       "Diamonds": "diamonds",
       "Ripples": "ripples",
       "Dots": "dots",
-      "Voronoi": "voronoi",
+      "Water": "water",
+      "Classic Drop": "classicdrop",
       "Cells": "cells",
+      "Voronoi": "voronoi",
       "Fractal": "fractal",
       "Vortex": "vortex",
-      "Bubbles": "bubbles",
-      "Water": "water",
-      "Classic Drop": "classicdrop"
+      "Bubbles": "bubbles"
     };
 
     // Pattern style selector - bind to simParams
@@ -295,13 +295,13 @@ export class TurbulenceUi extends BaseUi {
         "Diamonds": "diamonds",
         "Ripples": "ripples",
         "Dots": "dots",
-        "Voronoi": "voronoi",
+        "Water": "water",
+        "Classic Drop": "classicdrop",
         "Cells": "cells",
+        "Voronoi": "voronoi",
         "Fractal": "fractal",
         "Vortex": "vortex",
-        "Bubbles": "bubbles",
-        "Water": "water",
-        "Classic Drop": "classicdrop"
+        "Bubbles": "bubbles"
       })
       .onChange((value) => {
         eventBus.emit('uiControlChanged', { paramPath: 'turbulence.patternStyle', value });

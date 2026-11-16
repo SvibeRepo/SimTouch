@@ -406,7 +406,7 @@ fn classic_drop(x: f32, y: f32, cx: f32, cy: f32, p: &Params, time: f32) -> f32 
         }
     }
     let calm = (x * freq * 0.2 + y * freq * 0.3 + phase_time * 0.2).sin() * 0.1;
-    (value + calm) * 0.7
+    ((value + calm) * 0.7).min(1.0)
 }
 
 fn apply_phase(noise: f32, p: &Params, time: f32) -> f32 {

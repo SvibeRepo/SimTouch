@@ -2,7 +2,9 @@
 
 Direction for the next steps. When `START_HERE.md`, `doc/migration/`, `doc/SIMTOUCHCORE.md`, `core/cpp/doc/NEXT.md`, or a plan under `.superpowers/plans/` disagrees with this file about what to build next, follow this file.
 
-## Now (2026-11-15, order done)
+## Now (2026-11-16)
+
+The slice order below is done. The queue is the Next section.
 
 `master` is the Rust layout (`2dc08f1`). Branch `JavaScript` at `364fdc7` keeps the pre-merge tree. Branch `JavaRustCpp` runs both ticks: `particleSystem.step()` when `sim.engine` is `js`, and `rustCore.step(dt)` otherwise. The default engine is `rust`.
 
@@ -13,6 +15,21 @@ The shared slice chart is `spec/fields.json` (33 fields). Its `index` is the sha
 `fixtures/noise-step.json` is one interior step with pull 0.5 on checkerboard (pattern 0), frequency 2, scale 1, and speed 0. Contrast, separation, warp, and symmetry are 0. Blur and pattern offset stay off the chart; the runners pin both to 0. The same compare command steps it. Positions match within `1e-5`. Rust samples that field at the particle. The 128² grid remains the sample when blur is non-zero. Each cell is the phase sample, then the JavaScript ring (center plus 16 samples, or 4 for Classic Drop, radius `0.05 * blur`) is gathered from that grid. Pull reshape, contrast, and quantize (T-Quantize / separation) run on each sample before the gather only when that slider is off zero. Blur 0 leaves the phase sample alone. Other pattern styles stay uncompared.
 
 On `core/cpp`, the sample follows the same order: blur 0 is the phase sample; above 0 the ring reshapes with pullReshape, contrast, and quantize only when each slider is off zero. The library default blur is 0.8. This fixture pins blur to 0, so that path stays uncompared.
+
+## Next (2026-11-16)
+
+The checkerboard compare is green. The next fixture is boundary contact: one step on the same compare where a particle meets the circular wall, so bounce, restitution, damping, and repulsion run. Mode stays bounce and shape stays circle. The wall has to change the velocity (`expectMotion` on the fixture). Record that fixture here when positions match within `1e-5`.
+
+The plan after that fixture is the developer-preset projection. Lab JSON (panels, modulators, string enums) projects onto the existing suit mask. The mask, the rectangular domain, the Rust pack slots, and today's `STP1` bag stay as they are.
+
+Still later:
+
+- A step fixture for pattern styles after checkerboard. The index list now matches the lab on Rust and C++: checkerboard, waves, spiral, grid, circles, diamonds, ripples, dots, water, classic drop, cells, voronoi, fractal, vortex, bubbles.
+- Contrast above 0, separation, blur, domain warp, and symmetry. The blur path above is real and stays uncompared. Pattern offset stays off the chart.
+- A Rust 128² grid that matches a direct sample to `1e-5`. With blur at 0, Rust samples at the particle.
+- Pulse, microphone bands, organic rules, Voronoi, a new `STP1` layout, Phase2, and the suit `/sim` page.
+
+The two green fixtures also leave these chart paths idle: warp mode, turbulence speed and rotation, affect-scale and the scale field, and one step where collision and pull both run. A second step on a green fixture is the check that bias advance matches. Those wait behind the boundary-contact fixture and the preset plan.
 
 ## Products
 
@@ -26,6 +43,6 @@ Done (2026-11-15).
 
 1. **JavaScript tick.** Done. The known-good JavaScript tree is branch `JavaScript` at `364fdc7`. On `JavaRustCpp`, that tick is in `core/javascript`, `rustCore.js` is kept, and it runs when `sim.engine === "js"`. The lab steps JavaScript and Rust from the engine switch.
 2. **Shared field chart.** Done. `spec/fields.json` is one name and index for Rust, JavaScript, and `core/cpp` for gravity, damping, collision, boundary, and turbulence.
-3. **Shared slice.** Done. `fixtures/gravity-step.json` steps the JavaScript tick, the Rust tick, and `core/cpp`. Positions match within `1e-5`.
+3. **Shared slice.** Done. `fixtures/gravity-step.json` and `fixtures/noise-step.json` step the JavaScript tick, the Rust tick, and `core/cpp`. Positions match within `1e-5`. The queue is the Next section.
 
 Phase2 (`applications/embedded/phase2`) stays its own firmware. Library work lands in `core/cpp`. Phase1 stays the display slave of the lab.

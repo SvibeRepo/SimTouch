@@ -141,7 +141,7 @@ function compare(file) {
   ps.maxVelocity = fixture.maxVelocity;
   ps.particleRadius = fixture.particleRadius;
   ps.particleRadii.fill(fixture.particleRadius);
-  ps.picFlipRatio = 0;
+  ps.picFlipRatio = -1;
 
   applyFields(ps, boundary, turbulence, fields);
   turbulence.blurAmount = 0;

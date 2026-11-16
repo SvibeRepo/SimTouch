@@ -365,8 +365,8 @@ export class RandomizerUi extends BaseUi {
             // Get available pattern styles
             const patternStyles = [
               "checkerboard", "waves", "spiral", "grid", "circles",
-              "diamonds", "ripples", "dots", "voronoi", "cells",
-              "fractal", "vortex", "bubbles", "water", "classicdrop"
+              "diamonds", "ripples", "dots", "water", "classicdrop",
+              "cells", "voronoi", "fractal", "vortex", "bubbles"
             ];
 
             // Get the current value
