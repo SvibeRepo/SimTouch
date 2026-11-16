@@ -236,9 +236,9 @@ export class TurbulenceUi extends BaseUi {
       scaleRangeFolder.close();
     }
 
-    this.turbulenceMinScaleController = scaleRangeFolder.add(turbulenceParams, "minScale", 0.005, 0.015, 0.001).name("T-Min Size")
+    this.turbulenceMinScaleController = scaleRangeFolder.add(turbulenceParams, "minScale", 0.002, 0.015, 0.001).name("T-Min Size")
       .onChange(value => eventBus.emit('uiControlChanged', { paramPath: 'turbulence.minScale', value }));
-    this.turbulenceMaxScaleController = scaleRangeFolder.add(turbulenceParams, "maxScale", 0.015, 0.03, 0.001).name("T-Max Size")
+    this.turbulenceMaxScaleController = scaleRangeFolder.add(turbulenceParams, "maxScale", 0.005, 0.03, 0.001).name("T-Max Size")
       .onChange(value => eventBus.emit('uiControlChanged', { paramPath: 'turbulence.maxScale', value }));
 
     // Add geometric pattern controls folder

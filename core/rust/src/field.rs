@@ -154,8 +154,18 @@ fn sample_blurred(
     sum / (n + 1.0) * 2.0 - 1.0
 }
 
+/// T-Pull steers Classic Drop. Reshape stays off so the slider does not
+/// repaint the rings while it moves.
+fn pull_reshape(p: &Params) -> f32 {
+    if p.turb_pattern == pattern::CLASSIC_DROP {
+        0.0
+    } else {
+        p.turb_pull
+    }
+}
+
 fn needs_reshape(p: &Params) -> bool {
-    p.turb_pull != 0.0 || p.turb_contrast > 0.0 || p.turb_separation > 0.0
+    pull_reshape(p) != 0.0 || p.turb_contrast > 0.0 || p.turb_separation > 0.0
 }
 
 /// Phase sample in [0, 1], with pullReshape / contrast / quantize only when each is off zero.
@@ -400,26 +410,25 @@ fn classic_drop(x: f32, y: f32, cx: f32, cy: f32, p: &Params, time: f32) -> f32 
 }
 
 fn apply_phase(noise: f32, p: &Params, time: f32) -> f32 {
+    let amplitude = if p.turb_speed > 0.0 && p.turb_amplitude_enabled {
+        let dynamic = 0.5 + 0.5 * (time * p.turb_speed * p.turb_amplitude_speed).sin();
+        p.turb_amplitude * dynamic
+    } else {
+        p.turb_amplitude
+    };
     let phase_offset = if p.turb_speed > 0.0 && p.turb_phase_speed.abs() > 0.0 {
         time * p.turb_speed * p.turb_phase_speed.abs() * p.turb_phase_speed.signum()
             + p.turb_phase * TAU
     } else {
         p.turb_phase * TAU
     };
-    let mut n = (noise * TAU + phase_offset).sin();
-    if p.turb_speed > 0.0 && p.turb_amplitude_enabled {
-        let dynamic = 0.5 + 0.5 * (time * p.turb_speed * p.turb_amplitude_speed).sin();
-        n *= p.turb_amplitude * dynamic;
-    } else {
-        n *= p.turb_amplitude;
-    }
-    n
+    (noise * TAU + phase_offset).sin() * amplitude
 }
 
 /// pullReshape, bandpass contrast, then quantize (T-Quantize / turb_separation).
 /// Content elements match JS `applyContrast` / C++ `reshape01`.
 pub fn apply_contrast(mut value: f32, p: &Params) -> f32 {
-    let pull_reshape = p.turb_pull;
+    let pull_reshape = pull_reshape(p);
     let contrast_value = p.turb_contrast;
     let quantize = p.turb_separation;
     if pull_reshape == 0.0 && contrast_value <= 0.0 && quantize <= 0.0 {
@@ -527,9 +536,16 @@ pub fn sample_force(
         }
     };
     let n1 = sample(x, y);
-    // pullForce steers particles; pullReshape bends the sample in apply_contrast.
+    // Pull follows the gradient, then normalizes it, so a shallow slope shoves
+    // as hard as a ring. Classic Drop's folded surface is that slope. Steer
+    // only where a ripple is present. Reshape stays off, so the slider does
+    // not repaint the rings.
     let pull_force = p.turb_pull;
-    if p.turb_affect_position && pull_force != 0.0 {
+    let on_ripple = p.turb_pattern != pattern::CLASSIC_DROP || {
+        let (px, py, cx, cy) = process_xy(x, y, p, time, rotation, bias_x, bias_y);
+        pattern_value(p.turb_pattern, px, py, cx, cy, p, time) > 0.08
+    };
+    if p.turb_affect_position && pull_force != 0.0 && on_ripple {
         // Match the JS epsilon so soft grids still produce usable gradients.
         let eps = 0.01;
         let gx = (sample(x + eps, y) - n1) / eps;
@@ -809,6 +825,101 @@ mod tests {
             worst < grid_tol,
             "gathered blur at ({}, {}) misses the ring by {worst} (limit {grid_tol})",
             worst_at.0, worst_at.1
+        );
+    }
+
+    /// Rings stay the phase fold of the drop. T-Pull steers on a ripple and
+    /// leaves still water alone, and the slider does not repaint the noise.
+    #[test]
+    fn classic_drop_pull_follows_rings_without_repainting() {
+        let mut p = Params::default();
+        p.turb_pattern = pattern::CLASSIC_DROP;
+        p.turb_freq = 2.0;
+        p.turb_speed = 0.0;
+        p.turb_scale = 3.0;
+        p.turb_blur = 0.8;
+        p.turb_phase = 0.0;
+        p.turb_phase_speed = -1.0;
+        p.turb_amplitude = 1.0;
+        p.turb_offset_x = 0.0;
+        p.turb_offset_y = 0.0;
+        p.turb_pull = 1.0;
+        p.turb_contrast = 0.0;
+        p.turb_separation = 0.0;
+        p.turb_affect_position = true;
+        p.turb_strength = 4.0;
+        p.boundary_shape = crate::params::boundary_shape::CIRCULAR;
+
+        let mut neg = vec![0.0_f32; FIELD_AREA];
+        let mut pos = vec![0.0_f32; FIELD_AREA];
+        let mut aux = vec![0.0_f32; FIELD_AREA];
+        p.turb_pull = -1.0;
+        fill_field(&mut neg, &mut aux, &p, 0.0, 0.0, 0.0, 0.0);
+        p.turb_pull = 1.0;
+        fill_field(&mut pos, &mut aux, &p, 0.0, 0.0, 0.0, 0.0);
+        let mut worst = 0.0_f32;
+        for i in 0..FIELD_AREA {
+            worst = worst.max((neg[i] - pos[i]).abs());
+        }
+        assert!(
+            worst < 1e-4,
+            "T-Pull rewrites classic drop noise by {worst}"
+        );
+
+        p.turb_pattern = pattern::CHECKERBOARD;
+        p.turb_pull = -1.0;
+        fill_field(&mut neg, &mut aux, &p, 0.0, 0.0, 0.0, 0.0);
+        p.turb_pull = 1.0;
+        fill_field(&mut pos, &mut aux, &p, 0.0, 0.0, 0.0, 0.0);
+        let mut board = 0.0_f32;
+        for i in 0..FIELD_AREA {
+            board = board.max((neg[i] - pos[i]).abs());
+        }
+        assert!(
+            board > 0.05,
+            "pull reshape left checkerboard unchanged, diff {board}"
+        );
+
+        p.turb_pattern = pattern::CLASSIC_DROP;
+        p.turb_blur = 0.0;
+        p.turb_pull = 1.0;
+        let n = 24;
+        let dt = 1.0;
+        let mut site = (0.5_f32, 0.5_f32);
+        let mut best = 0.0_f32;
+        let mut quiet = 0.0_f32;
+        let mut saw_ripple = false;
+        let mut saw_still = false;
+        for iy in 1..n - 1 {
+            for ix in 1..n - 1 {
+                let x = (ix as f32 + 0.5) / n as f32;
+                let y = (iy as f32 + 0.5) / n as f32;
+                let (px, py, cx, cy) = process_xy(x, y, &p, 0.0, 0.0, 0.0, 0.0);
+                let raw = pattern_value(pattern::CLASSIC_DROP, px, py, cx, cy, &p, 0.0);
+                let (vx, vy, _) = sample_force(&[], x, y, 0.0, 0.0, dt, &p, 0.0, 0.0, 0.0, 0.0);
+                let speed = (vx * vx + vy * vy).sqrt();
+                if raw > 0.08 {
+                    saw_ripple = true;
+                    if speed > best {
+                        best = speed;
+                        site = (x, y);
+                    }
+                } else if raw < 0.05 {
+                    saw_still = true;
+                    quiet = quiet.max(speed);
+                }
+            }
+        }
+        assert!(saw_ripple && saw_still, "need a ripple and still water in the sample");
+        assert!(best > 1.0, "T-Pull does not steer the ring, max speed {best}");
+        assert!(quiet < 1e-4, "T-Pull still shoves still water at {quiet}");
+        let (ax, ay, _) = sample_force(&[], site.0, site.1, 0.0, 0.0, dt, &p, 0.0, 0.0, 0.0, 0.0);
+        p.turb_pull = -0.25;
+        let (bx, by, _) = sample_force(&[], site.0, site.1, 0.0, 0.0, dt, &p, 0.0, 0.0, 0.0, 0.0);
+        let same_way = ax * bx + ay * by;
+        assert!(
+            same_way < 0.0,
+            "negative T-Pull should reverse the shove, dot {same_way}"
         );
     }
 }

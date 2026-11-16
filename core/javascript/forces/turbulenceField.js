@@ -416,7 +416,10 @@ export class TurbulenceField {
   applyContrast(value, time) {
     // Store original value for debugging
     const originalValue = value;
-    const pullReshape = this.pullFactor;
+    // T-Pull steers Classic Drop. Reshape stays off so the slider does not
+    // repaint the rings while it moves.
+    const pattern = typeof this.patternStyle === 'string' ? this.patternStyle.toLowerCase() : 'checkerboard';
+    const pullReshape = pattern === "classicdrop" ? 0 : this.pullFactor;
     const quantize = this.separation;
     const contrastValue = this.contrast;
     // Each pass is identity at zero — skip the whole reshape when all are idle.
@@ -662,7 +665,6 @@ export class TurbulenceField {
         }
 
         // Add some subtle background waves for a water surface effect
-        // Also use phaseTime for consistent animation
         const calmWater = Math.sin(x * freq * 0.2 + y * freq * 0.3 + phaseTime * 0.2) * 0.1;
         patternValue += calmWater;
 
@@ -764,6 +766,19 @@ export class TurbulenceField {
     return patternValue;
   }
 
+  applyPhase(noise, time) {
+    const amplitude = (this.speed > 0 && this.amplitudeEnabled)
+      ? this.amplitude * (0.5 + 0.5 * Math.sin(time * this.speed * this.amplitudeSpeed))
+      : this.amplitude;
+    let phaseOffset;
+    if (this.speed > 0 && Math.abs(this.phaseSpeed) > 0) {
+      phaseOffset = time * this.speed * Math.abs(this.phaseSpeed) * Math.sign(this.phaseSpeed) + this.phase * Math.PI * 2;
+    } else {
+      phaseOffset = this.phase * Math.PI * 2;
+    }
+    return Math.sin(noise * Math.PI * 2 + phaseOffset) * amplitude;
+  }
+
   // Completely redesigned noise2D function that supports geometric patterns
   noise2D(x, y, time = this.time, applyBlur = false) {
     try {
@@ -781,32 +796,7 @@ export class TurbulenceField {
       let patternStyleStr = typeof this.patternStyle === 'string' ? this.patternStyle.toLowerCase() : 'checkerboard';
       let noise = this.calculatePattern(patternStyleStr, processedX, processedY, procCenterX, procCenterY);
 
-      // 3. Apply phase offset (time-influenced or static)
-      if (this.speed > 0) {
-        // When T-Speed > 0, use speed controls for animation
-        if (Math.abs(this.phaseSpeed) > 0) {
-          const phaseOffset = time * this.speed * Math.abs(this.phaseSpeed) * Math.sign(this.phaseSpeed) + this.phase * Math.PI * 2;
-          noise = Math.sin(noise * Math.PI * 2 + phaseOffset);
-        } else {
-          // Apply static phase when speed is 0
-          const phaseOffset = this.phase * Math.PI * 2;
-          noise = Math.sin(noise * Math.PI * 2 + phaseOffset);
-        }
-
-        if (this.amplitudeEnabled) {
-          const dynamicAmplitude = 0.5 + 0.5 * Math.sin(time * this.speed * this.amplitudeSpeed);
-          noise *= this.amplitude * dynamicAmplitude;
-        } else {
-          // Apply static amplitude even when time-driven amplitude is disabled
-          noise *= this.amplitude;
-        }
-      } else {
-        // When T-Speed = 0, apply static values
-        const phaseOffset = this.phase * Math.PI * 2;
-        noise = Math.sin(noise * Math.PI * 2 + phaseOffset);
-        // Apply static amplitude
-        noise *= this.amplitude;
-      }
+      noise = this.applyPhase(noise, time);
 
       // // 4. Apply contrast and separation as post-processing
       // noise = this.applyContrast((noise + 1) * 0.5, time);
@@ -881,27 +871,7 @@ export class TurbulenceField {
       // Calculate pattern
       let sampleNoise = this.calculatePattern(patternStyleStr, px, py, centerX, centerY);
 
-      // Apply phase and amplitude
-      if (this.speed > 0) {
-        if (Math.abs(this.phaseSpeed) > 0) {
-          const phaseOffset = time * this.speed * Math.abs(this.phaseSpeed) * Math.sign(this.phaseSpeed) + this.phase * Math.PI * 2;
-          sampleNoise = Math.sin(sampleNoise * Math.PI * 2 + phaseOffset);
-        } else {
-          const phaseOffset = this.phase * Math.PI * 2;
-          sampleNoise = Math.sin(sampleNoise * Math.PI * 2 + phaseOffset);
-        }
-
-        if (this.amplitudeEnabled) {
-          const dynamicAmplitude = 0.5 + 0.5 * Math.sin(time * this.speed * this.amplitudeSpeed);
-          sampleNoise *= this.amplitude * dynamicAmplitude;
-        } else {
-          sampleNoise *= this.amplitude;
-        }
-      } else {
-        const phaseOffset = this.phase * Math.PI * 2;
-        sampleNoise = Math.sin(sampleNoise * Math.PI * 2 + phaseOffset);
-        sampleNoise *= this.amplitude;
-      }
+      sampleNoise = this.applyPhase(sampleNoise, time);
 
       // Apply contrast to the sample (convert to 0-1 range first)
       sampleNoise = this.applyContrast((sampleNoise + 1) * 0.5, time);
@@ -1041,14 +1011,20 @@ export class TurbulenceField {
       }
 
       // pullReshape bends the sample inside applyContrast. pullForce steers
-      // particles along the gradient from the same T-Pull slider.
-
-      // Calculate noise value for particle position
-      // Always apply blur for simulation
+      // particles along the gradient from the same T-Pull slider. Classic Drop
+      // normalizes every slope into a full shove, including the faint surface,
+      // so the shove runs only where a ripple is present.
       const n1 = this.noise2D(x, y, this.time, true);
       const pullForce = this.pullFactor;
+      const patternName = typeof this.patternStyle === 'string' ? this.patternStyle.toLowerCase() : 'checkerboard';
+      let onRipple = true;
+      if (patternName === "classicdrop") {
+        const { nx, ny } = this._getCorrectedNoiseCoordinates(x, y);
+        const [px, py, cx, cy] = this.processCoordinates(nx, ny, this.time);
+        onRipple = this.calculatePattern(patternName, px, py, cx, cy) > 0.08;
+      }
 
-      if (this.affectPosition) {
+      if (this.affectPosition && onRipple) {
         if (pullForce > 0) {
           // PULL MODE: Move toward noise peaks (positive pullForce)
           // Sample additional points to calculate gradient
