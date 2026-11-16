@@ -3,7 +3,7 @@
 use crate::collision::CollisionBins;
 use crate::field::{self, FIELD_AREA};
 use crate::flip::FlipGrid;
-use crate::grid::Grid;
+use crate::grid::{Grid, MODE_NOISE};
 use crate::organic;
 use crate::params::{id, Params, PARAM_COUNT};
 use crate::voronoi;
@@ -46,6 +46,9 @@ pub struct Engine {
     org_link_count: Vec<u16>,
     org_links: Vec<u16>,
     grid: Grid,
+    /// Active lab grid mode. Used to skip the 128² fill when turbulence is idle
+    /// and the mode is not NOISE. Set from the host before step.
+    grid_mode: u32,
 }
 
 impl Engine {
@@ -87,7 +90,12 @@ impl Engine {
             org_link_count: vec![0; capacity],
             org_links: vec![0; capacity * organic::MAX_LINKS],
             grid: Grid::new(capacity),
+            grid_mode: MODE_NOISE,
         }
+    }
+
+    pub fn set_grid_mode(&mut self, mode: u32) {
+        self.grid_mode = mode;
     }
 
     pub fn set_count(&mut self, count: usize) {
@@ -143,15 +151,20 @@ impl Engine {
                 self.bias_y += self.bias_vy * dt * 60.0;
             }
         }
-        field::fill_field(
-            &mut self.field,
-            &mut self.field_aux,
-            &self.params,
-            self.time,
-            self.rotation,
-            self.bias_x,
-            self.bias_y,
-        );
+        let turb_on = self.params.turb_affect_position
+            || self.params.turb_affect_scale
+            || self.params.turb_scale_field;
+        if turb_on || self.grid_mode == MODE_NOISE {
+            field::fill_field(
+                &mut self.field,
+                &mut self.field_aux,
+                &self.params,
+                self.time,
+                self.rotation,
+                self.bias_x,
+                self.bias_y,
+            );
+        }
         if self.params.voronoi_strength > 0.0 {
             let cells = self.params.voronoi_cells.clamp(2, voronoi::MAX_CELLS);
             if cells != self.vor_count {
@@ -398,6 +411,7 @@ impl Engine {
         affect_scale: bool,
         collision_grid: u32,
     ) {
+        self.grid_mode = mode;
         let count = self.count;
         self.grid.eval(
             mode,

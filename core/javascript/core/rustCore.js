@@ -387,6 +387,10 @@ export class RustCore {
     p[PARAM.ORGANIC_CHAIN_BASE] = num(scales.Chain?.base, 1.5);
 
     this.core.set_params(p);
+    const gridMode = main.gridGenRenderer?.renderModes?.modeId?.();
+    if (typeof gridMode === "number" && this.core.set_grid_mode) {
+      this.core.set_grid_mode(gridMode);
+    }
   }
 
   step(dt) {

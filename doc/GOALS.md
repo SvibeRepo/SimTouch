@@ -10,9 +10,9 @@ The shared slice chart is `spec/fields.json` (33 fields). Its `index` is the sha
 
 `fixtures/gravity-step.json` is one interior step. Two particles overlap, so collision runs. Turbulence affect-position is on (decay and a direction bias). Pull is 0, so the noise samplers do not change velocity. `node --import ./tools/lab-register.mjs tools/compare-slice.mjs` steps the JavaScript tick, the Rust tick, and `core/cpp`. Positions match within `1e-5`.
 
-`fixtures/noise-step.json` is one interior step with pull 0.5 on checkerboard (pattern 0), frequency 2, scale 1, and speed 0. Contrast, separation, warp, and symmetry are 0. Blur and pattern offset stay off the chart; the runners pin both to 0. The same compare command steps it. Positions match within `1e-5`. Rust samples that field at the particle; the 128² grid remains the sample when contrast, separation, or blur is non-zero. Other pattern styles stay uncompared.
+`fixtures/noise-step.json` is one interior step with pull 0.5 on checkerboard (pattern 0), frequency 2, scale 1, and speed 0. Contrast, separation, warp, and symmetry are 0. Blur and pattern offset stay off the chart; the runners pin both to 0. The same compare command steps it. Positions match within `1e-5`. Rust samples that field at the particle. The 128² grid remains the sample when blur is non-zero. Each cell is the phase sample, then the JavaScript ring (center plus 16 samples, or 4 for Classic Drop, radius `0.05 * blur`) is gathered from that grid. Pull reshape, contrast, and quantize (T-Quantize / separation) run on each sample before the gather only when that slider is off zero. Blur 0 leaves the phase sample alone. Other pattern styles stay uncompared.
 
-On `core/cpp`, pull does not reshape the noise sample. The lab still reshapes that sample when blur is above 0. The library default blur is 0.8. This fixture pins blur to 0, so that path stays uncompared.
+On `core/cpp`, the sample follows the same order: blur 0 is the phase sample; above 0 the ring reshapes with pullReshape, contrast, and quantize only when each slider is off zero. The library default blur is 0.8. This fixture pins blur to 0, so that path stays uncompared.
 
 ## Products
 

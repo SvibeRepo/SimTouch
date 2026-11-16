@@ -451,7 +451,7 @@ export class ParticleSystem {
         y: posY ? posY[i] : this.particles[i * 2 + 1],
         vx: this.velocitiesX[i],
         vy: this.velocitiesY[i],
-        // Use the determined rawRadius for size calculation
+        // renderedSize for density: rawRadius * renderScale (not a diameter).
         size: rawRadius * this.renderScale,
       };
       if (i < 9 && this.logTick.GetTick() && this.db) {

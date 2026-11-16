@@ -197,14 +197,15 @@ impl Grid {
     }
 
     fn eval_noise(&mut self, width: f32, height: f32, field: &[f32]) {
-        const TUNE: f32 = 2.2;
+        const NOISE_TUNE: f32 = 2.2;
         for i in 0..self.count {
             let cell = self.cells[i];
             let cx = cell.x + cell.w * 0.5;
             let cy = cell.y + cell.h * 0.5;
             let nx = cx / width;
             let ny = 1.0 - cy / height;
-            self.values[i] = bilinear_sample(field, FIELD_N, nx, ny) * TUNE;
+            let noise_value = bilinear_sample(field, FIELD_N, nx, ny);
+            self.values[i] = noise_value * NOISE_TUNE;
         }
     }
 
@@ -290,12 +291,15 @@ impl Grid {
                         let limit = min_dist + radius;
                         if dist_sq < limit * limit {
                             let overlap = (min_dist - dist_sq.sqrt()).max(0.0);
-                            total += (overlap / min_dist) * TUNE;
+                            // tune_in_pair and tune_after_avg are both TUNE (1).
+                            let tune_in_pair = TUNE;
+                            total += (overlap / min_dist) * tune_in_pair;
                         }
                     }
                 }
             }
-            self.values[i] = (total / npart as f32) * TUNE;
+            let tune_after_avg = TUNE;
+            self.values[i] = (total / npart as f32) * tune_after_avg;
         }
     }
 
@@ -313,8 +317,8 @@ impl Grid {
     ) {
         for i in 0..count {
             let raw = if affect_scale { radii[i] } else { particle_radius };
-            // getParticles size = rawRadius * renderScale; density uses size / 8.
-            let pr = raw * render_scale / 8.0;
+            // renderedSize = rawRadius * renderScale; densityRadius = renderedSize / 8.
+            let density_radius = raw * render_scale / 8.0;
             let (px, py) = pixel(x[i], y[i], width, height);
             for c in 0..self.count {
                 let cell = self.cells[c];
@@ -322,9 +326,11 @@ impl Grid {
                 if cell_area <= 0.0 {
                     continue;
                 }
-                let overlap = circle_rect_overlap(px, py, pr, cell.x, cell.y, cell.w, cell.h);
-                if overlap > 0.0 {
-                    self.values[c] += shaped_coverage(overlap, cell_area, 0.1);
+                let overlap_area =
+                    circle_rect_overlap(px, py, density_radius, cell.x, cell.y, cell.w, cell.h);
+                if overlap_area > 0.0 {
+                    const DENSITY_GAIN: f32 = 0.1;
+                    self.values[c] += shaped_coverage(overlap_area, cell_area, DENSITY_GAIN);
                 }
             }
         }
@@ -685,10 +691,12 @@ fn zero_slice(buf: &mut [f32], n: usize) {
     }
 }
 
-fn shaped_coverage(overlap: f32, cell_area: f32, gain: f32) -> f32 {
-    let mut weight = (overlap / cell_area) * 100.0;
-    weight = (weight / 100.0).powf(1.5) * 100.0;
-    (weight * gain).min(100.0)
+/// Density content elements match JS `calculateDensity`:
+/// coveragePercent → shapedCoverage → densityValue = min(shapedCoverage * densityGain, 100).
+fn shaped_coverage(overlap_area: f32, cell_area: f32, density_gain: f32) -> f32 {
+    let coverage_percent = (overlap_area / cell_area) * 100.0;
+    let shaped_coverage = (coverage_percent / 100.0).powf(1.5) * 100.0;
+    (shaped_coverage * density_gain).min(100.0)
 }
 
 fn js_sign(v: f32) -> f32 {

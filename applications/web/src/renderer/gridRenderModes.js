@@ -383,16 +383,19 @@ export class GridRenderModes {
               const minDist = p1.radius + p2.radius;
 
               if (distSq < (minDist + radius) * (minDist + radius)) {
-                // Calculate overlap-based proximity
                 const overlap = Math.max(0, minDist - Math.sqrt(distSq));
-                totalProximity += (overlap / minDist) * tune;
+                // tuneInPair and tuneAfterAvg are both `tune` (1). Kept separate
+                // so a later change cannot land on only one multiply.
+                const tuneInPair = tune;
+                totalProximity += (overlap / minDist) * tuneInPair;
               }
             });
           });
         });
 
+        const tuneAfterAvg = tune;
         this.targetValues[cell.index] =
-          (totalProximity / particlesInCell.length) * tune;
+          (totalProximity / particlesInCell.length) * tuneAfterAvg;
       }
     });
 
@@ -417,9 +420,9 @@ export class GridRenderModes {
       const px = particle.x * this.dimensions.renderWidth;
       const py = (1 - particle.y) * this.dimensions.renderHeight;
 
-      // Use the rendered size (diameter) from getParticles()
-      const renderedDiameter = particle.size; // Already scaled by renderScale (e.g., 40 for base 0.01)
-      const particleRadius = renderedDiameter / 8; // Convert to radius (e.g., 20 pixels)
+      // getParticles size = rawRadius * renderScale (not a diameter).
+      const renderedSize = particle.size;
+      const densityRadius = renderedSize / 8;
 
       // Find all cells that this particle overlaps with using circle-rectangle overlap
       this.gridMap.forEach((cell) => {
@@ -429,7 +432,7 @@ export class GridRenderModes {
         const overlapArea = this.calculateCircleRectOverlap(
           px,
           py,
-          particleRadius,
+          densityRadius,
           x,
           y,
           width,
@@ -437,19 +440,11 @@ export class GridRenderModes {
         );
 
         if (overlapArea > 0) {
-          const particleArea = Math.PI * particleRadius * particleRadius;
-          let densityValue;
-
-          // Calculate the actual percentage of cell covered by the particle
-          densityValue = (overlapArea / cellArea) * 100;
-
-          // Apply a smoother scaling to the density value
-          // This creates a more gradual transition from 0 to 100%
-          densityValue = Math.pow(densityValue / 100, 1.5) * 100;
-
-          // Scale the density to match the grid's visualization range
-          // We'll use a smaller scale for density to avoid saturation
-          densityValue = Math.min(densityValue * 0.1, 100);
+          // Same content elements as Rust shaped_coverage / eval_density.
+          const coveragePercent = (overlapArea / cellArea) * 100;
+          const shapedCoverage = Math.pow(coveragePercent / 100, 1.5) * 100;
+          const densityGain = 0.1;
+          const densityValue = Math.min(shapedCoverage * densityGain, 100);
 
           this.targetValues[cell.index] += densityValue;
         }
@@ -1001,7 +996,7 @@ export class GridRenderModes {
     }
 
     const turbulence = particleSystem.turbulence;
-    const tune = 2.2;
+    const noiseTune = 2.2;
 
     // Calculate noise value for each cell center
     this.gridMap.forEach((cell) => {
@@ -1015,8 +1010,7 @@ export class GridRenderModes {
       // Get noise value at cell center with blur applied
       const noiseValue = turbulence.noise2D(nx, ny, turbulence.time, true);
 
-      // Store raw noise value (0-1) without scaling
-      this.targetValues[cell.index] = noiseValue * tune;
+      this.targetValues[cell.index] = noiseValue * noiseTune;
     });
 
     return this.targetValues;

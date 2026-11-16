@@ -1,5 +1,8 @@
-//! Turbulence on a fixed grid. Patterns, contrast, symmetry, domain warp, and blur
-//! run as passes over the grid. Particles only bilinear-sample the result.
+//! Turbulence on a fixed grid. Patterns, contrast, symmetry, and domain warp run
+//! as passes over the grid. Blur 0 stores the phase sample and skips contrast,
+//! which is the soft edge JavaScript shows for free. Above 0, contrast runs on
+//! that sample and the JavaScript ring is gathered from the raster, still one
+//! analytic sample per cell. Particles only bilinear-sample the result.
 
 use crate::params::{pattern, Params};
 
@@ -43,6 +46,20 @@ pub fn fill_field(
     if field.len() < FIELD_AREA || aux.len() < FIELD_AREA {
         return;
     }
+    if p.turb_blur > 0.0 {
+        // pullReshape, contrast, and quantize run on each sample before the
+        // average when that slider is off zero. Rasterize once, then gather.
+        for row in 0..FIELD_N {
+            for col in 0..FIELD_N {
+                let u = (col as f32 + 0.5) / FIELD_N as f32;
+                let v = (row as f32 + 0.5) / FIELD_N as f32;
+                field[row * FIELD_N + col] =
+                    reshape_sample(p, u, v, time, rotation, bias_x, bias_y);
+            }
+        }
+        gather_blur(field, aux, p, time, rotation, bias_x, bias_y);
+        return;
+    }
     for row in 0..FIELD_N {
         for col in 0..FIELD_N {
             let u = (col as f32 + 0.5) / FIELD_N as f32;
@@ -52,16 +69,111 @@ pub fn fill_field(
             field[row * FIELD_N + col] = apply_phase(raw, p, time);
         }
     }
-    if p.turb_contrast > 0.0 || p.turb_separation > 0.0 || p.turb_pull != 0.0 {
-        contrast_pass(field, p);
+}
+
+fn ring_count(p: &Params) -> usize {
+    if p.turb_pattern == pattern::CLASSIC_DROP {
+        4
+    } else {
+        16
     }
-    if p.turb_blur > 0.0 {
-        let taps = if p.turb_pattern == pattern::CLASSIC_DROP {
-            1
-        } else {
-            (0.05 * p.turb_blur * FIELD_N as f32).round() as i32
-        };
-        blur_pass(field, aux, taps.clamp(1, 4));
+}
+
+/// JavaScript `applyBlur`, read back from the contrasted grid. The center is
+/// the cell itself. Ring taps inside the square are bilinear; taps that leave
+/// the square are evaluated, because the grid has no samples there. Classic
+/// Drop uses 4 ring samples; every other pattern uses 16.
+fn gather_blur(
+    field: &mut [f32],
+    aux: &mut [f32],
+    p: &Params,
+    time: f32,
+    rotation: f32,
+    bias_x: f32,
+    bias_y: f32,
+) {
+    let count = ring_count(p);
+    let radius = 0.05 * p.turb_blur;
+    let n = count as f32;
+    let mut ox = [0.0_f32; 16];
+    let mut oy = [0.0_f32; 16];
+    for i in 0..count {
+        let angle = (i as f32 / n) * TAU;
+        ox[i] = angle.cos() * radius;
+        oy[i] = angle.sin() * radius;
+    }
+    let inv = 1.0 / (n + 1.0);
+    let nf = FIELD_N as f32;
+    for row in 0..FIELD_N {
+        let v = (row as f32 + 0.5) / nf;
+        for col in 0..FIELD_N {
+            let u = (col as f32 + 0.5) / nf;
+            let mut sum = field[row * FIELD_N + col];
+            for i in 0..count {
+                let sx = u + ox[i];
+                let sy = v + oy[i];
+                sum += if (0.0..=1.0).contains(&sx) && (0.0..=1.0).contains(&sy) {
+                    bilinear_sample(field, FIELD_N, sx, sy)
+                } else {
+                    reshape_sample(p, sx, sy, time, rotation, bias_x, bias_y)
+                };
+            }
+            aux[row * FIELD_N + col] = sum * inv * 2.0 - 1.0;
+        }
+    }
+    field[..FIELD_AREA].copy_from_slice(&aux[..FIELD_AREA]);
+}
+
+/// Analytic `applyBlur`, kept to measure the gathered grid against JavaScript.
+#[cfg(test)]
+fn sample_blurred(
+    p: &Params,
+    x: f32,
+    y: f32,
+    time: f32,
+    rotation: f32,
+    bias_x: f32,
+    bias_y: f32,
+) -> f32 {
+    let count = ring_count(p);
+    let radius = 0.05 * p.turb_blur;
+    let mut sum = reshape_sample(p, x, y, time, rotation, bias_x, bias_y);
+    let n = count as f32;
+    for i in 0..count {
+        let angle = (i as f32 / n) * TAU;
+        sum += reshape_sample(
+            p,
+            x + angle.cos() * radius,
+            y + angle.sin() * radius,
+            time,
+            rotation,
+            bias_x,
+            bias_y,
+        );
+    }
+    sum / (n + 1.0) * 2.0 - 1.0
+}
+
+fn needs_reshape(p: &Params) -> bool {
+    p.turb_pull != 0.0 || p.turb_contrast > 0.0 || p.turb_separation > 0.0
+}
+
+/// Phase sample in [0, 1], with pullReshape / contrast / quantize only when each is off zero.
+fn reshape_sample(
+    p: &Params,
+    x: f32,
+    y: f32,
+    time: f32,
+    rotation: f32,
+    bias_x: f32,
+    bias_y: f32,
+) -> f32 {
+    let n = sample_analytic(p, x, y, time, rotation, bias_x, bias_y);
+    let value01 = (n + 1.0) * 0.5;
+    if needs_reshape(p) {
+        apply_contrast(value01, p)
+    } else {
+        value01.clamp(0.0, 1.0)
     }
 }
 
@@ -122,7 +234,8 @@ fn scale_about(x: f32, y: f32, scale: f32, cx: f32, cy: f32) -> (f32, f32) {
 }
 
 pub fn domain_warp(x: f32, y: f32, p: &Params, time: f32, cx: f32, cy: f32) -> (f32, f32) {
-    if p.turb_warp <= 0.0 {
+    let domain_warp = p.turb_warp;
+    if domain_warp <= 0.0 {
         return (x, y);
     }
     let tx = x - cx;
@@ -131,13 +244,13 @@ pub fn domain_warp(x: f32, y: f32, p: &Params, time: f32, cx: f32, cy: f32) -> (
     let (wx, wy) = if p.turb_speed > 0.0 && p.turb_warp_speed > 0.0 {
         let t = time * p.turb_speed * p.turb_warp_speed;
         (
-            tx + p.turb_warp * (ty * warp_freq + t).sin(),
-            ty + p.turb_warp * (tx * warp_freq + t).cos(),
+            tx + domain_warp * (ty * warp_freq + t).sin(),
+            ty + domain_warp * (tx * warp_freq + t).cos(),
         )
     } else {
         (
-            tx + p.turb_warp * (ty * warp_freq).sin(),
-            ty + p.turb_warp * (tx * warp_freq).cos(),
+            tx + domain_warp * (ty * warp_freq).sin(),
+            ty + domain_warp * (tx * warp_freq).cos(),
         )
     };
     (wx + cx, wy + cy)
@@ -303,88 +416,61 @@ fn apply_phase(noise: f32, p: &Params, time: f32) -> f32 {
     n
 }
 
+/// pullReshape, bandpass contrast, then quantize (T-Quantize / turb_separation).
+/// Content elements match JS `applyContrast` / C++ `reshape01`.
 pub fn apply_contrast(mut value: f32, p: &Params) -> f32 {
-    if p.turb_pull != 0.0 {
-        if p.turb_pull < 0.0 {
-            value = value * (1.0 + p.turb_pull) + (1.0 - value) * (-p.turb_pull);
+    let pull_reshape = p.turb_pull;
+    let contrast_value = p.turb_contrast;
+    let quantize = p.turb_separation;
+    if pull_reshape == 0.0 && contrast_value <= 0.0 && quantize <= 0.0 {
+        return value.clamp(0.0, 1.0);
+    }
+    if pull_reshape != 0.0 {
+        if pull_reshape < 0.0 {
+            value = value * (1.0 + pull_reshape) + (1.0 - value) * (-pull_reshape);
         } else if value > 0.5 {
-            value = 0.5 + (value - 0.5) * (1.0 + p.turb_pull * 3.0);
+            value = 0.5 + (value - 0.5) * (1.0 + pull_reshape * 3.0);
         } else {
-            value *= 1.0 - p.turb_pull * 0.5;
+            value *= 1.0 - pull_reshape * 0.5;
         }
         value = value.clamp(0.0, 1.0);
     }
-    let contrast = p.turb_contrast;
-    if contrast > 0.0 {
-        let mid = p.turb_contrast_mid;
-        let shadow = p.turb_contrast_shadow;
-        let high = p.turb_contrast_high;
-        if value < mid {
-            let span = mid - shadow;
+    if contrast_value > 0.0 {
+        let contrast_mid_point = p.turb_contrast_mid;
+        let contrast_shadow_point = p.turb_contrast_shadow;
+        let contrast_highlight_point = p.turb_contrast_high;
+        let contrast_dark_boost = p.turb_contrast_dark;
+        if value < contrast_mid_point {
+            let span = contrast_mid_point - contrast_shadow_point;
             if span.abs() > 1e-6 {
-                let shadow_range = (value - shadow) / span;
+                let shadow_range = (value - contrast_shadow_point) / span;
                 if shadow_range > 0.0 {
-                    let boosted = shadow
+                    let boosted_value = contrast_shadow_point
                         + shadow_range
                             * span
-                            * shadow_range.powf(1.0 / (1.0 + p.turb_contrast_dark * contrast));
-                    value = value * (1.0 - contrast) + boosted * contrast;
+                            * shadow_range.powf(1.0 / (1.0 + contrast_dark_boost * contrast_value));
+                    value = value * (1.0 - contrast_value) + boosted_value * contrast_value;
                 }
             }
-        } else if value < high {
-            let span = high - mid;
+        } else if value < contrast_highlight_point {
+            let span = contrast_highlight_point - contrast_mid_point;
             if span.abs() > 1e-6 {
-                let transition = (value - mid) / span;
-                let reduction = transition.powf(0.5);
-                let adjusted = contrast * (1.0 - reduction);
-                let mid_curve = mid + (value - mid) * transition.powf(1.0 - adjusted * 0.5);
-                value = value * (1.0 - adjusted) + mid_curve * adjusted;
+                let transition_range = (value - contrast_mid_point) / span;
+                let contrast_reduction = transition_range.powf(0.5);
+                let adjusted_contrast = contrast_value * (1.0 - contrast_reduction);
+                let mid_curve = contrast_mid_point
+                    + (value - contrast_mid_point)
+                        * transition_range.powf(1.0 - adjusted_contrast * 0.5);
+                value = value * (1.0 - adjusted_contrast) + mid_curve * adjusted_contrast;
             }
         }
     }
-    if p.turb_separation > 0.0 {
+    if quantize > 0.0 {
         let centered = value - 0.5;
-        let sep = 1.0 + p.turb_separation * 12.0;
-        value = 1.0 / (1.0 + (-centered * sep).exp());
+        let sep_factor = 1.0 + quantize * 12.0;
+        value = 1.0 / (1.0 + (-centered * sep_factor).exp());
     }
     value.clamp(0.0, 1.0)
-}
-
-fn contrast_pass(field: &mut [f32], p: &Params) {
-    for v in field.iter_mut().take(FIELD_AREA) {
-        let n = ((*v + 1.0) * 0.5).clamp(0.0, 1.0);
-        *v = apply_contrast(n, p) * 2.0 - 1.0;
-    }
-}
-
-pub fn blur_pass(field: &mut [f32], aux: &mut [f32], radius: i32) {
-    let r = radius.clamp(1, 4);
-    for row in 0..FIELD_N {
-        for col in 0..FIELD_N {
-            let mut sum = 0.0;
-            let mut w = 0.0;
-            for k in -r..=r {
-                let c = (col as i32 + k).clamp(0, FIELD_N as i32 - 1) as usize;
-                let weight = (r - k.abs() + 1) as f32;
-                sum += field[row * FIELD_N + c] * weight;
-                w += weight;
-            }
-            aux[row * FIELD_N + col] = sum / w;
-        }
-    }
-    for row in 0..FIELD_N {
-        for col in 0..FIELD_N {
-            let mut sum = 0.0;
-            let mut w = 0.0;
-            for k in -r..=r {
-                let rr = (row as i32 + k).clamp(0, FIELD_N as i32 - 1) as usize;
-                let weight = (r - k.abs() + 1) as f32;
-                sum += aux[rr * FIELD_N + col] * weight;
-                w += weight;
-            }
-            field[row * FIELD_N + col] = sum / w;
-        }
-    }
 }
 
 pub fn sample_analytic(
@@ -430,7 +516,9 @@ pub fn sample_force(
         nvx += p.turb_dir_x * p.turb_strength * dt;
         nvy += p.turb_dir_y * p.turb_strength * dt;
     }
-    let analytic = p.turb_blur == 0.0 && p.turb_contrast == 0.0 && p.turb_separation == 0.0;
+    // Contrast, pull, and separation live inside the blur ring. With blur at 0,
+    // JavaScript `noise2D` returns the phase sample and never those passes.
+    let analytic = p.turb_blur == 0.0;
     let sample = |sx: f32, sy: f32| {
         if analytic {
             sample_analytic(p, sx, sy, time, rotation, bias_x, bias_y)
@@ -439,7 +527,9 @@ pub fn sample_force(
         }
     };
     let n1 = sample(x, y);
-    if p.turb_affect_position && p.turb_pull != 0.0 {
+    // pullForce steers particles; pullReshape bends the sample in apply_contrast.
+    let pull_force = p.turb_pull;
+    if p.turb_affect_position && pull_force != 0.0 {
         // Match the JS epsilon so soft grids still produce usable gradients.
         let eps = 0.01;
         let gx = (sample(x + eps, y) - n1) / eps;
@@ -448,11 +538,11 @@ pub fn sample_force(
         if mag > 1e-5 {
             let mut nx = gx / mag;
             let mut ny = gy / mag;
-            if p.turb_pull < 0.0 && p.turb_pull > -0.5 {
+            if pull_force < 0.0 && pull_force > -0.5 {
                 nx = -nx;
                 ny = -ny;
             }
-            let strength = p.turb_pull.abs() * p.turb_strength;
+            let strength = pull_force.abs() * p.turb_strength;
             nvx += nx * strength * dt;
             nvy += ny * strength * dt;
         }
@@ -556,16 +646,6 @@ mod tests {
         assert!((wx - 0.3).abs() > 1e-4 || (wy - 0.4).abs() > 1e-4);
     }
 
-    #[test]
-    fn blur_spreads_a_spike() {
-        let mut field = vec![0.0; FIELD_AREA];
-        let mut aux = vec![0.0; FIELD_AREA];
-        field[32 * FIELD_N + 32] = 1.0;
-        blur_pass(&mut field, &mut aux, 2);
-        assert!(field[32 * FIELD_N + 32] < 1.0);
-        assert!(field[32 * FIELD_N + 33] > 0.0);
-    }
-
     /// Default browser preset: Checkerboard, scale 3, freq 2, blur 0.8, Size on.
     /// Size mapping needs a field that still reaches near ±1 after blur.
     #[test]
@@ -621,6 +701,114 @@ mod tests {
         assert!(
             size_span > 0.015,
             "size should use T-Min..T-Max (~0.008..0.03), got min={min_r} max={max_r} span={size_span}"
+        );
+    }
+
+    /// `TurbulenceField.noise2D(x, y, 0, true)` on checkerboard, scale 3, freq 2,
+    /// speed 1, phase speed -1, offset (0.5, -0.5). The old tent blur missed
+    /// these by up to 0.42.
+    #[test]
+    fn blur_ring_matches_javascript_noise2d() {
+        let plain = [
+            (0.1_f32, 0.1_f32, 0.270638_f32),
+            (0.4, 0.4, 0.733312),
+            (0.2, 0.3, -0.611283),
+            (0.5, 0.5, 0.0),
+            (0.8, 0.2, 0.441957),
+        ];
+        let shaped = [
+            (0.1_f32, 0.1_f32, 0.364667_f32),
+            (0.3, 0.3, -0.874745),
+            (0.7, 0.3, 0.999542),
+            (0.5, 0.5, -0.171720),
+            (0.4, 0.6, -0.876336),
+        ];
+        check_blur_samples(0.0, 0.0, &plain, 5e-3);
+        // Pull and contrast pinch the edge to about one cell, so gathering it
+        // back off the raster cannot match the analytic ring sample for sample.
+        check_blur_samples(0.5, 1.0, &shaped, 0.1);
+    }
+
+    #[test]
+    fn blur_zero_keeps_the_phase_sample() {
+        let mut p = Params::default();
+        p.turb_pattern = pattern::CHECKERBOARD;
+        p.turb_freq = 2.0;
+        p.turb_scale = 3.0;
+        p.turb_speed = 1.0;
+        p.turb_phase_speed = -1.0;
+        p.turb_offset_x = 0.5;
+        p.turb_offset_y = -0.5;
+        p.turb_blur = 0.0;
+        p.turb_contrast = 0.5;
+        p.turb_pull = 1.0;
+        p.turb_separation = 0.8;
+        let mut field = vec![0.0; FIELD_AREA];
+        let mut aux = vec![0.0; FIELD_AREA];
+        fill_field(&mut field, &mut aux, &p, 0.0, 0.0, 0.0, 0.0);
+        let raw = sample_analytic(&p, 0.1, 0.1, 0.0, 0.0, 0.0, 0.0);
+        assert!(
+            (raw - 0.271437).abs() < 1e-4,
+            "phase sample {raw} drifted from JavaScript noise2D"
+        );
+        let col = 20usize;
+        let row = 30usize;
+        let x = (col as f32 + 0.5) / FIELD_N as f32;
+        let y = (row as f32 + 0.5) / FIELD_N as f32;
+        let at_cell = sample_analytic(&p, x, y, 0.0, 0.0, 0.0, 0.0);
+        let stored = field[row * FIELD_N + col];
+        assert!(
+            (stored - at_cell).abs() < 1e-5,
+            "blur 0 must not run contrast/quantize, stored={stored} phase={at_cell}"
+        );
+    }
+
+    fn check_blur_samples(contrast: f32, pull: f32, samples: &[(f32, f32, f32)], grid_tol: f32) {
+        let mut p = Params::default();
+        p.turb_pattern = pattern::CHECKERBOARD;
+        p.turb_freq = 2.0;
+        p.turb_scale = 3.0;
+        p.turb_speed = 1.0;
+        p.turb_phase_speed = -1.0;
+        p.turb_offset_x = 0.5;
+        p.turb_offset_y = -0.5;
+        p.turb_blur = 0.8;
+        p.turb_contrast = contrast;
+        p.turb_pull = pull;
+        let mut field = vec![0.0; FIELD_AREA];
+        let mut aux = vec![0.0; FIELD_AREA];
+        fill_field(&mut field, &mut aux, &p, 0.0, 0.0, 0.0, 0.0);
+        let mut worst = 0.0_f32;
+        let mut worst_at = (0.0_f32, 0.0_f32);
+        for &(x, y, expected) in samples {
+            let direct = sample_blurred(&p, x, y, 0.0, 0.0, 0.0, 0.0);
+            assert!(
+                (direct - expected).abs() < 1e-4,
+                "ring ({x},{y}) {direct} expected {expected}"
+            );
+            let got = bilinear_sample(&field, FIELD_N, x, y);
+            let err = (got - expected).abs();
+            if err > worst {
+                worst = err;
+                worst_at = (x, y);
+            }
+        }
+        for row in (4..FIELD_N).step_by(8) {
+            for col in (4..FIELD_N).step_by(8) {
+                let x = (col as f32 + 0.5) / FIELD_N as f32;
+                let y = (row as f32 + 0.5) / FIELD_N as f32;
+                let direct = sample_blurred(&p, x, y, 0.0, 0.0, 0.0, 0.0);
+                let err = (field[row * FIELD_N + col] - direct).abs();
+                if err > worst {
+                    worst = err;
+                    worst_at = (x, y);
+                }
+            }
+        }
+        assert!(
+            worst < grid_tol,
+            "gathered blur at ({}, {}) misses the ring by {worst} (limit {grid_tol})",
+            worst_at.0, worst_at.1
         );
     }
 }

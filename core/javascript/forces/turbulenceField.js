@@ -370,7 +370,8 @@ export class TurbulenceField {
 
   // Apply domain warping to coordinates
   applyDomainWarp(x, y, time, centerX, centerY) {
-    if (this.domainWarp <= 0) return [x, y];
+    const domainWarp = this.domainWarp;
+    if (domainWarp <= 0) return [x, y];
 
     // Apply warp relative to center
     const tx = x - centerX;
@@ -381,12 +382,12 @@ export class TurbulenceField {
     let wx, wy;
     if (this.speed > 0 && this.domainWarpSpeed > 0) {
       // Time-driven warping
-      wx = tx + this.domainWarp * Math.sin(ty * warpFreq + time * this.speed * this.domainWarpSpeed);
-      wy = ty + this.domainWarp * Math.cos(tx * warpFreq + time * this.speed * this.domainWarpSpeed);
+      wx = tx + domainWarp * Math.sin(ty * warpFreq + time * this.speed * this.domainWarpSpeed);
+      wy = ty + domainWarp * Math.cos(tx * warpFreq + time * this.speed * this.domainWarpSpeed);
     } else {
       // Static warping
-      wx = tx + this.domainWarp * Math.sin(ty * warpFreq);
-      wy = ty + this.domainWarp * Math.cos(tx * warpFreq);
+      wx = tx + domainWarp * Math.sin(ty * warpFreq);
+      wy = ty + domainWarp * Math.cos(tx * warpFreq);
     }
 
     // Return to original coordinate space
@@ -411,35 +412,39 @@ export class TurbulenceField {
     return [rx + centerX, ry + centerY];
   }
 
-  // Apply contrast and separation to pattern value
+  // pullReshape, bandpass contrast, then quantize (T-Quantize / separation).
   applyContrast(value, time) {
     // Store original value for debugging
     const originalValue = value;
+    const pullReshape = this.pullFactor;
+    const quantize = this.separation;
+    const contrastValue = this.contrast;
+    // Each pass is identity at zero — skip the whole reshape when all are idle.
+    if (pullReshape === 0 && contrastValue <= 0 && quantize <= 0) {
+      return Math.max(0, Math.min(1, value));
+    }
 
-    // ===== PULL MODE EFFECTS =====
-    // Apply transformation based on pullFactor (-1 to 1 range)
-    if (this.pullFactor !== 0) {
-      if (this.pullFactor < 0) {
+    // ===== pullReshape (sample bend from T-Pull; not the particle force) =====
+    if (pullReshape !== 0) {
+      if (pullReshape < 0) {
         // BLACK MODE (negative values)
         // Linear interpolation toward inverted pattern
-        // At pullFactor = -1: fully inverted
-        // At pullFactor = 0: no effect
-        value = value * (1 + this.pullFactor) + (1 - value) * (-this.pullFactor);
+        // At pullReshape = -1: fully inverted
+        // At pullReshape = 0: no effect
+        value = value * (1 + pullReshape) + (1 - value) * (-pullReshape);
       } else {
         // WHITE MODE (positive values)
         // Enhance white areas by applying a stronger curve
-        // At pullFactor = 1: maximum enhancement
-        // At pullFactor = 0: no effect
+        // At pullReshape = 1: maximum enhancement
+        // At pullReshape = 0: no effect
 
         // Apply a more aggressive enhancement for white mode
         if (value > 0.5) {
           // For brighter areas, push toward white (1.0)
-          // pullFactor controls how strongly we push
-          value = 0.5 + (value - 0.5) * (1.0 + this.pullFactor * 3.0);
+          value = 0.5 + (value - 0.5) * (1.0 + pullReshape * 3.0);
         } else {
           // For darker areas, push toward black (0.0)
-          // pullFactor controls how strongly we push
-          value = value * (1.0 - this.pullFactor * 0.5);
+          value = value * (1.0 - pullReshape * 0.5);
         }
 
         // Ensure values stay in valid range
@@ -448,10 +453,6 @@ export class TurbulenceField {
     }
 
     // ===== BANDPASS CONTRAST =====
-    // Get base contrast value (removed time animation)
-    let contrastValue = this.contrast;
-
-    // Apply bandpass contrast if enabled
     if (contrastValue > 0) {
       // Apply bandpass contrast - enhance dark to mid-tones while preserving whites
 
@@ -485,9 +486,7 @@ export class TurbulenceField {
         // Apply a gentler curve to the mid-tone range
         const midCurve = this.contrastMidPoint +
           (value - this.contrastMidPoint) *
-          Math.pow((value - this.contrastMidPoint) /
-            (this.contrastHighlightPoint - this.contrastMidPoint),
-            1.0 - adjustedContrast * 0.5);
+          Math.pow(transitionRange, 1.0 - adjustedContrast * 0.5);
 
         // Mix with original value based on adjusted contrast strength
         value = value * (1 - adjustedContrast) + midCurve * adjustedContrast;
@@ -496,15 +495,10 @@ export class TurbulenceField {
       // (no code needed - we simply don't modify values above contrastHighlightPoint)
     }
 
-    // Apply separation (threshold) effect if enabled
-    if (this.separation > 0) {
-      // Center value around 0 (-0.5 to 0.5 range)
+    // quantize (T-Quantize / separation field): soft ramp → hard step
+    if (quantize > 0) {
       const centered = value - 0.5;
-
-      // Calculate separation factor (0 = smooth, 1 = very sharp)
-      const sepFactor = 1.0 + this.separation * 12.0; // 1.0 to 13.0
-
-      // Apply sigmoid-like function for separation
+      const sepFactor = 1.0 + quantize * 12.0; // 1.0 to 13.0
       value = 1.0 / (1.0 + Math.exp(-centered * sepFactor));
     }
 
@@ -1046,19 +1040,17 @@ export class TurbulenceField {
         newVy += this.directionBias[1] * this.strength * dt;
       }
 
-      // NOTE: The noise pattern itself is now affected by pullFactor:
-      // - When pullFactor = 0: Original pattern with no modifications
-      // - When pullFactor > 0: White areas become more pronounced (enhanced contrast)
-      // - When pullFactor < 0: Pattern gradually inverts (black areas become active)
-      // This is applied in the applyContrast method during noise generation
+      // pullReshape bends the sample inside applyContrast. pullForce steers
+      // particles along the gradient from the same T-Pull slider.
 
       // Calculate noise value for particle position
       // Always apply blur for simulation
       const n1 = this.noise2D(x, y, this.time, true);
+      const pullForce = this.pullFactor;
 
       if (this.affectPosition) {
-        if (this.pullFactor > 0) {
-          // PULL MODE: Move toward noise peaks (positive pullFactor)
+        if (pullForce > 0) {
+          // PULL MODE: Move toward noise peaks (positive pullForce)
           // Sample additional points to calculate gradient
           const epsilon = 0.01;  // Small sampling distance
           const nx = this.noise2D(x + epsilon, y, this.time, true);
@@ -1071,48 +1063,36 @@ export class TurbulenceField {
           // Calculate gradient magnitude and normalize
           const gradMag = Math.sqrt(gradX * gradX + gradY * gradY);
           if (gradMag > 0.001) {
-            // Apply force toward higher noise values, scaled by pullFactor
             const normalizedGradX = gradX / gradMag;
             const normalizedGradY = gradY / gradMag;
 
-            // Scale force by pull factor (0 to 1 range)
-            const pullStrength = this.pullFactor * this.strength;
+            const pullStrength = pullForce * this.strength;
             newVx += normalizedGradX * pullStrength * dt;
             newVy += normalizedGradY * pullStrength * dt;
           }
-        } else if (this.pullFactor < 0) {
+        } else if (pullForce < 0) {
           // PUSH MODE: Particles are pushed by the noise field values
-          // Calculate gradient like in PULL MODE
           const epsilon = 0.01;  // Small sampling distance
           const nx = this.noise2D(x + epsilon, y, this.time, true);
           const ny = this.noise2D(x, y + epsilon, this.time, true);
 
-          // Calculate approximate gradient (direction toward higher values)
           const gradX = (nx - n1) / epsilon;
           const gradY = (ny - n1) / epsilon;
 
-          // Calculate gradient magnitude and normalize
           const gradMag = Math.sqrt(gradX * gradX + gradY * gradY);
           if (gradMag > 0.001) {
-            // For consistency with visualization:
-            // - For mild negative values (-0.01 to -0.5): push AWAY from white (higher values)
-            // - For stronger negative values (< -0.5): pull TOWARD white
-            // This matches how the visualization works with the applyContrast inversion
+            // Mild negative: push away from white. Stronger negative: pull toward white.
             let normalizedGradX, normalizedGradY;
 
-            if (this.pullFactor > -0.5) {
-              // Push away from white (original behavior)
+            if (pullForce > -0.5) {
               normalizedGradX = -gradX / gradMag;
               normalizedGradY = -gradY / gradMag;
             } else {
-              // Pull toward white when pullFactor gets more negative
-              // This behavior change matches what's happening in the visualization
               normalizedGradX = gradX / gradMag;
               normalizedGradY = gradY / gradMag;
             }
 
-            // Scale force by pull factor (0 to 1 range)
-            const pushStrength = Math.abs(this.pullFactor) * this.strength;
+            const pushStrength = Math.abs(pullForce) * this.strength;
             newVx += normalizedGradX * pushStrength * dt;
             newVy += normalizedGradY * pushStrength * dt;
           }
