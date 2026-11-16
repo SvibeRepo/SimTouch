@@ -43,6 +43,12 @@ impl SimCore {
         self.inner.apply_params(data);
     }
 
+    /// Caller framebuffer size. Not in the float bag.
+    pub fn set_render_size(&mut self, width: f32, height: f32) {
+        self.inner.params.render_width = width.max(1e-8);
+        self.inner.params.render_height = height.max(1e-8);
+    }
+
     pub fn step(&mut self, dt: f32) {
         self.inner.step(dt);
     }

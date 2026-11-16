@@ -102,12 +102,26 @@ export class GridUi extends BaseUi {
     offsetFolder.domElement.appendChild(screenRezContainer);
 
     this.screenRezControllerWidth = offsetFolder.add(this.uiGridParams.screen, "width").name("Screen Specs")
-      .onChange((value) => { eventBus.emit('gridChanged', { paramPath: 'screen.width', value: value }); });
+      .onChange((value) => {
+        if (this.uiGridParams.screen.shape === "circular") {
+          this.uiGridParams.screen.height = value;
+          this.screenRezControllerHeight?.updateDisplay();
+          eventBus.emit('gridChanged', { paramPath: 'screen.height', value });
+        }
+        eventBus.emit('gridChanged', { paramPath: 'screen.width', value });
+      });
     this.screenRezControllerWidth.domElement.classList.add("left-input");
     screenRezContainer.appendChild(this.screenRezControllerWidth.domElement);
 
     this.screenRezControllerHeight = offsetFolder.add(this.uiGridParams.screen, "height").name("X")
-      .onChange((value) => { eventBus.emit('gridChanged', { paramPath: 'screen.height', value: value }); });
+      .onChange((value) => {
+        if (this.uiGridParams.screen.shape === "circular") {
+          this.uiGridParams.screen.width = value;
+          this.screenRezControllerWidth?.updateDisplay();
+          eventBus.emit('gridChanged', { paramPath: 'screen.width', value });
+        }
+        eventBus.emit('gridChanged', { paramPath: 'screen.height', value });
+      });
     this.screenRezControllerHeight.domElement.classList.add("right-input");
     screenRezContainer.appendChild(this.screenRezControllerHeight.domElement);
 
@@ -118,6 +132,12 @@ export class GridUi extends BaseUi {
 
     this.screenShapeButton.addEventListener("click", () => {
       this.uiGridParams.screen.shape = this.uiGridParams.screen.shape === "rectangular" ? "circular" : "rectangular";
+      if (this.enforceCircularSquare()) {
+        eventBus.emit('gridChanged', { paramPath: 'screen.width', value: this.uiGridParams.screen.width });
+        eventBus.emit('gridChanged', { paramPath: 'screen.height', value: this.uiGridParams.screen.height });
+        this.screenRezControllerWidth?.updateDisplay();
+        this.screenRezControllerHeight?.updateDisplay();
+      }
       eventBus.emit('gridChanged', { paramPath: 'screen.shape', value: this.uiGridParams.screen.shape });
       this.screenShapeButton.textContent = this.uiGridParams.screen.shape === "rectangular" ? "R" : "C";
     });
@@ -148,7 +168,7 @@ export class GridUi extends BaseUi {
     const cellCountContainer = document.createElement("div");
     cellCountContainer.classList = "slider-cellCount-container";
 
-    this.targetCellCountCellsController = gridParamFolder.add(gridSpecs, "targetCellCount", 1, 1200, 1).name("TargetCells")
+    this.targetCellCountCellsController = gridParamFolder.add(gridSpecs, "targetCellCount", 1, 2048, 1).name("TargetCells")
       .onChange(() => { eventBus.emit('gridChanged', { paramPath: 'gridSpecs.targetCellCount', value: this.uiGridParams.gridSpecs.targetCellCount }); });
     this.targetCellCountCellsController.domElement.classList.add("slider-dual-input-slider");
     cellCountContainer.appendChild(this.targetCellCountCellsController.domElement);
@@ -358,11 +378,21 @@ export class GridUi extends BaseUi {
   }
 
 
+  /** Keep circular Screen Specs square. Returns true when height was changed. */
+  enforceCircularSquare() {
+    const screen = this.uiGridParams.screen;
+    if (!screen || screen.shape !== "circular") return false;
+    if (screen.height === screen.width) return false;
+    screen.height = screen.width;
+    return true;
+  }
+
   updateUIState(newGridParams) {
 
     // Update properties of existing objects instead of replacing them
     if (newGridParams.screen) {
       Object.assign(this.uiGridParams.screen, newGridParams.screen);
+      this.enforceCircularSquare();
     }
     if (newGridParams.gridSpecs) {
       Object.assign(this.uiGridParams.gridSpecs, newGridParams.gridSpecs);
@@ -434,6 +464,7 @@ export class GridUi extends BaseUi {
       // Update internal UI state from preset data
       if (presetData.screen) {
         Object.assign(this.uiGridParams.screen, presetData.screen);
+        this.enforceCircularSquare();
       }
       if (presetData.gridSpecs) {
         Object.assign(this.uiGridParams.gridSpecs, presetData.gridSpecs);

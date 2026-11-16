@@ -3,6 +3,7 @@ mod collision;
 mod field;
 mod flip;
 mod grid;
+mod metric;
 mod organic;
 mod params;
 mod step;

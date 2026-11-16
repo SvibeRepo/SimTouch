@@ -36,7 +36,7 @@ pub fn apply(
     if p.organic_behavior == behavior::NONE || count == 0 {
         return;
     }
-    bins.rebuild(x, y, count, ORG_GRID);
+    bins.rebuild(x, y, count, ORG_GRID, 1.0, 1.0);
     if p.organic_behavior == behavior::AUTOMATA {
         ensure_states(state, state_init, count);
         update_automata(bins, x, y, state, state_next, count, p);

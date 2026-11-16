@@ -91,11 +91,16 @@ export class RectangularBoundary extends BaseBoundary {
         const effectiveDamping =
             externalDamping !== null ? externalDamping : this.damping;
 
-        // Adjusted bounds accounting for particle radius
-        const minXWithRadius = this.minX + particleRadius;
-        const maxXWithRadius = this.maxX - particleRadius;
-        const minYWithRadius = this.minY + particleRadius;
-        const maxYWithRadius = this.maxY - particleRadius;
+        const sx = Math.max(this.metricScaleX ?? 1, 1e-8);
+        const sy = Math.max(this.metricScaleY ?? 1, 1e-8);
+        const insetX = particleRadius / sx;
+        const insetY = particleRadius / sy;
+
+        // Adjusted bounds accounting for particle radius in the framebuffer metric
+        const minXWithRadius = this.minX + insetX;
+        const maxXWithRadius = this.maxX - insetX;
+        const minYWithRadius = this.minY + insetY;
+        const maxYWithRadius = this.maxY - insetY;
 
         // Initial collision flag
         let collision = false;

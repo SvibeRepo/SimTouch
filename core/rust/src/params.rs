@@ -187,6 +187,9 @@ pub struct Params {
     pub rect_min_y: f32,
     pub rect_max_x: f32,
     pub rect_max_y: f32,
+    /// Caller framebuffer size. Not in the float bag; set by the host.
+    pub render_width: f32,
+    pub render_height: f32,
 
     pub turb_strength: f32,
     pub turb_scale: f32,
@@ -297,6 +300,8 @@ impl Default for Params {
             rect_min_y: 0.1,
             rect_max_x: 0.9,
             rect_max_y: 0.9,
+            render_width: 1.0,
+            render_height: 1.0,
             turb_strength: 0.0,
             turb_scale: 3.0,
             turb_speed: 1.0,

@@ -65,9 +65,11 @@ export class CollisionSystem {
     // console.log(`Collision grid initialized with size ${this.gridSizeCollision}x${this.gridSizeCollision}`); // REMOVED
   }
 
-  update(particles, velocitiesX, velocitiesY) {
+  update(particles, velocitiesX, velocitiesY, sx = 1, sy = 1) {
     if (!this.enabled) return;
 
+    this.metricScaleX = sx > 1e-8 ? sx : 1;
+    this.metricScaleY = sy > 1e-8 ? sy : 1;
     this.updateGrid(particles);
     this.resolveCollisions(particles, velocitiesX, velocitiesY);
   }
@@ -79,11 +81,14 @@ export class CollisionSystem {
       this.grid.push([]);
     }
 
-    // Then add particles to grid cells
+    const sx = this.metricScaleX ?? 1;
+    const sy = this.metricScaleY ?? 1;
+
+    // Then add particles to grid cells in the framebuffer metric
     const numParticles = particles.length / 2;
     for (let i = 0; i < numParticles; i++) {
-      const x = particles[i * 2];
-      const y = particles[i * 2 + 1];
+      const x = particles[i * 2] * sx;
+      const y = particles[i * 2 + 1] * sy;
 
       // Ensure coordinates are within bounds
       if (x < 0 || x > 1 || y < 0 || y > 1) continue;
@@ -172,93 +177,69 @@ export class CollisionSystem {
   }
 
   resolveCollision(i, j, particles, velocitiesX, velocitiesY) {
+    const sx = this.metricScaleX ?? 1;
+    const sy = this.metricScaleY ?? 1;
     const dx = particles[j * 2] - particles[i * 2];
     const dy = particles[j * 2 + 1] - particles[i * 2 + 1];
-    const distSq = dx * dx + dy * dy;
+    const sdx = dx * sx;
+    const sdy = dy * sy;
+    const distSq = sdx * sdx + sdy * sdy;
 
-    let radiusI = this.particleRadius; // Default if no particle system
-    let radiusJ = this.particleRadius; // Default if no particle system
-    let densityFactor = 1.0; // Default density factor
+    let radiusI = this.particleRadius;
+    let radiusJ = this.particleRadius;
 
-    // Only try to access particleSystem properties if the reference exists
     if (this.particleSystem) {
       const affectScale = this.particleSystem.turbulence?.affectScale;
       radiusI = affectScale ? this.particleSystem.particleRadii[i] : this.particleSystem.particleRadius;
       radiusJ = affectScale ? this.particleSystem.particleRadii[j] : this.particleSystem.particleRadius;
-
-      // Access rest density from particleSystem reference
-      // REMOVE START
-      // if (this.particleSystem.restDensity) {
-      //  densityFactor = Math.max(0.5, Math.min(2.0, this.particleSystem.restDensity / 3));
-      // }
-      // REMOVE END
     }
 
-    // Modify minimum separation distance based on rest density
-    // Higher density = particles should be closer (smaller minDist)
-    // REPLACE START
-    // const minDist = (radiusI + radiusJ) * (1 / densityFactor);
-    // REPLACE END
-    // WITH START
-    // Calculate spacing multiplier based on rest density
-    // Default to 1 (edge-to-edge) if restDensity is unavailable or 0
     let spacingMultiplier = 1.0;
     if (this.particleSystem && typeof this.particleSystem.restDensity === 'number' && this.particleSystem.restDensity > 0) {
-      // Linear increase: At density 10, multiplier is 1.5 (gap = 0.5 * radius sum)
       const scaleFactor = 0.05;
       spacingMultiplier = 1.0 + (this.particleSystem.restDensity * scaleFactor);
     }
 
-    // Calculate minimum separation distance using the multiplier
     const minDist = (radiusI + radiusJ) * spacingMultiplier;
-    // WITH END
-
     const minDistSq = minDist * minDist;
 
-    if (distSq < minDistSq) {
+    if (distSq < minDistSq && distSq >= 1e-12 && minDist > 0) {
       const dist = Math.sqrt(distSq);
-      const nx = dx / dist;
-      const ny = dy / dist;
+      const nx = sdx / dist;
+      const ny = sdy / dist;
 
-      // Calculate overlap
       const overlap = minDist - dist;
-
-      // Convert repulsion into a smooth force
       const repulsionForce = Math.pow(overlap / minDist, 1.5) * this.repulsion;
 
-      // Apply repulsion as velocity change instead of position correction
-      const repulsionX = nx * repulsionForce;
-      const repulsionY = ny * repulsionForce;
+      // Push back into sim units: scaled impulse / scale.
+      const repulsionX = (nx * repulsionForce) / sx;
+      const repulsionY = (ny * repulsionForce) / sy;
 
-      // Apply smoother velocity changes
       velocitiesX[i] -= repulsionX;
       velocitiesY[i] -= repulsionY;
       velocitiesX[j] += repulsionX;
       velocitiesY[j] += repulsionY;
 
-      // Handle collision response only for significant relative velocity
-      const vx = velocitiesX[j] - velocitiesX[i];
-      const vy = velocitiesY[j] - velocitiesY[i];
+      const vx = (velocitiesX[j] - velocitiesX[i]) * sx;
+      const vy = (velocitiesY[j] - velocitiesY[i]) * sy;
       const vn = vx * nx + vy * ny;
 
       if (vn < 0) {
-        // Softer restitution based on overlap
         const restitution =
           this.particleRestitution * (1.0 - overlap / minDist);
         const impulse = -(1 + restitution) * vn * 0.5;
 
-        velocitiesX[i] -= nx * impulse;
-        velocitiesY[i] -= ny * impulse;
-        velocitiesX[j] += nx * impulse;
-        velocitiesY[j] += ny * impulse;
+        velocitiesX[i] -= (nx * impulse) / sx;
+        velocitiesY[i] -= (ny * impulse) / sy;
+        velocitiesX[j] += (nx * impulse) / sx;
+        velocitiesY[j] += (ny * impulse) / sy;
       }
 
-      // Apply minimal position correction to prevent extreme overlap
       const correction = Math.max(0, overlap - minDist * 0.1) * 0.5;
-      particles[i * 2] -= nx * correction;
-      particles[i * 2 + 1] -= ny * correction;
-      particles[j * 2] += nx * correction;
-      particles[j * 2 + 1] += ny * correction;
+      particles[i * 2] -= (nx * correction) / sx;
+      particles[i * 2 + 1] -= (ny * correction) / sy;
+      particles[j * 2] += (nx * correction) / sx;
+      particles[j * 2 + 1] += (ny * correction) / sy;
     }
   }
 

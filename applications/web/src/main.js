@@ -246,6 +246,11 @@ export class Main {
       voronoi: this.voronoiField,
       boundaryManager: this.boundaryManager,
     });
+    this.particleSystem.applyCollisionMetric(
+      this.gridParams.screen.shape,
+      this.dimensionManager.renderWidth,
+      this.dimensionManager.renderHeight
+    );
 
     this.modulatorManager = new ModulatorManager();
 

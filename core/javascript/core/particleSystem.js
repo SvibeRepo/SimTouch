@@ -1,6 +1,7 @@
 import { FluidFLIP } from "./fluidFLIP.js";
 import { MouseForces } from "../forces/mouseForces.js";
 import { CollisionSystem } from "../forces/collisionSystem.js";
+import { collisionScales } from "../forces/collisionScales.js";
 import { OrganicBehavior } from "../behaviors/organicBehavior.js";
 import { GravityForces } from "../forces/gravityForces.js";
 import { eventBus } from '../../util/eventManager.js';
@@ -96,10 +97,22 @@ export class ParticleSystem {
     // Initialize organic behavior
     this.organicBehavior = new OrganicBehavior();
 
+    this.metricScaleX = 1;
+    this.metricScaleY = 1;
+
     this.initializeParticles();
 
     // Subscribe to parameter updates
     eventBus.on('simParamsUpdated', this.handleParamsUpdate.bind(this));
+    eventBus.on('gridParamsUpdated', ({ gridParams, dimensions }) => {
+      this.applyCollisionMetric(gridParams?.screen?.shape, dimensions?.renderWidth, dimensions?.renderHeight);
+    });
+  }
+
+  applyCollisionMetric(shape, renderWidth, renderHeight) {
+    const { sx, sy } = collisionScales(shape, renderWidth, renderHeight);
+    this.metricScaleX = sx;
+    this.metricScaleY = sy;
   }
 
   // Helper function to throw errors
@@ -353,11 +366,16 @@ export class ParticleSystem {
       this.velocitiesY[i] = Math.max(-this.maxVelocity, Math.min(this.maxVelocity, this.velocitiesY[i]));
     }
 
+    const sx = this.metricScaleX ?? 1;
+    const sy = this.metricScaleY ?? 1;
+
     // Use collision system ONCE - not twice
     this.collisionSystem.update(
       this.particles,
       this.velocitiesX,
-      this.velocitiesY
+      this.velocitiesY,
+      sx,
+      sy
     );
 
     // Finally check boundary collisions for all particles
@@ -374,6 +392,9 @@ export class ParticleSystem {
         console.error(`ParticleSystem.updateParticles: Could not get boundary from manager for particle ${i}! Skipping collision.`);
         continue; // Skip collision for this particle if boundary is missing
       }
+
+      currentBoundary.metricScaleX = sx;
+      currentBoundary.metricScaleY = sy;
 
       // Pass boundary damping to the boundary collision resolver
       currentBoundary.resolveCollision( // Use currentBoundary

@@ -1,5 +1,6 @@
 //! Circular and rectangular boundaries. Both write position and velocity in place.
 
+use crate::metric::collision_scales;
 use crate::params::{boundary_mode, boundary_shape, Params};
 
 pub fn resolve(p: &Params, x: &mut f32, y: &mut f32, vx: &mut f32, vy: &mut f32, radius: f32) {
@@ -58,10 +59,13 @@ fn resolve_circle(p: &Params, x: &mut f32, y: &mut f32, vx: &mut f32, vy: &mut f
 }
 
 fn resolve_rect(p: &Params, x: &mut f32, y: &mut f32, vx: &mut f32, vy: &mut f32, radius: f32) {
-    let min_x = p.rect_min_x + radius;
-    let max_x = p.rect_max_x - radius;
-    let min_y = p.rect_min_y + radius;
-    let max_y = p.rect_max_y - radius;
+    let (sx, sy) = collision_scales(p.boundary_shape, p.render_width, p.render_height);
+    let inset_x = radius / sx.max(1e-8);
+    let inset_y = radius / sy.max(1e-8);
+    let min_x = p.rect_min_x + inset_x;
+    let max_x = p.rect_max_x - inset_x;
+    let min_y = p.rect_min_y + inset_y;
+    let max_y = p.rect_max_y - inset_y;
     let damp = p.external_damping;
 
     if p.boundary_mode == boundary_mode::WARP {
@@ -178,5 +182,38 @@ mod tests {
         resolve(&p, &mut x, &mut y, &mut vx, &mut vy, 0.01);
         assert!(vx > 0.0, "left-wall hit should reverse vx, got {vx}");
         assert!(x > 0.1, "position should be written back inside");
+    }
+
+    #[test]
+    fn tall_render_doubles_x_wall_inset() {
+        let mut p = Params::default();
+        p.boundary_shape = boundary_shape::RECTANGULAR;
+        p.boundary_mode = boundary_mode::BOUNCE;
+        p.rect_min_x = 0.0;
+        p.rect_max_x = 1.0;
+        p.rect_min_y = 0.0;
+        p.rect_max_y = 1.0;
+        p.render_width = 480.0;
+        p.render_height = 960.0;
+        p.boundary_restitution = 1.0;
+        p.external_damping = 1.0;
+        p.boundary_repulsion = 0.0;
+        let radius = 0.01f32;
+        let mut x = 0.0;
+        let mut y = 0.5;
+        let mut vx = -0.1;
+        let mut vy = 0.0;
+        resolve(&p, &mut x, &mut y, &mut vx, &mut vy, radius);
+        let expected = radius / 0.5 + 0.001;
+        assert!(
+            (x - expected).abs() < 1e-4,
+            "tall rect inset x {x} should be near {expected}"
+        );
+    }
+
+    #[test]
+    fn circular_shape_ignores_tall_render_for_rect_inset_path() {
+        let (sx, sy) = crate::metric::collision_scales(boundary_shape::CIRCULAR, 480.0, 960.0);
+        assert_eq!((sx, sy), (1.0, 1.0));
     }
 }

@@ -308,7 +308,10 @@ impl Engine {
             self.vy[i] = self.vy[i].clamp(-max_v, max_v);
         }
         if p.collision_enabled {
-            self.bins.rebuild(&self.x, &self.y, count, p.collision_grid);
+            let (sx, sy) =
+                crate::metric::collision_scales(p.boundary_shape, p.render_width, p.render_height);
+            self.bins
+                .rebuild(&self.x, &self.y, count, p.collision_grid, sx, sy);
             crate::collision::resolve(
                 &self.bins,
                 &mut self.x,
