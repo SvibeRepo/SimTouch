@@ -54,18 +54,8 @@ export class NoisePreviewManager {
         this.eventListeners = [];
         this.boundHandleUiChange = null;
 
-        // Performance settings
+        // Performance settings. Only the selected preview animates.
         this.selectedFps = 15;
-        this.hoverRefreshInterval = 100;
-        this.lastHoverRefreshTime = 0;
-
-        // Parameter tracking for automatic refresh
-        this._lastTurbulenceParams = this._captureCurrentParams();
-        this._paramsCheckInterval = 500;
-        this._lastParamsCheckTime = 0;
-
-        // Track hover state
-        this.hoveredPattern = null;
 
         this._updateRelevanceState();
         this._initializeEventListeners();
@@ -177,19 +167,6 @@ export class NoisePreviewManager {
             const pattern = element.getAttribute('data-pattern');
             if (pattern) {
                 this.previewElements.set(pattern, element);
-
-                element.addEventListener('mouseenter', () => {
-                    if (pattern !== this.selectedPattern) {
-                        this.hoveredPattern = pattern;
-                        this.lastHoverRefreshTime = 0;
-                    }
-                });
-
-                element.addEventListener('mouseleave', () => {
-                    if (this.hoveredPattern === pattern) {
-                        this.hoveredPattern = null;
-                    }
-                });
             }
         });
 
@@ -438,7 +415,6 @@ export class NoisePreviewManager {
         if (this.db) console.log("NoisePreviewManager: Starting refresh loop.");
 
         this.lastRefreshTime = performance.now();
-        this.lastHoverRefreshTime = performance.now();
         this.refreshingSelected = true;
 
         if (this.selectedPattern && !this._inRefreshSelectedPreview) {
@@ -469,57 +445,6 @@ export class NoisePreviewManager {
         this.generateAllStaticPreviews();
     }
 
-    _captureCurrentParams() {
-        const field = this.turbulenceField;
-        if (!field) return {};
-
-        return {
-            patternStyle: field.patternStyle,
-            patternFrequency: field.patternFrequency,
-            domainWarp: field.domainWarp,
-            domainWarpSpeed: field.domainWarpSpeed,
-            symmetryAmount: field.symmetryAmount,
-            phase: field.phase,
-            phaseSpeed: field.phaseSpeed,
-            rotation: field.rotation,
-            rotationSpeed: field.rotationSpeed,
-            pullFactor: field.pullFactor,
-            patternOffsetX: field.patternOffsetX,
-            patternOffsetY: field.patternOffsetY,
-            _displayBiasAccelX: field._displayBiasAccelX,
-            _displayBiasAccelY: field._displayBiasAccelY,
-            biasStrength: field.biasStrength,
-            strength: this.main?.simParams?.turbulence?.strength ?? field.strength,
-            scale: this.main?.simParams?.turbulence?.scale ?? field.scale,
-            speed: this.main?.simParams?.turbulence?.speed ?? field.speed,
-            decayRate: this.main?.simParams?.turbulence?.decayRate ?? field.decayRate,
-            contrast: this.main?.simParams?.turbulence?.contrast ?? field.contrast,
-            separation: this.main?.simParams?.turbulence?.separation ?? field.separation,
-            blurAmount: this.main?.simParams?.turbulence?.blurAmount ?? field.blurAmount,
-        };
-    }
-
-    _haveParamsChanged() {
-        const currentParams = this._captureCurrentParams();
-        const lastParams = this._lastTurbulenceParams;
-
-        for (const [key, value] of Object.entries(currentParams)) {
-            const tolerance = 0.0001;
-
-            if (typeof value === 'number' && typeof lastParams[key] === 'number') {
-                if (Math.abs(value - lastParams[key]) > tolerance) {
-                    this._lastTurbulenceParams = currentParams;
-                    return true;
-                }
-            } else if (value !== lastParams[key]) {
-                this._lastTurbulenceParams = currentParams;
-                return true;
-            }
-        }
-
-        return false;
-    }
-
     update() {
         if (!this.isVisible || this.refreshingDisabled || !this.isTurbulenceRelevant) {
             if (this.animationFrameId) {
@@ -532,29 +457,12 @@ export class NoisePreviewManager {
 
         const now = performance.now();
         const elapsedSinceLastFrame = now - this.lastRefreshTime;
-        const elapsedSinceParamsCheck = now - this._lastParamsCheckTime;
-        const elapsedSinceHoverRefresh = now - this.lastHoverRefreshTime;
-
-        if (elapsedSinceParamsCheck > this._paramsCheckInterval) {
-            this._lastParamsCheckTime = now;
-
-            if (this._haveParamsChanged()) {
-                if (this.selectedPattern && !this._inRefreshSelectedPreview) {
-                    this.refreshSelectedPreview();
-                }
-            }
-        }
 
         if (elapsedSinceLastFrame > (1000 / this.selectedFps)) {
             if (!this._inRefreshSelectedPreview) {
                 this.refreshSelectedPreview();
             }
             this.lastRefreshTime = now;
-        }
-
-        if (this.hoveredPattern && elapsedSinceHoverRefresh > this.hoverRefreshInterval) {
-            this.refreshHoveredPreview();
-            this.lastHoverRefreshTime = now;
         }
 
         if (this.isVisible) {
@@ -768,20 +676,32 @@ export class NoisePreviewManager {
         };
     }
 
-    refreshHoveredPreview() {
-        if (!this.hoveredPattern) return;
+    refreshInactivePreviews() {
+        if (!this.turbulenceField || this.previewElements.size === 0) return;
 
-        const element = this.previewElements.get(this.hoveredPattern);
-        if (!element) return;
+        const originalStyle = this.turbulenceField.patternStyle;
 
-        const img = element.querySelector('img');
-        if (!img) return;
+        try {
+            this.patternEntries.forEach(([, patternValue]) => {
+                if (patternValue === this.selectedPattern) return;
 
-        img.src = this.generateStaticPreviewImage(
-            this.hoveredPattern,
-            this.previewSize,
-            this.previewSize
-        );
+                const element = this.previewElements.get(patternValue);
+                if (!element) return;
+
+                const img = element.querySelector('img');
+                if (!img) return;
+
+                this.turbulenceField.patternStyle = patternValue;
+                img.src = this.generateStaticPreviewImage(
+                    patternValue,
+                    this.previewSize,
+                    this.previewSize,
+                    true
+                );
+            });
+        } finally {
+            this.turbulenceField.patternStyle = originalStyle;
+        }
     }
 
     refreshAllPreviews(force = false) {
@@ -848,22 +768,18 @@ export class NoisePreviewManager {
         switch (profile) {
             case 'low':
                 this.selectedFps = 10;
-                this.hoverRefreshInterval = 200;
                 break;
 
             case 'medium':
                 this.selectedFps = 15;
-                this.hoverRefreshInterval = 100;
                 break;
 
             case 'high':
                 this.selectedFps = 24;
-                this.hoverRefreshInterval = 50;
                 break;
 
             case 'ultra':
                 this.selectedFps = 30;
-                this.hoverRefreshInterval = 33;
                 break;
 
             default:

@@ -537,12 +537,7 @@ export class TurbulenceUi extends BaseUi {
     this.turbulenceBlurController = patternControlsFolder.add(turbulenceParams, "blurAmount", 0, 2, 0.01)
       .name("T-Blur")
       .onChange((value) => {
-        // ADDED: Emit event
         eventBus.emit('uiControlChanged', { paramPath: 'turbulence.blurAmount', value });
-        // Refresh preview when blur amount changes
-        if (this.previewManager) {
-          this.previewManager.refreshSelectedPreview();
-        }
       });
 
     // Handle folder open/close events
@@ -645,6 +640,20 @@ export class TurbulenceUi extends BaseUi {
 
       this.guiStateObserver = guiStateObserver;
     }
+
+    this._bindPreviewRefreshOnRelease();
+  }
+
+  _bindPreviewRefreshOnRelease() {
+    const bindFolder = (folder) => {
+      for (const controller of folder.controllers) {
+        controller.onFinishChange(() => {
+          this.previewManager?.refreshInactivePreviews();
+        });
+      }
+      for (const child of folder.folders) bindFolder(child);
+    };
+    bindFolder(this.gui);
   }
 
   getControlTargets() {
@@ -810,6 +819,7 @@ export class TurbulenceUi extends BaseUi {
       this.updateControllerDisplays();
       // Reset bias when loading "None" preset
       this.resetBias();
+      this.previewManager?.refreshInactivePreviews();
       return true;
     }
 
@@ -841,6 +851,7 @@ export class TurbulenceUi extends BaseUi {
 
       // Always reset bias when loading any preset
       this.resetBias();
+      this.previewManager?.refreshInactivePreviews();
 
       return true;
     } catch (error) {
