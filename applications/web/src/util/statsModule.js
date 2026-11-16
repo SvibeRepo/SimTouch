@@ -36,6 +36,9 @@ var Stats = function () {
 
   var fpsPanel = addPanel(new Stats.Panel("FPS", "#0ff", "#002"));
   var msPanel = addPanel(new Stats.Panel("MS", "#0f0", "#020"));
+  // Headroom: frame gap minus work. Updated once per second from HeadroomMeter.
+  // Starts green; HeadroomMeter repaints red as headroom approaches 0.
+  var headPanel = addPanel(new Stats.Panel("HD", "#0f0", "#020"));
 
   if (self.performance && self.performance.memory) {
     var memPanel = addPanel(new Stats.Panel("MB", "#f08", "#201"));
@@ -50,6 +53,7 @@ var Stats = function () {
 
     addPanel: addPanel,
     showPanel: showPanel,
+    headPanel: headPanel,
 
     begin: function () {
       beginTime = (performance || Date).now();
@@ -129,7 +133,10 @@ Stats.Panel = function (name, fg, bg) {
   return {
     dom: canvas,
 
-    update: function (value, maxValue) {
+    update: function (value, maxValue, nextFg, nextBg) {
+      if (nextFg) fg = nextFg;
+      if (nextBg) bg = nextBg;
+
       min = Math.min(min, value);
       max = Math.max(max, value);
 

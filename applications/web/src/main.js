@@ -410,6 +410,7 @@ export class Main {
 
   render() {
     this.frame++;
+    this.ui.headroom.beginFrame();
     const sim = this.simParams.simulation;
 
     if (sim.engine === "js") {
@@ -457,6 +458,7 @@ export class Main {
 
     this.ui.update(this.particleSystem.timeStep);
     this.modulatorManager.update(this.particleSystem.timeStep);
+    this.ui.headroom.endFrame();
   }
 
   static async create() {

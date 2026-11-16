@@ -17,6 +17,7 @@ import { RandomizerUi } from "./panels/randomizerUi.js";
 import { GridUi } from "./panels/gridUi.js";
 
 import Stats from "../util/statsModule.js";
+import { HeadroomMeter } from "../util/headroomMeter.js";
 import { eventBus } from "../util/eventManager.js";
 
 export class UiManager {
@@ -37,6 +38,7 @@ export class UiManager {
     this.initializeUIComponents();
 
     this.stats = new Stats();
+    this.headroom = new HeadroomMeter(this.stats.headPanel);
     this.initStats();
     this.allTargets = {};
 
@@ -198,5 +200,6 @@ export class UiManager {
 
     this.stats.dom.remove();
     this.stats = null;
+    this.headroom = null;
   }
 }
