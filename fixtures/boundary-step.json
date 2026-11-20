@@ -1,0 +1,37 @@
+{
+  "name": "boundary-circle-bounce-repulsion-one-step",
+  "dt": 0.016666666666666666,
+  "timeScale": 1,
+  "particleRadius": 0.02,
+  "maxVelocity": 1,
+  "tolerance": 0.00001,
+  "expectMotion": true,
+  "note": "One step on the circular domain (radius 0.5 * boundary scale 1.03), bounce mode. Particle 0 starts outside the wall with outward + tangential velocity so restitution and damping both change the bounce. Particle 1 sits in the soft repulsion zone with zero velocity so only repulsion runs. Gravity and collision are off; turbulence pull and affect-position are off; velocity damping is 1.",
+  "particles": [
+    {"x": 1.0, "y": 0.5, "vx": 0.3, "vy": 0.2},
+    {"x": 0.98, "y": 0.5, "vx": 0.0, "vy": 0.0}
+  ],
+  "fields": {
+    "gravityX": 0,
+    "gravityY": 0,
+    "velocityDamping": 1,
+    "collisionEnabled": 0,
+    "collisionGrid": 10,
+    "collisionRepulsion": 0.5,
+    "collisionRestitution": 0.8,
+    "boundaryMode": 0,
+    "boundaryShape": 0,
+    "boundaryDamping": 0.8,
+    "boundaryRestitution": 0.6,
+    "boundaryRepulsion": 0.5,
+    "turbStrength": 0,
+    "turbPull": 0,
+    "turbDecay": 1,
+    "turbDirX": 0,
+    "turbDirY": 0,
+    "turbBiasStrength": 0,
+    "turbAffectPosition": 0,
+    "turbAffectScale": 0,
+    "turbScaleField": 0
+  }
+}

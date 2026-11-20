@@ -212,6 +212,6 @@ function compare(file) {
 const files = process.argv.slice(2);
 const list = files.length > 0
   ? files
-  : ["fixtures/gravity-step.json", "fixtures/noise-step.json"];
+  : ["fixtures/gravity-step.json", "fixtures/noise-step.json", "fixtures/boundary-step.json"];
 for (const file of list) compare(file);
 process.exit(0);

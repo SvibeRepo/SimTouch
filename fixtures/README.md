@@ -6,4 +6,6 @@ Saved patterns and step traces that use `spec/`. Rust tests and the library host
 
 `noise-step.json` is one interior step with pull on checkerboard. Contrast, separation, warp, and symmetry are 0. The runners pin blur and pattern offset to 0.
 
-`node --import ./tools/lab-register.mjs tools/compare-slice.mjs` steps both on the JavaScript tick, the Rust tick, and `engines/cpp`. The positions must match within `tolerance`. The next file is a boundary-contact fixture. The queue after that is `doc/GOALS.md`.
+`boundary-step.json` is one circular bounce step. One particle hits the wall (restitution + damping); another sits in the soft repulsion zone. `expectMotion` is on.
+
+`node --import ./tools/lab-register.mjs tools/compare-slice.mjs` steps all three on the JavaScript tick, the Rust tick, and `engines/cpp`. The positions must match within `tolerance`. The queue after that is `doc/GOALS.md`.

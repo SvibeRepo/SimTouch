@@ -4,7 +4,7 @@ JavaScript is where comparison starts. A winner is chosen **with the human** bef
 
 Status: **§0–§9 LOCKED and executed.** Pass 2 code for a row waits until that row is LOCKED here.
 
-**Order of work:** §0–§9 done. §10 follows §0 (already done for this pass). Alignment Pass 1 rows closed — next work is the deferred formula queue below (or GOALS boundary-contact fixture).
+**Order of work:** §0–§9 done. §10 follows §0 (already done for this pass). Alignment Pass 1 rows closed — boundary-contact fixture green; next is GOALS developer-preset (or deferred formula queue below).
 
 | Verdict | Meaning |
 |---------|---------|
@@ -119,7 +119,7 @@ engines/
 ## 3. Collision and boundary
 
 **Collision logic:** match (metric bins, spacing, ¾-power repulsion).
-**Boundary logic:** differ — C++ circular bounce is leaner (no tangential restitution split, no repulsion zone).
+**Boundary logic:** circular match (lab restitution/tangent + soft zone) after `fixtures/boundary-step.json`. C++ rectangular bounce still lean.
 **Naming:** `resolve` / `enforce` — settle word **enforce** for the boundary call; collision **resolve**.
 **Workflow:** match (collision then boundary).
 
@@ -130,10 +130,10 @@ engines/
 |-------|----------|
 | Pair collision | Shared formula (metric bins, spacing, ¾-power). Cap C++ grid at 16. No JS grid realloc. |
 | Boundary spine | Same `enforce` steps as lab: outside → warp **or** bounce; else soft repulsion zone. |
-| C++ circular live | Lean bounce (whole-velocity × `boundaryDamping`); soft zone early-out. Lab restitution split + repulsion block kept commented for a later fidelity flip. |
+| C++ circular live | Lab restitution on normal + damping on tangent; `0.001` inset; soft repulsion on. (Prior lean reflect×damping kept as a history comment.) |
 | Naming | Boundary call **enforce**; collision **resolve**. |
 
-**Deferred:** Port lean → lab fidelity when a boundary-contact fixture demands wall match on C++.
+**Deferred:** C++ rectangular wall fidelity (fixture is circle-only).
 
 **Lock:** LOCKED — executed (see Collision/boundary pass status).
 
@@ -320,16 +320,16 @@ Mass “split every large file” is **not** a separate pass. Structure is **§0
 
 ## Collision/boundary pass status (§3)
 
-**Executed** (Pass 2 for this row):
+**Executed** (Pass 2 for this row; circular fidelity follow-up with `fixtures/boundary-step.json`):
 
 | Done | Detail |
 |------|--------|
 | Collision | Unchanged shared formula; C++ grid cap 16 |
-| C++ `Boundary::enforce` | Circular (and rect) reshaped to lab spine; lean bounce live; lab restitution/repulsion commented; soft zone early-out |
+| C++ `Boundary::enforce` | Circular (and rect) reshaped to lab spine; circular now lab restitution/tangent + soft zone + `0.001` inset |
 | Rust naming | `boundary::resolve` → `boundary::enforce` |
-| Fidelity | C++ wall math still lean until boundary fixture demands match |
+| Fidelity | Circular matched by boundary-contact fixture; rectangular still lean |
 
-**Verified:** `compare-slice` gravity + noise green; Rust lib tests 35; C++ `simcore_test` OK.
+**Verified:** `compare-slice` gravity + noise + boundary green; Rust lib tests 35; C++ `simcore_test` OK.
 
 ---
 
@@ -410,4 +410,4 @@ Mass “split every large file” is **not** a separate pass. Structure is **§0
 
 Former premature formula edits were **reverted** before the structure pass. §1–§9 done.
 
-Deferred candidates (still PROPOSED): polarity invert with presets (incl. maxDensity slider); touch/field interaction; voronoi grid-as-NOISE; C++ voronoi cheap path; C++ boundary fidelity (when fixture demands); C++ aspect/warp (unsure); docs/flowcharts.
+Deferred candidates (still PROPOSED): polarity invert with presets (incl. maxDensity slider); touch/field interaction; voronoi grid-as-NOISE; C++ voronoi cheap path; C++ rectangular boundary fidelity; C++ aspect/warp (unsure); docs/flowcharts.

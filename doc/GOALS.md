@@ -16,11 +16,11 @@ The shared slice chart is `spec/fields.json` (33 fields). Its `index` is the sha
 
 On `engines/cpp`, the sample follows the same order: blur 0 is the phase sample; above 0 the ring reshapes with pullReshape, contrast, and quantize only when each slider is off zero. The library default blur is 0.8. This fixture pins blur to 0, so that path stays uncompared.
 
-## Next (2026-11-16)
+`fixtures/boundary-step.json` is one circular bounce step. Particle 0 starts outside the wall with outward + tangential velocity (restitution and damping both apply). Particle 1 sits in the soft repulsion zone. Mode is bounce, shape is circle, `expectMotion` is on. Positions match within `1e-5`. That fixture also flipped C++ circular `Boundary::enforce` to the lab restitution/tangent split, `0.001` inset, and soft repulsion (ledger §3 deferred fidelity).
 
-The checkerboard compare is green. The next fixture is boundary contact: one step on the same compare where a particle meets the circular wall, so bounce, restitution, damping, and repulsion run. Mode stays bounce and shape stays circle. The wall has to change the velocity (`expectMotion` on the fixture). Record that fixture here when positions match within `1e-5`.
+## Next (2026-11-20)
 
-The plan after that fixture is the developer-preset projection. Lab JSON (panels, modulators, string enums) projects onto the existing suit mask. The mask, the rectangular domain, the Rust pack slots, and today's `STP1` bag stay as they are.
+The next plan is the developer-preset projection. Lab JSON (panels, modulators, string enums) projects onto the existing suit mask. The mask, the rectangular domain, the Rust pack slots, and today's `STP1` bag stay as they are.
 
 Still later:
 
@@ -29,7 +29,7 @@ Still later:
 - A Rust 128² grid that matches a direct sample to `1e-5`. With blur at 0, Rust samples at the particle.
 - Pulse, microphone bands, organic rules, Voronoi, a new `STP1` layout, Phase2, and the suit `/sim` page.
 
-The two green fixtures also leave these chart paths idle: warp mode, turbulence speed and rotation, affect-scale and the scale field, and one step where collision and pull both run. A second step on a green fixture is the check that bias advance matches. Those wait behind the boundary-contact fixture and the preset plan.
+The three green fixtures also leave these chart paths idle: warp mode, turbulence speed and rotation, affect-scale and the scale field, and one step where collision and pull both run. A second step on a green fixture is the check that bias advance matches. Those wait behind the preset plan. Rectangular boundary fidelity on C++ is still lean.
 
 ## Products
 
@@ -43,6 +43,6 @@ Done (2026-11-15).
 
 1. **JavaScript tick.** Done. The known-good JavaScript tree is branch `JavaScript` at `364fdc7`. On `JavaRustCpp`, that tick is in `engines/javascript`, `rustCore.js` is kept, and it runs when `sim.engine === "js"`. The lab steps JavaScript and Rust from the engine switch.
 2. **Shared field chart.** Done. `spec/fields.json` is one name and index for Rust, JavaScript, and `engines/cpp` for gravity, damping, collision, boundary, and turbulence.
-3. **Shared slice.** Done. `fixtures/gravity-step.json` and `fixtures/noise-step.json` step the JavaScript tick, the Rust tick, and `engines/cpp`. Positions match within `1e-5`. The queue is the Next section.
+3. **Shared slice.** Done. `fixtures/gravity-step.json`, `fixtures/noise-step.json`, and `fixtures/boundary-step.json` step the JavaScript tick, the Rust tick, and `engines/cpp`. Positions match within `1e-5`. The queue is the Next section.
 
 Phase2 (`applications/embedded/phase2`) stays its own firmware. Library work lands in `engines/cpp`. Phase1 stays the display slave of the lab.
