@@ -30,9 +30,9 @@ SimTouch is a **dual-phase project** that creates organic, physics-driven contro
 - **Web UI**: `applications/embedded/phase2/data/` - Self-hosted configuration interface (HTML/CSS/JS)
 
 ### Reference Implementations
-- **JavaScript sources**: `core/javascript/` - Original algorithms (for validation & porting reference)
-- **Pattern lab**: `applications/web/` - Browser host linked to `core/javascript` and `core/rust`
-- **SimTouchCore Library**: `core/cpp/` - hardware-free core linked by the P4 panel. Phase2 does not build this tree.
+- **JavaScript sources**: `engines/javascript/` - Original algorithms (for validation & porting reference)
+- **Pattern lab**: `applications/web/` - Browser host linked to `engines/javascript` and `engines/rust`
+- **SimTouchCore Library**: `engines/cpp/` - hardware-free core linked by the P4 panel. Phase2 does not build this tree.
 - **Phase1 Firmware**: `applications/embedded/phase1/` - Legacy UDP slave mode (deprecated for new work)
 
 ## 🏗️ Current Architecture (Phase2)
@@ -159,9 +159,9 @@ SimTouch is a **dual-phase project** that creates organic, physics-driven contro
 - All simulation logic in normalized `[0,1]` space
 
 ### Scope Limitations
-- **Library-first**: Develop simulation behavior in `core/cpp` and validate in `applications/web`
+- **Library-first**: Develop simulation behavior in `engines/cpp` and validate in `applications/web`
 - **Phase2 fork**: `applications/embedded/phase2/` is kept as a separate copy; ordinary library work does not land there
-- **Phase1**: `applications/embedded/phase1/` is the pattern-lab display slave only; do not link it to `core/cpp`
+- **Phase1**: `applications/embedded/phase1/` is the pattern-lab display slave only; do not link it to `engines/cpp`
 
 ## 📊 Performance Targets
 

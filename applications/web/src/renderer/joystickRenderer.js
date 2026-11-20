@@ -162,9 +162,9 @@ export class JoystickRenderer {
   updateGravityUI() {
     // Try to find gravity through main or emuForces
     let gravity = null;
-    // console.log("gravity ", this.main?.particleSystem?.gravity, this.emuForces?.gravity); // Debug log
-    if (this.main?.particleSystem?.gravity) {
-      gravity = this.main.particleSystem.gravity;
+    // console.log("gravity ", this.main?.ps?.gravity, this.emuForces?.gravity); // Debug log
+    if (this.main?.ps?.gravity) {
+      gravity = this.main.ps.gravity;
     } else if (this.emuForces?.gravity) {
       gravity = this.emuForces.gravity;
     }
@@ -314,8 +314,8 @@ export class JoystickRenderer {
 
     // Reset actual gravity if EMU is not enabled
     let gravity = null;
-    if (this.main && this.main.particleSystem && this.main.particleSystem.gravity) {
-      gravity = this.main.particleSystem.gravity;
+    if (this.main && this.main.ps && this.main.ps.gravity) {
+      gravity = this.main.ps.gravity;
     } else if (this.emuForces && this.emuForces.gravity) {
       gravity = this.emuForces.gravity;
     }
@@ -497,8 +497,8 @@ export class JoystickRenderer {
         // --- Explicitly reset physics when snapping to zero ---
         // Reset actual gravity if EMU is not enabled
         let gravity = null;
-        if (this.main?.particleSystem?.gravity) {
-          gravity = this.main.particleSystem.gravity;
+        if (this.main?.ps?.gravity) {
+          gravity = this.main.ps.gravity;
         } else if (this.emuForces?.gravity) {
           gravity = this.emuForces.gravity;
         }

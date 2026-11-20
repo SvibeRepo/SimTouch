@@ -1,11 +1,11 @@
-// Node resolves core/javascript to its real path, so its ../../util imports miss
+// Node resolves engines/javascript to its real path, so its ../../util imports miss
 // applications/web/src. Rewrite those as the browser does through the simulation junction.
 import { isBuiltin } from "node:module";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import path from "node:path";
 import fs from "node:fs";
 
-const coreRoot = path.resolve("core/javascript");
+const coreRoot = path.resolve("engines/javascript");
 const simRoot = path.resolve("applications/web/src/simulation");
 
 export async function resolve(specifier, context, nextResolve) {

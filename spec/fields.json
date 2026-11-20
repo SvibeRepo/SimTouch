@@ -1,7 +1,7 @@
 {
   "index": "Shared identity for the slice gravity, damping, collision, boundary, and turbulence. This number is not the Rust pack slot and not the suit registry index.",
-  "rust": "Current slot in core/rust/src/params.rs id and core/javascript/core/rustCore.js PARAM. Those two tables stay equal to each other.",
-  "cpp": "Current index in core/cpp/src/config/sim_config.h kParamRegistry. The suit mask and rectangular domain stay as they are.",
+  "rust": "Current slot in engines/rust/src/config/params.rs id and engines/javascript/engines/rustCore.js PARAM. Those two tables stay equal to each other.",
+  "cpp": "Current index in engines/cpp/src/config/sim_config.h kParamRegistry. The suit mask and rectangular domain stay as they are.",
   "js": "Lab path under simParams. Encodings stay local: lab strings, Rust flags, and suit uint8 values are not unified here.",
   "fields": [
     {"index": 0, "name": "gravityX", "group": "gravity", "rustName": "GRAVITY_X", "rust": 0, "cpp": 80, "cppLabel": "Gravity X", "js": "gravity.directionX"},

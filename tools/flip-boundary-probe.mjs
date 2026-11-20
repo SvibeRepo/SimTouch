@@ -1,8 +1,8 @@
 // One-particle PIC/FLIP probe. Exits 1 when the JavaScript tick ignores PicFlipRatio.
 //   node --import ./tools/lab-register.mjs tools/flip-boundary-probe.mjs
 
-import { ParticleSystem } from "../core/javascript/core/particleSystem.js";
-import { CircularBoundary } from "../core/javascript/boundary/circularBoundary.js";
+import { ParticleSystem } from "../engines/javascript/core/particle_system.js";
+import { CircularBoundary } from "../engines/javascript/core/boundary/circular_boundary.js";
 
 function make(count, picOnSystem, picOnFluid) {
   const boundary = new CircularBoundary({

@@ -4,13 +4,13 @@ import { fileURLToPath } from "node:url";
 
 const simRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const linkPath = join(simRoot, "src", "simulation");
-const target = join(simRoot, "..", "..", "core", "javascript");
+const target = join(simRoot, "..", "..", "engines", "javascript");
 
 if (existsSync(linkPath)) {
   const stat = lstatSync(linkPath);
   if (stat.isSymbolicLink()) process.exit(0);
   console.error(
-    `${linkPath} is a real directory. Move it to core/javascript before creating the junction.`
+    `${linkPath} is a real directory. Move it to engines/javascript before creating the junction.`
   );
   process.exit(1);
 }

@@ -1,4 +1,4 @@
-// Step a fixture on the JavaScript tick, the Rust tick, and core/cpp, then compare.
+// Step a fixture on the JavaScript tick, the Rust tick, and engines/cpp, then compare.
 // From the SimTouch root:
 //   node --import ./tools/lab-register.mjs tools/compare-slice.mjs [fixture.json ...]
 
@@ -15,9 +15,9 @@ function chartIndex(name, column) {
   return row[column];
 }
 
-const { ParticleSystem } = await import("../core/javascript/core/particleSystem.js");
-const { CircularBoundary } = await import("../core/javascript/boundary/circularBoundary.js");
-const { TurbulenceField } = await import("../core/javascript/forces/turbulenceField.js");
+const { ParticleSystem } = await import("../engines/javascript/core/particle_system.js");
+const { CircularBoundary } = await import("../engines/javascript/core/boundary/circular_boundary.js");
+const { TurbulenceField } = await import("../engines/javascript/forces/turbulence.js");
 
 function applyFields(ps, boundary, turbulence, fields) {
   const set = {
@@ -92,21 +92,21 @@ function rustExe() {
     : ["slice_step", "slice_step.exe"];
   for (const dir of ["debug", "release"]) {
     for (const name of names) {
-      const candidate = path.join("core", "rust", "target", dir, name);
+      const candidate = path.join("engines", "rust", "target", dir, name);
       if (existsSync(candidate)) return candidate;
     }
   }
   return null;
 }
 
-const cppExe = path.join("core", "cpp", "test", "slice_step.exe");
+const cppExe = path.join("engines", "cpp", "test", "slice_step.exe");
 const rust = rustExe();
 if (!existsSync(cppExe)) {
-  console.error("missing core/cpp/test/slice_step.exe");
+  console.error("missing engines/cpp/test/slice_step.exe");
   process.exit(1);
 }
 if (!rust) {
-  console.error("missing core/rust slice_step. From core/rust: cargo build --bin slice_step");
+  console.error("missing engines/rust slice_step. From engines/rust: cargo build --bin slice_step");
   process.exit(1);
 }
 

@@ -95,7 +95,7 @@ if (process.platform === "win32" && !hasMsvcLinker) {
 }
 
 const repoRoot = join(simRoot, "..", "..");
-const crateDir = join(repoRoot, "core", "rust");
+const crateDir = join(repoRoot, "engines", "rust");
 const outDir = join(simRoot, "src", "simcore", "pkg");
 
 const args = [

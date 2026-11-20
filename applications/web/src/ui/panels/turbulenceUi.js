@@ -157,7 +157,7 @@ export class TurbulenceUi extends BaseUi {
 
       // Keep reset particle sizes logic for now, triggered directly
       // if (!newValue) {
-      //   turbulenceField.resetParticleSizes(this.main.particleSystem);
+      //   turbulenceField.resetParticleSizes(this.main.ps);
       // }
       // Emit event to reset particle size to base value when AffectScale is turned off
       if (!newValue) {

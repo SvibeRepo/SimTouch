@@ -126,7 +126,7 @@ export class StateManager {
   getDebugStats(grid) {
     return {
       gridCells: grid.numX * grid.numY,
-      activeParticles: grid.particleSystem.getParticles().length,
+      activeParticles: grid.ps.getParticles().length,
       pressureIterations: grid.numPressureIters,
       timings: {
         pressureSolve: this.metrics._pressureSolveTime,

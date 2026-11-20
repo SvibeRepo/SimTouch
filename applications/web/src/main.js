@@ -1,20 +1,20 @@
 import { ShaderManager } from "./shader/shaderManager.js";
 // Simulation
-import { ParticleSystem } from "./simulation/core/particleSystem.js";
-import { RustCore, particleBuffers } from "./simulation/core/rustCore.js";
-import { TurbulenceField } from "./simulation/forces/turbulenceField.js";
-import { VoronoiField } from "./simulation/forces/voronoiField.js";
+import { ParticleSystem } from "./simulation/core/particle_system.js";
+import { RustCore, particleBuffers } from "./simulation/core/rust_core.js";
+import { TurbulenceField } from "./simulation/forces/turbulence.js";
+import { VoronoiField } from "./simulation/forces/voronoi.js";
 // CoreGrid   
-import { DimensionManager } from "./coreGrid/dimensionManager.js";
-import { BoundaryManager } from "./coreGrid/boundaryManager.js";
+import { DimensionManager } from "./simulation/grid/lattice/dimension_manager.js";
+import { BoundaryManager } from "./simulation/grid/lattice/boundary_manager.js";
 // UI
 import { UiManager } from "./ui/uiManager.js";
 // Input
-import { MouseForces } from "./simulation/forces/mouseForces.js";
+import { MouseForces } from "./simulation/forces/mouse.js";
 import { ExternalInputConnector } from "./input/externalInputConnector.js";
-import { EmuForces } from "./simulation/forces/emuForces.js";
+import { EmuForces } from "./simulation/forces/emu.js";
 import { JoystickRenderer } from "./renderer/joystickRenderer.js";
-import { MicInputForces } from "./simulation/forces/micForces.js";
+import { MicInputForces } from "./simulation/forces/mic.js";
 import { DataVisualization } from "./renderer/dataVisualization.js";
 import { SoundVisualizer } from "./sound/soundVisualizer.js";
 // Renderer
@@ -241,12 +241,12 @@ export class Main {
     this.voronoiField = new VoronoiField({ boundary: physicsBoundary });
 
     // Instantiate ParticleSystem, passing the boundary manager
-    this.particleSystem = new ParticleSystem({
+    this.ps = new ParticleSystem({
       turbulence: this.turbulenceField,
       voronoi: this.voronoiField,
       boundaryManager: this.boundaryManager,
     });
-    this.particleSystem.applyCollisionMetric(
+    this.ps.applyCollisionMetric(
       this.gridParams.screen.shape,
       this.dimensionManager.renderWidth,
       this.dimensionManager.renderHeight
@@ -261,17 +261,17 @@ export class Main {
       this.gridParams,
       this.dimensionManager,
       this.boundaryManager,
-      this.particleSystem
+      this.ps
     );
 
     this.frame = 0;
     this.mouseForces = new MouseForces();
     this.mouseForces.setMainReference(this);
-    this.mouseForces.setupMouseInteraction(this.canvas, this.particleSystem);
+    this.mouseForces.setupMouseInteraction(this.canvas, this.ps);
     this.micForces = new MicInputForces();
 
     // Attach mouseForces to particleSystem
-    this.particleSystem.mouseForces = this.mouseForces;
+    this.ps.mouseForces = this.mouseForces;
 
 
 
@@ -307,7 +307,7 @@ export class Main {
 
       // Create EmuForces instance with correct reference to gravity
       this.emuForces = new EmuForces({
-        gravity: this.particleSystem.gravity
+        gravity: this.ps.gravity
       });
 
       this.externalInput = new ExternalInputConnector(
@@ -422,38 +422,38 @@ export class Main {
       // Rust attach leaves x/y on the wasm arrays. The JavaScript tick writes
       // the interleaved buffer, and getParticles prefers x/y while they are set,
       // so the picture stays on the last Rust frame until those views are dropped.
-      if (this.rustCore?.ready) this.rustCore.detach(this.particleSystem);
-      this.particleSystem.mouseForces.update(this.particleSystem);
-      this.emuForces.apply(this.particleSystem.timeStep);
-      this.turbulenceField.update(this.particleSystem.timeStep);
-      this.voronoiField.update(this.particleSystem.timeStep);
-      this.particleSystem.step();
+      if (this.rustCore?.ready) this.rustCore.detach(this.ps);
+      this.ps.mouseForces.update(this.ps);
+      this.emuForces.apply(this.ps.timeStep);
+      this.turbulenceField.update(this.ps.timeStep);
+      this.voronoiField.update(this.ps.timeStep);
+      this.ps.step();
       this.gridGenRenderer.draw();
-      this.particleRenderer.draw(particleBuffers(this.particleSystem, this.simParams.turbulence.affectScale));
+      this.particleRenderer.draw(particleBuffers(this.ps, this.simParams.turbulence.affectScale));
     } else {
-      const dt = (sim.timeStep ?? this.particleSystem.timeStep) * (sim.timeScale ?? this.particleSystem.timeScale);
+      const dt = (sim.timeStep ?? this.ps.timeStep) * (sim.timeScale ?? this.ps.timeScale);
       if (this.rustCore?.ready) {
-        this.rustCore.prepare(this.particleSystem);
+        this.rustCore.prepare(this.ps);
       } else if (!this._warnedMissingWasm) {
         console.error("[sim-core] wasm tick is not loaded. Run npm run build:core.");
         this._warnedMissingWasm = true;
       }
 
-      this.particleSystem.mouseForces.update(this.particleSystem);
+      this.ps.mouseForces.update(this.ps);
       this.emuForces.apply(dt);
 
       if (this.rustCore?.ready) {
-        const mouse = this.particleSystem.mouseForces;
-        if (mouse.isActive) mouse.neutralizeOtherForces(this.particleSystem);
-        else mouse.restoreOtherForces(this.particleSystem);
+        const mouse = this.ps.mouseForces;
+        if (mouse.isActive) mouse.neutralizeOtherForces(this.ps);
+        else mouse.restoreOtherForces(this.ps);
         this.rustCore.sync(this);
         this.rustCore.step(dt);
-        this.rustCore.attach(this.particleSystem);
+        this.rustCore.attach(this.ps);
         this.rustCore.writeBack(this.turbulenceField);
       }
 
       this.gridGenRenderer.draw();
-      this.particleRenderer.draw(particleBuffers(this.particleSystem, this.simParams.turbulence.affectScale));
+      this.particleRenderer.draw(particleBuffers(this.ps, this.simParams.turbulence.affectScale));
     }
 
     const error = this.gl.getError();
@@ -461,8 +461,8 @@ export class Main {
       console.error("WebGL Error:", error);
     }
 
-    this.ui.update(this.particleSystem.timeStep);
-    this.modulatorManager.update(this.particleSystem.timeStep);
+    this.ui.update(this.ps.timeStep);
+    this.modulatorManager.update(this.ps.timeStep);
     this.ui.headroom.endFrame();
   }
 

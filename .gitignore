@@ -7,6 +7,6 @@ target/
 applications/embedded/LilyGo-T-RGB-main/
 applications/web/src/simcore/pkg/
 applications/web/src/simulation
-core/cpp/
+engines/cpp/
 .superpowers/
 .vscode/

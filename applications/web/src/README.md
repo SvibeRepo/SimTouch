@@ -136,7 +136,7 @@ Components are designed to fail explicitly when required dependencies are missin
 
    ```javascript
    // BAD
-   const field = this.main?.turbulenceField || this.particleSystem?.main?.turbulenceField;
+   const field = this.main?.turbulenceField || this.ps?.main?.turbulenceField;
 
    // GOOD
    const field = this.main.turbulenceField; // Documented dependency

@@ -18,7 +18,7 @@ export class InputsUi extends BaseUi {
     const externalButton = document.createElement("button");
     externalButton.textContent = "Touch Input";
     externalButton.className = "toggle-button";
-    const isExternalEnabled = this.main.particleSystem.mouseForces.externalInputEnabled;
+    const isExternalEnabled = this.main.ps.mouseForces.externalInputEnabled;
     if (isExternalEnabled) externalButton.classList.add("active");
     externalButton.addEventListener("click", () => {
       const isActive = externalButton.classList.contains("active");
@@ -94,11 +94,11 @@ export class InputsUi extends BaseUi {
   }
 
   validateDependencies() {
-    if (!this.main.particleSystem) {
+    if (!this.main.ps) {
       throw new Error("ParticleSystem is required in main for InputsUi");
     }
 
-    if (!this.main.particleSystem.mouseForces) {
+    if (!this.main.ps.mouseForces) {
       throw new Error("MouseForces is required in particleSystem for InputsUi");
     }
 
@@ -215,7 +215,7 @@ export class InputsUi extends BaseUi {
   //#region Inputs
 
   initMouseControls() {
-    const particles = this.main.particleSystem;
+    const particles = this.main.ps;
     const mouseForces = particles.mouseForces;
 
     this.mouseInputFolder
@@ -229,7 +229,7 @@ export class InputsUi extends BaseUi {
 
   initExternalInputControls() {
     const externalInput = this.main.externalInput;
-    const mouseForces = this.main.particleSystem.mouseForces;
+    const mouseForces = this.main.ps.mouseForces;
 
     // Create a persistent button type object
     const buttonTypeControl = {
@@ -557,7 +557,7 @@ export class InputsUi extends BaseUi {
 
     // Add wrappers for toggle buttons
     targets["Enable External"] = {
-      getValue: () => this.main.particleSystem.mouseForces.externalInputEnabled,
+      getValue: () => this.main.ps.mouseForces.externalInputEnabled,
       setValue: (value) => {
         if (this.externalInputButton) this.externalInputButton.classList.toggle("active", value);
         if (value) this.main.externalInput.enable();

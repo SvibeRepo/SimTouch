@@ -80,9 +80,9 @@ Then open your browser to `http://localhost:8080/sim.html` to view the simulatio
 ## Project Structure
 
 - `applications/web/` - Pattern lab (browser host, WebGL UI, npm scripts)
-- `core/javascript/` - Portable simulation sources (linked into the pattern lab)
-- `core/rust/` - Rust simulation tick (WASM build for the pattern lab)
-- `core/cpp/` - SimTouchCore C++ library (separate git repo, gitignored here)
+- `engines/javascript/` - Portable simulation sources (linked into the pattern lab)
+- `engines/rust/` - Rust simulation tick (WASM build for the pattern lab)
+- `engines/cpp/` - SimTouchCore C++ library (separate git repo, gitignored here)
 - `applications/embedded/phase1` - Waveshare ESP32-S3-Touch 1.28 display slave firmware
 - `applications/embedded/phase2/` - Kept Phase2 fork (standalone ESP32 sim; not the library)
 - `doc/` - Architecture, glossary, and reference docs

@@ -4,17 +4,17 @@
 
 `doc/ARCHITECTURE.md` describes the **Phase2 in-tree fork** (`applications/embedded/phase2/`). The **library** is a second tree:
 
-`core/cpp/`
+`engines/cpp/`
 
-PlatformIO name `SimTouchCore`, version 0.2.0 (`library.json`). The portable core is `src/config`, `src/core`, `src/forces`, and `src/grid`. There is no `src/app`, `src/output`, `src/input`, or `src/arduino`. Wi-Fi and the tuning page live in the 3.4C example, not in the library. The module write-up is [the library README](../core/cpp/README.md). This page is the fork map so Phase2 docs are not read as the library API. When the two disagree about the library, the README wins.
+PlatformIO name `SimTouchCore`, version 0.2.0 (`library.json`). The portable core is `src/config`, `src/core`, `src/forces`, and `src/grid`. There is no `src/app`, `src/output`, `src/input`, or `src/arduino`. Wi-Fi and the tuning page live in the 3.4C example, not in the library. The module write-up is [the library README](../engines/cpp/README.md). This page is the fork map so Phase2 docs are not read as the library API. When the two disagree about the library, the README wins.
 
 ## Who builds which tree
 
 | Tree | Path | What links it |
 |---|---|---|
-| SimTouchCore Library | `core/cpp/` | P4 panel and `core/cpp/examples/waveshare_esp32p4_3.4c`. Separate git repo, gitignored by SimTouch. |
+| SimTouchCore Library | `engines/cpp/` | P4 panel and `engines/cpp/examples/waveshare_esp32p4_3.4c`. Separate git repo, gitignored by SimTouch. |
 | Phase2 fork | `applications/embedded/phase2/` | Phase2 PlatformIO envs. Its `include/` and `src/` are separate copies. |
-| JavaScript sources | `core/javascript/` | Pattern lab, through the `src/simulation` junction. The running tick is `core/rust`. |
+| JavaScript sources | `engines/javascript/` | Pattern lab, through the `src/simulation` junction. The running tick is `engines/rust`. |
 | Pattern lab | `applications/web/` | Browser host. |
 
 Phase2 has not been synced onto the library. Editing one tree does not change the other.
@@ -29,7 +29,7 @@ The suit slave (`Svibe_Firmware_Slave`) does not link the library yet. Older not
 
 `GridModes::compute` is the only public grid output. Per-mode methods are private on the library. P4 uses `PointModes` on the suit mesh and does not call `GridModes`. Noise mode on P4 (`gridMode == 0`) advances turbulence bias and calls `computeNoise` without `step`.
 
-Masks, the preset blob, and the host `g++` lines are in the [library README](../core/cpp/README.md). Short form: `simParamMaskCore`, `simParamMaskPointModes`, and `simParamMaskGridModes` in `src/config/sim_params.cpp`. P4 merges core with point modes and then clears indices 71 and 72.
+Masks, the preset blob, and the host `g++` lines are in the [library README](../engines/cpp/README.md). Short form: `simParamMaskCore`, `simParamMaskPointModes`, and `simParamMaskGridModes` in `src/config/sim_params.cpp`. P4 merges core with point modes and then clears indices 71 and 72.
 
 ## Symbols removed from the library only
 
@@ -53,4 +53,4 @@ These are easy to miss if a Phase2 example is copied onto the library:
 
 ## Host tests
 
-Build from `core/cpp/`. Commands are in the library README. They compile the `src/*/*.cpp` sources with `g++ -std=c++17` and do not build Phase2.
+Build from `engines/cpp/`. Commands are in the library README. They compile the `src/*/*.cpp` sources with `g++ -std=c++17` and do not build Phase2.

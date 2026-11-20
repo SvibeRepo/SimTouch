@@ -13,7 +13,7 @@ The **JavaScript prototyping environment** that runs in a browser. Features:
 - UDP communication to external ESP32 slave display
 - Acts as the reference implementation for porting to Phase2
 
-Location: `applications/web/` (host), `core/javascript/` (portable sim sources)  
+Location: `applications/web/` (host), `engines/javascript/` (portable sim sources)  
 Status: Complete, stable, reference-only
 
 ### Phase 2
@@ -27,7 +27,7 @@ Location: `applications/embedded/phase2/` (in-tree fork; it does not compile Sim
 Status: Active development (core features complete, advanced features scaffolded)
 
 ### SimTouchCore Library
-The **hardware-free particle core** extracted from Phase2. PlatformIO library at `core/cpp/` (`library.json` name `SimTouchCore`). The P4 panel links this tree. Phase2 keeps separate copies of the same module names under `applications/embedded/phase2/` and has not been synced to the library. Public API, masks, presets, and symbols removed from the library only: [SIMTOUCHCORE.md](SIMTOUCHCORE.md).
+The **hardware-free particle core** extracted from Phase2. PlatformIO library at `engines/cpp/` (`library.json` name `SimTouchCore`). The P4 panel links this tree. Phase2 keeps separate copies of the same module names under `applications/embedded/phase2/` and has not been synced to the library. Public API, masks, presets, and symbols removed from the library only: [SIMTOUCHCORE.md](SIMTOUCHCORE.md).
 
 ### Phase 3
 **Integration into production suit firmware** (`Svibe_Firmware_Slave`). Features:
@@ -316,8 +316,8 @@ A **pair of files** (header + implementation) implementing a specific feature.
 - Replace `Array.push()` → Fixed-size array with count variable
 
 ### Reference Implementation
-**JavaScript code** in `core/javascript/` that serves as the specification.
-- Example: `core/javascript/forces/turbulenceField.js` → `Turbulence.cpp`
+**JavaScript code** in `engines/javascript/` that serves as the specification.
+- Example: `engines/javascript/forces/turbulence.js` → `Turbulence.cpp`
 - JS Sim is feature-complete and validated; Phase2 ports from it
 - Porting strategy: Copy algorithm logic, adapt to C++ constraints
 

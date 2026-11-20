@@ -4,9 +4,9 @@
 import { readFileSync } from "node:fs";
 
 const chart = JSON.parse(readFileSync("spec/fields.json", "utf8"));
-const rustSrc = readFileSync("core/rust/src/params.rs", "utf8");
-const jsSrc = readFileSync("core/javascript/core/rustCore.js", "utf8");
-const cppSrc = readFileSync("core/cpp/src/config/sim_config.h", "utf8");
+const rustSrc = readFileSync("engines/rust/src/config/params.rs", "utf8");
+const jsSrc = readFileSync("engines/javascript/core/rust_core.js", "utf8");
+const cppSrc = readFileSync("engines/cpp/src/config/sim_config.h", "utf8");
 
 function rustIds(source) {
   const block = source.match(/pub mod id \{([\s\S]*?)\n\}/);

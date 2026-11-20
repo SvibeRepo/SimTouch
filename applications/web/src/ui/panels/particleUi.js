@@ -9,7 +9,7 @@ export class ParticleUi extends BaseUi {
     this.initParticleControls();
 
     // Track the last regenerated particle count
-    this.lastRegeneratedCount = this.main.particleSystem?.numParticles || 0;
+    this.lastRegeneratedCount = this.main.ps?.numParticles || 0;
   }
 
   //#region Particle
@@ -118,7 +118,7 @@ export class ParticleUi extends BaseUi {
 
     try {
       const targets = this.getControlTargets();
-      const particles = this.main.particleSystem;
+      const particles = this.main.ps;
 
       // Check if preset has a higher particle count than current
       let needsReinitialize = false;

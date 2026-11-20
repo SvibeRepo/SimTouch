@@ -19,7 +19,7 @@ export class BoundaryUi extends BaseUi {
   }
 
   initBoundaryControls() {
-    const particles = this.main.particleSystem;
+    const particles = this.main.ps;
     if (!particles) return;
 
 
@@ -61,7 +61,7 @@ export class BoundaryUi extends BaseUi {
       });
     }
 
-    const boundary = this.main.particleSystem.boundary;
+    const boundary = this.main.ps.boundary;
 
     // Add shape-specific controllers based on current boundary type IN SIMPARAMS
     if (this.main.simParams.boundary.shape === this.boundaryTypes.CIRCULAR) {

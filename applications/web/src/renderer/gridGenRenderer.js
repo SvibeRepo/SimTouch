@@ -1,10 +1,10 @@
 import { BaseRenderer } from "./baseRenderer.js";
 import * as mat4 from "gl-matrix/mat4.js";
-import { GridGeometry } from "../coreGrid/gridGeometry.js";
+import { GridGeometry } from "../simulation/grid/lattice/grid_geometry.js";
 import { OverlayManager } from "./overlayRenderer.js";
 import { eventBus } from '../util/eventManager.js';
 import { Gradients } from "../shader/gradients.js";
-import { GridRenderModes, GridField } from "./gridRenderModes.js";
+import { GridRenderModes, GridField } from "../simulation/grid/grid_render_modes.js";
 import { comManager } from "../com/comManager.js";
 import { debugManager } from "../util/debugManager.js";
 
@@ -17,7 +17,7 @@ export class GridGenRenderer extends BaseRenderer {
     this.gradient = new Gradients("c0"); // Initialize gradient in constructor
     this.dimensionManager = dimensionManager;
     this.boundaryManager = boundaryManager;
-    this.particleSystem = particleSystem;
+    this.ps = particleSystem;
     this.rustCore = null;
     this.simParams = null;
     this.cellsDirtyPending = false;
@@ -486,7 +486,7 @@ export class GridGenRenderer extends BaseRenderer {
 
     // Get latest data values and gradient lookup
     // Fetch dataValues only if needed
-    const dataValues = useDataColors ? this.renderModes.getValues(this.particleSystem) : null;
+    const dataValues = useDataColors ? this.renderModes.getValues(this.ps) : null;
 
     if (this.comManager.shouldSendData) {
       // Create Uint8Array for cell values only

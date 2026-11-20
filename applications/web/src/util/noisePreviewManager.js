@@ -1,7 +1,7 @@
 import { debugManager } from './debugManager.js';
 import { eventBus } from './eventManager.js';
 
-/** Match core/rust/src/field.rs bilinear_sample. Preview ny is already simulation Y. */
+/** Match engines/rust/src/field.rs bilinear_sample. Preview ny is already simulation Y. */
 function bilinearSampleField(grid, n, x, y) {
     if (!grid || n === 0 || grid.length < n * n) return 0;
     const nF = n;
@@ -54,8 +54,12 @@ export class NoisePreviewManager {
         this.eventListeners = [];
         this.boundHandleUiChange = null;
 
-        // Performance settings. Only the selected preview animates.
+        // Performance settings. Only the selected preview animates continuously;
+        // other thumbs play while hovered (throttled) and refresh on slider release.
         this.selectedFps = 15;
+        this.hoverRefreshInterval = 100;
+        this.lastHoverRefreshTime = 0;
+        this.hoveredPattern = null;
 
         this._updateRelevanceState();
         this._initializeEventListeners();
@@ -167,6 +171,19 @@ export class NoisePreviewManager {
             const pattern = element.getAttribute('data-pattern');
             if (pattern) {
                 this.previewElements.set(pattern, element);
+
+                element.addEventListener('mouseenter', () => {
+                    if (pattern !== this.selectedPattern) {
+                        this.hoveredPattern = pattern;
+                        this.lastHoverRefreshTime = 0;
+                    }
+                });
+
+                element.addEventListener('mouseleave', () => {
+                    if (this.hoveredPattern === pattern) {
+                        this.hoveredPattern = null;
+                    }
+                });
             }
         });
 
@@ -337,6 +354,10 @@ export class NoisePreviewManager {
             }
         }
 
+        if (this.hoveredPattern === pattern) {
+            this.hoveredPattern = null;
+        }
+
         this.selectedPattern = pattern;
 
         this.updateSelectedUI();
@@ -415,6 +436,7 @@ export class NoisePreviewManager {
         if (this.db) console.log("NoisePreviewManager: Starting refresh loop.");
 
         this.lastRefreshTime = performance.now();
+        this.lastHoverRefreshTime = performance.now();
         this.refreshingSelected = true;
 
         if (this.selectedPattern && !this._inRefreshSelectedPreview) {
@@ -430,6 +452,8 @@ export class NoisePreviewManager {
             cancelAnimationFrame(this.animationFrameId);
             this.animationFrameId = null;
         }
+
+        this.hoveredPattern = null;
 
         const originalPatternStyle = this.turbulenceField ? this.turbulenceField.patternStyle : null;
 
@@ -457,12 +481,18 @@ export class NoisePreviewManager {
 
         const now = performance.now();
         const elapsedSinceLastFrame = now - this.lastRefreshTime;
+        const elapsedSinceHoverRefresh = now - this.lastHoverRefreshTime;
 
         if (elapsedSinceLastFrame > (1000 / this.selectedFps)) {
             if (!this._inRefreshSelectedPreview) {
                 this.refreshSelectedPreview();
             }
             this.lastRefreshTime = now;
+        }
+
+        if (this.hoveredPattern && elapsedSinceHoverRefresh > this.hoverRefreshInterval) {
+            this.refreshHoveredPreview();
+            this.lastHoverRefreshTime = now;
         }
 
         if (this.isVisible) {
@@ -676,6 +706,23 @@ export class NoisePreviewManager {
         };
     }
 
+    refreshHoveredPreview() {
+        if (!this.hoveredPattern || this.refreshingDisabled) return;
+        if (this.hoveredPattern === this.selectedPattern) return;
+
+        const element = this.previewElements.get(this.hoveredPattern);
+        if (!element) return;
+
+        const img = element.querySelector('img');
+        if (!img) return;
+
+        img.src = this.generateStaticPreviewImage(
+            this.hoveredPattern,
+            this.previewSize,
+            this.previewSize
+        );
+    }
+
     refreshInactivePreviews() {
         if (!this.turbulenceField || this.previewElements.size === 0) return;
 
@@ -768,18 +815,22 @@ export class NoisePreviewManager {
         switch (profile) {
             case 'low':
                 this.selectedFps = 10;
+                this.hoverRefreshInterval = 200;
                 break;
 
             case 'medium':
                 this.selectedFps = 15;
+                this.hoverRefreshInterval = 100;
                 break;
 
             case 'high':
                 this.selectedFps = 24;
+                this.hoverRefreshInterval = 50;
                 break;
 
             case 'ultra':
                 this.selectedFps = 30;
+                this.hoverRefreshInterval = 33;
                 break;
 
             default:

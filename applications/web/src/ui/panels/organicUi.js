@@ -1,5 +1,5 @@
 import { BaseUi } from "../baseUi.js";
-import { Behaviors } from "../../simulation/behaviors/organicBehavior.js";
+import { Behaviors } from "../../simulation/behaviors/organic.js";
 import { PresetManager } from "../../presets/presetManager.js";
 import { eventBus } from '../../util/eventManager.js';
 import { debugManager } from '../../util/debugManager.js';
@@ -47,7 +47,7 @@ export class OrganicUi extends BaseUi {
 
   initOrganicControls() {
     const organicParams = this.main.simParams.organic;
-    const organicBehavior = this.main.particleSystem.organicBehavior;
+    const organicBehavior = this.main.ps.organicBehavior;
 
     this.behaviorTypeController = this.gui
       .add(organicParams, "behavior", Object.values(Behaviors))
@@ -187,8 +187,8 @@ export class OrganicUi extends BaseUi {
     }
 
     // Update the organic behavior mode
-    if (this.main.particleSystem && this.main.particleSystem.organicBehavior) {
-      this.main.particleSystem.organicBehavior.currentBehavior = mode;
+    if (this.main.ps && this.main.ps.organicBehavior) {
+      this.main.ps.organicBehavior.currentBehavior = mode;
     }
   }
 
