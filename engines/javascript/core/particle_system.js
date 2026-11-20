@@ -30,7 +30,7 @@ export class ParticleSystem {
     );
 
     // Physics parameters
-    this.velocityDamping = 0.98;
+    this.velocityDamping = 1.0;
     this.boundaryDamping = 0.95;
     this.velocityThreshold = 0.001;
     this.positionThreshold = 0.0001;

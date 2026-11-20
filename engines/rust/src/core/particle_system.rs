@@ -232,7 +232,8 @@ impl ParticleSystem {
 
     fn apply_gravity(&mut self, dt: f32) {
         let p = &self.params;
-        if !(p.gravity_enabled && (p.gravity_x.abs() + p.gravity_y.abs()) > 1e-6) {
+        // Nonzero components = on (ledger §2); ignore gravity_enabled for apply.
+        if (p.gravity_x.abs() + p.gravity_y.abs()) <= 1e-6 {
             return;
         }
         for i in 0..self.count {

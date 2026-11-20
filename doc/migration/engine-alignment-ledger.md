@@ -2,9 +2,9 @@
 
 JavaScript is where comparison starts. A winner is chosen **with the human** before any port. Priorities for arguing: (1) C++ / suit performance, (2) cleanness. Documentation of the settled tree is a later plan.
 
-Status: **§0 + §1 LOCKED and executed.** Rows §2–§9 stay PROPOSED until discussed. Pass 2 code for a row waits until that row is LOCKED here.
+Status: **§0–§2 LOCKED and executed.** Rows §3–§9 stay PROPOSED until discussed. Pass 2 code for a row waits until that row is LOCKED here.
 
-**Order of work:** §0 done. §1 done. Next: discuss and lock **§2** (gravity / damp / rest / clamp), then remaining formula rows.
+**Order of work:** §0–§2 done. Next: discuss and lock **§3** (collision / boundary), then remaining formula rows.
 
 | Verdict | Meaning |
 |---------|---------|
@@ -98,13 +98,21 @@ engines/
 
 ## 2. Gravity, damping, integrate, clamp
 
-**Logic:** match formulas; C++ gravity has no enable gate; rest now on all three (done under §1).
+**Logic:** match formulas; rest on all three (done under §1).
 **Naming:** `velocityDamping` / `velocity_damping` — keep local case; shared word **velocityDamping** in docs.
 **Workflow:** match (after forces, before collision).
 
-**PROPOSED winner:** JS/Rust formulas. Gravity enable gate stays on lab engines. Rest thresholds already on JS/Rust/C++ via §1. `timeScale` playback owned by §1 (done).
+**LOCKED winner:**
+| Topic | Decision |
+|-------|----------|
+| Gravity gate | Nonzero components = on (`\|gx\| + \|gy\| > 1e-6`). Same on JS / Rust / C++. No separate enable flag for apply. |
+| Damp formula | Keep retain scale: `v *= velocityDamping` (**1 = no damp**, lower = heavier). |
+| Shared default | `velocityDamping = 1.0` on JS / Rust / C++ / lab. |
+| Rest / advect / clamp | Already match; unchanged. |
 
-**Lock:** open — next discuss row after §1
+**Deferred:** polarity invert (`0 = no damp`, `1 = max damp`) and other retain-style knobs — separate pass with lab presets / NVS remap in parallel (otherwise presets break).
+
+**Lock:** LOCKED — executed (see Gravity/damp pass status).
 
 ---
 
@@ -257,8 +265,24 @@ Mass “split every large file” is **not** a separate pass. Structure is **§0
 
 ---
 
+## Gravity/damp pass status (§2)
+
+**Executed** (Pass 2 for this row):
+
+| Done | Detail |
+|------|--------|
+| Gravity gate | JS / Rust / C++ apply only when `|gx| + |gy| > 1e-6`; lab pack uses nonzero components |
+| Damp default | JS ctor `velocityDamping` aligned to `1.0` (match Rust / C++ / lab) |
+| Damp formula | Unchanged retain scale (`v *= d`) |
+
+**Deferred:** polarity invert + preset/NVS remap (separate pass).
+
+**Verified:** `compare-slice` gravity + noise green; Rust lib tests 35; C++ `simcore_test` OK.
+
+---
+
 ## Pass 2 queue (formulas)
 
-Former premature formula edits were **reverted** before the structure pass. §1 is done.
+Former premature formula edits were **reverted** before the structure pass. §1–§2 done.
 
-Deferred candidates (still PROPOSED): touch/field interaction; JS voronoi deterministic; C++ boundary fidelity; C++ aspect/warp; grid mode ID renumber; docs/flowcharts. Rows §2–§9 stay open until discussed.
+Deferred candidates (still PROPOSED): polarity invert with presets; touch/field interaction; JS voronoi deterministic; C++ boundary fidelity; C++ aspect/warp; grid mode ID renumber; docs/flowcharts. Rows §3–§9 stay open until discussed.

@@ -266,13 +266,15 @@ export class RustCore {
     const scales = ps.organicBehavior?.forceScales || {};
     const patternName = String(turb.patternStyle || "checkerboard").toLowerCase();
     const patternIndex = Math.max(0, PATTERNS.indexOf(patternName));
-    const gravityOn = !!(gravity && gravity.enabled && gravity.strength >= 1e-6);
+    const gx = num(gravity?.directionX, 0);
+    const gy = num(gravity?.directionY, 0);
+    const gravityOn = Math.abs(gx) + Math.abs(gy) >= 1e-6;
     const shape = physics && typeof physics.getBoundaryType === "function"
       ? physics.getBoundaryType()
       : "CIRCULAR";
 
-    p[PARAM.GRAVITY_X] = gravityOn ? num(gravity.directionX, 0) : 0;
-    p[PARAM.GRAVITY_Y] = gravityOn ? num(gravity.directionY, 0) : 0;
+    p[PARAM.GRAVITY_X] = gravityOn ? gx : 0;
+    p[PARAM.GRAVITY_Y] = gravityOn ? gy : 0;
     p[PARAM.GRAVITY_ENABLED] = flag(gravityOn);
     p[PARAM.VELOCITY_DAMPING] = num(sim.simulation.velocityDamping, ps.velocityDamping);
     p[PARAM.EXTERNAL_DAMPING] = num(boundaryParams.damping, 0.8);

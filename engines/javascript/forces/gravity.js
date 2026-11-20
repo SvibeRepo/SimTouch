@@ -91,15 +91,15 @@ export class GravityForces {
   }
 
   getAcceleration() {
-    if (!this.enabled || this.strength < 1e-6) return [0, 0, 0];
+    // Nonzero components = on (ledger §2); no separate enable gate.
+    if (this.strength < 1e-6) return [0, 0, 0];
 
     // Use raw direction values directly
     return [this.directionX, this.directionY, this.directionZ];
   }
 
   apply(velocitiesX, velocitiesY, numParticles, dt) {
-    // Check enabled state and if strength is effectively zero
-    if (!this.enabled || this.strength < 1e-6) return;
+    if (this.strength < 1e-6) return;
 
     // Use raw direction values
     const accX = this.directionX;
