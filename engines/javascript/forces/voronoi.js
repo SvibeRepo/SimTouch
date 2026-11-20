@@ -1,5 +1,11 @@
 import { eventBus } from '../../util/eventManager.js'; // Added import
 import { debugManager } from '../../util/debugManager.js';
+
+/** Matches engines/rust `forces::voronoi::MAX_CELLS`. */
+const MAX_CELLS = 48;
+/** Golden-angle step used by Rust `place_cells`. */
+const PLACE_ANGLE = 2.3999631;
+
 export class VoronoiField {
   constructor({
     strength = 0,
@@ -8,7 +14,7 @@ export class VoronoiField {
     edgeWidth = 0.3,
     attractionFactor = 1.0,
     boundary = null,
-    timeOffset = Math.random() * 1000,
+    timeOffset = 0,
     decayRate = 0.99,
     pullMode = false,  // NEW: Pull particles to edges instead of pushing away
   } = {}) {
@@ -88,13 +94,12 @@ export class VoronoiField {
     if (this.db) console.log(`VoronoiField updated params via event`);
   }
 
+  /** Rust `place_cells`: fixed golden-angle spiral, no Math.random. */
   initializeCells() {
     try {
-      // Clear existing arrays first
       this.voronoiCenters = [];
       this.voronoiVelocities = [];
 
-      // Safety checks for boundary
       const radius =
         this.boundary && typeof this.boundary.getRadius === "function"
           ? this.boundary.getRadius()
@@ -108,34 +113,30 @@ export class VoronoiField {
           ? this.boundary.centerY
           : 0.5;
 
-      // Generate at least 2 cells
-      const actualCellCount = Math.max(2, this.cellCount);
+      const n = Math.min(MAX_CELLS, Math.max(2, this.cellCount | 0));
+      const placeRadius = radius * 0.9;
 
-      if (this.db) console.log(`Regenerating ${actualCellCount} Voronoi cells`);
+      if (this.db) console.log(`Placing ${n} Voronoi cells (deterministic)`);
 
-      // Generate cells explicitly
-      for (let i = 0; i < actualCellCount; i++) {
-        const angle = Math.random() * Math.PI * 2;
-        const dist = Math.sqrt(Math.random()) * radius * 0.9;
-
-        const cellX = centerX + Math.cos(angle) * dist;
-        const cellY = centerY + Math.sin(angle) * dist;
-
-        this.voronoiCenters.push([cellX, cellY]);
-
-        const vAngle = Math.random() * Math.PI * 2;
-        const vMag = Math.random() * this.cellMovementSpeed;
-
+      for (let i = 0; i < n; i++) {
+        const angle = i * PLACE_ANGLE;
+        const dist = placeRadius * Math.sqrt((i + 0.5) / n);
+        this.voronoiCenters.push([
+          centerX + Math.cos(angle) * dist,
+          centerY + Math.sin(angle) * dist,
+        ]);
+        const vAngle = angle * 1.7;
+        const mag =
+          this.cellMovementSpeed * (0.3 + (0.7 * (i % 5)) / 5.0);
         this.voronoiVelocities.push([
-          Math.cos(vAngle) * vMag,
-          Math.sin(vAngle) * vMag,
+          Math.cos(vAngle) * mag,
+          Math.sin(vAngle) * mag,
         ]);
       }
 
       if (this.db) console.log(`Generated ${this.voronoiCenters.length} voronoi cells`);
     } catch (error) {
       console.error("Error initializing Voronoi cells:", error);
-      // Fallback to minimal setup to prevent crashes
       this.voronoiCenters = [
         [0.3, 0.3],
         [0.7, 0.7],
@@ -151,7 +152,7 @@ export class VoronoiField {
     this.initializeCells(); // Use the safe initialization method
   }
 
-  // Calculate more accurate Voronoi edge distance
+  // Calculate more accurate Voronoi edge distance (Rust `edge_at`)
   getVoronoiEdgeDistance(x, y) {
     // Check if there are enough centers
     if (!Array.isArray(this.voronoiCenters) || this.voronoiCenters.length < 2) {
@@ -403,6 +404,7 @@ export class VoronoiField {
     }
   }
 
+  /** Rust `move_cells`: bounce + periodic sin velocity nudge (no Math.random). */
   update(dt) {
     this.time += dt;
 
@@ -419,108 +421,69 @@ export class VoronoiField {
         return;
       }
 
-      // Move Voronoi cells
       let radius = 0.5;
       let centerX = 0.5;
       let centerY = 0.5;
 
-      // Get boundary parameters if available
       if (this.boundary) {
         try {
-          // Try to get radius from boundary
           radius = this.boundary.getRadius();
         } catch (e) {
-          radius = 0.5; // Fallback if getRadius fails
+          radius = 0.5;
         }
-
-        // Get center coordinates with fallbacks
         centerX = this.boundary.centerX !== undefined ? this.boundary.centerX : 0.5;
         centerY = this.boundary.centerY !== undefined ? this.boundary.centerY : 0.5;
       }
+
+      const placeRadius = radius * 0.9;
+      const maxRadiusSq = placeRadius * placeRadius;
+      const t = this.time + this.timeOffset;
 
       for (let i = 0; i < this.voronoiCenters.length; i++) {
         if (
           !Array.isArray(this.voronoiCenters[i]) ||
           !Array.isArray(this.voronoiVelocities[i])
         ) {
-          continue; // Skip invalid entries
+          continue;
         }
 
         const [cx, cy] = this.voronoiCenters[i];
-        const [vx, vy] = this.voronoiVelocities[i];
+        let [vx, vy] = this.voronoiVelocities[i];
 
-        // Update position
         let newX = cx + vx * dt;
         let newY = cy + vy * dt;
 
-        // Bounce off boundary
         const dx = newX - centerX;
         const dy = newY - centerY;
         const distSq = dx * dx + dy * dy;
-        const maxRadiusSq = radius * 0.9 * (radius * 0.9);
 
-        if (distSq > maxRadiusSq) {
-          // Reflect velocity
-          const normal = [dx, dy];
-          const normalLen = Math.sqrt(distSq);
-          normal[0] /= normalLen;
-          normal[1] /= normalLen;
-
-          // v - 2(v·n)n
-          const dot = vx * normal[0] + vy * normal[1];
-          this.voronoiVelocities[i] = [
-            vx - 2 * dot * normal[0],
-            vy - 2 * dot * normal[1],
-          ];
-
-          // Move back inside boundary
-          const overlap = Math.sqrt(distSq) - radius * 0.9;
-          newX = newX - normal[0] * overlap;
-          newY = newY - normal[1] * overlap;
+        if (distSq > maxRadiusSq && distSq > 1e-12) {
+          const dist = Math.sqrt(distSq);
+          const nxn = dx / dist;
+          const nyn = dy / dist;
+          const dot = vx * nxn + vy * nyn;
+          vx = vx - 2 * dot * nxn;
+          vy = vy - 2 * dot * nyn;
+          this.voronoiVelocities[i] = [vx, vy];
+          const overlap = dist - placeRadius;
+          newX = newX - nxn * overlap;
+          newY = newY - nyn * overlap;
         }
 
-        // Occasionally change velocity
-        if (Math.random() < 0.01) {
-          const vAngle = Math.random() * Math.PI * 2;
-          const vMag = Math.random() * this.cellMovementSpeed;
+        // Deterministic velocity nudge (Rust: sin(time*3 + i*1.7) > 0.98)
+        if (Math.sin(t * 3.0 + i * 1.7) > 0.98) {
+          const vAngle = t * 2.0 + i;
+          const mag = this.cellMovementSpeed * 0.5;
           this.voronoiVelocities[i] = [
-            Math.cos(vAngle) * vMag,
-            Math.sin(vAngle) * vMag,
+            Math.cos(vAngle) * mag,
+            Math.sin(vAngle) * mag,
           ];
         }
 
         this.voronoiCenters[i] = [newX, newY];
       }
-
-      // Occasionally add/remove cells for more dynamism
-      if (Math.random() < 0.001) {
-        const action = Math.random();
-        if (action < 0.3 && this.voronoiCenters.length > 3) {
-          // Remove a random cell
-          const index = Math.floor(Math.random() * this.voronoiCenters.length);
-          this.voronoiCenters.splice(index, 1);
-          this.voronoiVelocities.splice(index, 1);
-        } else if (this.voronoiCenters.length < this.cellCount * 1.5) {
-          // Add a new cell
-          const angle = Math.random() * Math.PI * 2;
-          const dist = Math.sqrt(Math.random()) * radius * 0.9;
-
-          this.voronoiCenters.push([
-            centerX + Math.cos(angle) * dist,
-            centerY + Math.sin(angle) * dist,
-          ]);
-
-          const vAngle = Math.random() * Math.PI * 2;
-          const vMag = Math.random() * this.cellMovementSpeed;
-          this.voronoiVelocities.push([
-            Math.cos(vAngle) * vMag,
-            Math.sin(vAngle) * vMag,
-          ]);
-        }
-      }
     } catch (err) {
       console.error("Error in voronoi update:", err);
-      // Try to recover by reinitializing cells
       this.initializeCells();
     }
   }

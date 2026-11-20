@@ -2,9 +2,9 @@
 
 JavaScript is where comparison starts. A winner is chosen **with the human** before any port. Priorities for arguing: (1) C++ / suit performance, (2) cleanness. Documentation of the settled tree is a later plan.
 
-Status: **§0–§5 LOCKED and executed.** Rows §6–§9 stay PROPOSED until discussed. Pass 2 code for a row waits until that row is LOCKED here.
+Status: **§0–§6 LOCKED and executed.** Rows §7–§9 stay PROPOSED until discussed. Pass 2 code for a row waits until that row is LOCKED here.
 
-**Order of work:** §0–§5 done. Next: discuss and lock **§6** (voronoi), then remaining formula rows.
+**Order of work:** §0–§6 done. Next: discuss and lock **§7** (organic / FLIP), then remaining formula rows.
 
 | Verdict | Meaning |
 |---------|---------|
@@ -174,9 +174,20 @@ engines/
 **Logic:** JS random cells + per-particle edge; Rust deterministic + 128² raster; C++ **absent**.
 **Workflow:** differ (raster vs on the fly).
 
-**PROPOSED winner:** **Rust model** (deterministic place/move + one raster + bilinear) for any future C++ port. C++ stays **absent**. JS random motion is lab-only until a fixture replaces it with the deterministic path (cleanness + compareability). No C++ product this pass.
+**Long-term goals** (not all this pass):
+1. Organic feel without obvious loop — **compatible with deterministic** (fixed place + sin-nudged move; no `Math.random`).
+2. Grid mode like NOISE (sample edge field) — **later**, with multi-mode work.
+3. C++ compute-cheap path — **favoured**; no mandatory 128² on suit this pass.
 
-**Lock:** open
+**LOCKED winner:**
+| Topic | Decision |
+|-------|----------|
+| Lab truth | **Rust model** — deterministic `place_cells` / `move_cells`; edge force via `edge_at` / raster sample. |
+| JS | Align place + move to Rust (drop random regen / velocity / add-remove). Per-particle `edge_at` OK this pass (same formula as Rust before bilinear). |
+| C++ | **Absent product** — keep `apply_voronoi` spine slot as early-return stub (org rule). Cheap sampler / force later. |
+| Grid-as-NOISE | **Deferred** to multi-mode pass. |
+
+**Lock:** LOCKED — executed (see Voronoi pass status).
 
 ---
 
@@ -325,8 +336,22 @@ Mass “split every large file” is **not** a separate pass. Structure is **§0
 
 ---
 
+## Voronoi pass status (§6)
+
+**Executed** (Pass 2 for this row):
+
+| Done | Detail |
+|------|--------|
+| JS place/move | Deterministic golden-angle place + Rust bounce / sin velocity nudge; no random add-remove |
+| C++ spine | `apply_voronoi` early-return stub in `ParticleSystem::step` |
+| Deferred | Grid-as-NOISE mode; C++ cheap sampler/force; JS optional 128² raster |
+
+**Verified:** `compare-slice` gravity + noise green; C++ `simcore_test` OK.
+
+---
+
 ## Pass 2 queue (formulas)
 
-Former premature formula edits were **reverted** before the structure pass. §1–§5 done.
+Former premature formula edits were **reverted** before the structure pass. §1–§6 done.
 
-Deferred candidates (still PROPOSED): polarity invert with presets; touch/field interaction; JS voronoi deterministic; C++ boundary fidelity (when fixture demands); C++ aspect/warp (unsure); grid mode ID renumber; docs/flowcharts. Rows §6–§9 stay open until discussed.
+Deferred candidates (still PROPOSED): polarity invert with presets; touch/field interaction; voronoi grid-as-NOISE; C++ voronoi cheap path; C++ boundary fidelity (when fixture demands); C++ aspect/warp (unsure); grid mode ID renumber; docs/flowcharts. Rows §7–§9 stay open until discussed.
