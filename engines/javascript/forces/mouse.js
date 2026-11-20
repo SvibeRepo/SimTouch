@@ -164,22 +164,13 @@ export class MouseForces {
       const dx = pos.x - this.mouseState.lastPosition.x;
       const dy = pos.y - this.mouseState.lastPosition.y;
 
-      // Check if we're in Noise mode
+      // Events only update state; ParticleSystem.apply_touch applies once per step.
       if (this.isInNoiseMode()) {
-        // Handle as joystick for noise mode
         this.handleJoystick(pos);
-      } else {
-        // Handle normal particle interaction based on mouse button
-        if (this.mouseState.buttons.has(1)) {
-          // Middle mouse button
-          this.applyDragForce(particleSystem, pos.x, pos.y, dx * 2, dy * 2);
-        } else if (this.mouseState.buttons.has(0)) {
-          // Left mouse button
-          this.applyImpulseAt(particleSystem, pos.x, pos.y, "attract");
-        } else if (this.mouseState.buttons.has(2)) {
-          // Right mouse button
-          this.applyImpulseAt(particleSystem, pos.x, pos.y, "repulse");
-        }
+      } else if (this.mouseState.buttons.has(1)) {
+        this._dragDx = dx * 2;
+        this._dragDy = dy * 2;
+        this._dragPending = true;
       }
 
       this.mouseState.lastPosition = this.mouseState.position;
@@ -250,11 +241,9 @@ export class MouseForces {
       const touch = e.touches[0];
       const pos = this.getTouchSimulationCoords(touch, canvas);
 
+      // Events only update state; apply_touch runs once per step.
       if (this.isInNoiseMode()) {
         this.handleJoystick(pos);
-      } else {
-        // Handle as left button interaction
-        this.applyImpulseAt(particleSystem, pos.x, pos.y, "attract");
       }
 
       this.mouseState.lastPosition = this.mouseState.position;
@@ -386,6 +375,25 @@ export class MouseForces {
     }
   }
 
+  /** Once-per-step apply from pointer state (ledger §1 apply_touch). */
+  applyInStep(particleSystem) {
+    this.update(particleSystem);
+  }
+
+  /** Set isActive from pointer/external state without applying forces. */
+  syncActiveFromState() {
+    this.isActive = false;
+    if (this.mouseState.isPressed && this.mouseState.position) {
+      this.isActive = true;
+    }
+    if (this.externalInputEnabled && this.externalMouseState.isPressed) {
+      const now = performance.now();
+      if (now - this.externalMouseState.lastInputTime < this.externalMouseState.inputTimeout) {
+        this.isActive = true;
+      }
+    }
+  }
+
   update(particleSystem) {
     if (!particleSystem) {
       throw new Error("ParticleSystem is required for update");
@@ -409,7 +417,16 @@ export class MouseForces {
       } else {
         // Apply appropriate force based on button for normal modes
         if (this.mouseState.buttons.has(1)) {
-          // Middle mouse button - need movement for drag, handled in mousemove
+          if (this._dragPending) {
+            this.applyDragForce(
+              particleSystem,
+              pos.x,
+              pos.y,
+              this._dragDx || 0,
+              this._dragDy || 0
+            );
+            this._dragPending = false;
+          }
         } else if (this.mouseState.buttons.has(0)) {
           // Left mouse button - continuous attraction
           this.applyImpulseAt(particleSystem, pos.x, pos.y, "attract");

@@ -387,6 +387,10 @@ export class RustCore {
     p[PARAM.ORGANIC_CHAIN_BASE] = num(scales.Chain?.base, 1.5);
 
     this.core.set_params(p);
+    const timeScale = num(sim.simulation.timeScale, ps.timeScale ?? 1);
+    if (this.core.set_time_scale) {
+      this.core.set_time_scale(timeScale);
+    }
     const dims = main.dimensionManager?.getDimensions?.() || main.dimensionManager;
     const rw = Number(dims?.renderWidth);
     const rh = Number(dims?.renderHeight);

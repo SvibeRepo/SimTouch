@@ -75,6 +75,7 @@ fn main() {
     ps.set_count(count);
     ps.params.particle_radius = radius.max(0.0);
     ps.params.max_velocity = max_velocity.max(0.0);
+    ps.set_time_scale(time_scale);
     // The lab compare and core/cpp both use a circle of radius 0.5 * 1.03.
     // Boundary scale is not a pack slot.
     ps.params.boundary_radius = 0.5 * 1.03;
@@ -105,7 +106,7 @@ fn main() {
         ps.radius[i] = ps.params.particle_radius;
     }
 
-    ps.step(dt * time_scale);
+    ps.step(dt);
     for i in 0..count {
         println!(
             "{:.9} {:.9} {:.9} {:.9}",

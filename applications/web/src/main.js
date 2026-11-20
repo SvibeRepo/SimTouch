@@ -423,7 +423,7 @@ export class Main {
       // the interleaved buffer, and getParticles prefers x/y while they are set,
       // so the picture stays on the last Rust frame until those views are dropped.
       if (this.rustCore?.ready) this.rustCore.detach(this.ps);
-      this.ps.mouseForces.update(this.ps);
+      // Touch apply lives inside ps.step (apply_touch).
       this.emuForces.apply(this.ps.timeStep);
       this.turbulenceField.update(this.ps.timeStep);
       this.voronoiField.update(this.ps.timeStep);
@@ -431,7 +431,9 @@ export class Main {
       this.gridGenRenderer.draw();
       this.particleRenderer.draw(particleBuffers(this.ps, this.simParams.turbulence.affectScale));
     } else {
-      const dt = (sim.timeStep ?? this.ps.timeStep) * (sim.timeScale ?? this.ps.timeScale);
+      // Raw frame dt; wasm applies time_scale inside step (playback contract).
+      const timeStep = sim.timeStep ?? this.ps.timeStep;
+      const timeScale = sim.timeScale ?? this.ps.timeScale ?? 1;
       if (this.rustCore?.ready) {
         this.rustCore.prepare(this.ps);
       } else if (!this._warnedMissingWasm) {
@@ -440,14 +442,14 @@ export class Main {
       }
 
       this.ps.mouseForces.update(this.ps);
-      this.emuForces.apply(dt);
+      this.emuForces.apply(timeStep * timeScale);
 
       if (this.rustCore?.ready) {
         const mouse = this.ps.mouseForces;
         if (mouse.isActive) mouse.neutralizeOtherForces(this.ps);
         else mouse.restoreOtherForces(this.ps);
         this.rustCore.sync(this);
-        this.rustCore.step(dt);
+        this.rustCore.step(timeStep);
         this.rustCore.attach(this.ps);
         this.rustCore.writeBack(this.turbulenceField);
       }

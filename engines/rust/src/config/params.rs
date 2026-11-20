@@ -160,6 +160,8 @@ pub struct Params {
     pub gravity_x: f32,
     pub gravity_y: f32,
     pub gravity_enabled: bool,
+    /// Playback rate for the whole tick. Not in the float pack; hosts set it.
+    pub time_scale: f32,
     pub velocity_damping: f32,
     pub external_damping: f32,
     pub max_velocity: f32,
@@ -275,6 +277,7 @@ impl Default for Params {
             gravity_x: 0.0,
             gravity_y: 0.0,
             gravity_enabled: true,
+            time_scale: 1.0,
             velocity_damping: 1.0,
             external_damping: 0.95,
             max_velocity: 1.0,

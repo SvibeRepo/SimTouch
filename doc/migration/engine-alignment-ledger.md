@@ -2,9 +2,9 @@
 
 JavaScript is where comparison starts. A winner is chosen **with the human** before any port. Priorities for arguing: (1) C++ / suit performance, (2) cleanness. Documentation of the settled tree is a later plan.
 
-Status: **Pass 1 research complete. Winners below are PROPOSED only — not locked** (except where marked LOCKED after human discussion). Pass 2 code must wait until each differ row is discussed and locked here.
+Status: **§0 + §1 LOCKED and executed.** Rows §2–§9 stay PROPOSED until discussed. Pass 2 code for a row waits until that row is LOCKED here.
 
-**Order of work:** settle **§0 file structure** first; formula rows (including §1 step order) stay on hold.
+**Order of work:** §0 done. §1 done. Next: discuss and lock **§2** (gravity / damp / rest / clamp), then remaining formula rows.
 
 | Verdict | Meaning |
 |---------|---------|
@@ -52,13 +52,13 @@ engines/
     grid/       modes, geometry, noise readers
   rust/src/
     core/       particle_system, collision, boundary, velocity_grid, pic_flip
-    forces/     turbulence (from field.rs), gravity, voronoi, …
+    forces/     turbulence (from field.rs), touch, voronoi, …
     behaviors/  organic
     grid/
     config/     params
   cpp/src/
     core/       particle_system (from sim_core), collision, boundary, velocity_grid, pic_flip
-    forces/
+    forces/     touch (apply inside step); gravity_forces / touch_forces names still deferred
     behaviors/  (organic later)
     grid/
     config/ session/ paint/ arduino/   (host glue stays)
@@ -70,32 +70,41 @@ engines/
 
 ## 1. Step order
 
-| | JS | Rust | C++ |
-|---|----|------|-----|
-| Entry | `ParticleSystem.step` (`ps`) | `ParticleSystem::step` | `ParticleSystem::step` |
-| Spine | fields → gravity → (legacy organic) → turb → voronoi → organicBehavior → FLIP → damp → rest → advect → clamp → collision → boundary | fields → gravity → turb → voronoi → organic → FLIP → damp → rest → advect → clamp → collision → boundary | gravity → bias → turb → FLIP → damp → advect(`timeScale`) → clamp → collision → boundary |
+**LOCKED winner** (shape **B** — flat `step` call list only; workers own math):
 
-**Logic:** differ (JS dual organic; C++ no voronoi/organic/rest; C++ folds `timeScale` into position).
-**Naming:** match enough (`dt`, damping, clamp).
-**Workflow:** differ on organic placement and rest.
+```text
+1  advance_fields
+2  apply_gravity
+3  apply_turbulence
+4  apply_voronoi       # omit while product absent (C++ this pass)
+5  apply_organic       # omit while product absent (C++ this pass); one slot
+6  apply_touch         # JS mouse ≡ touch; last force before FLIP
+7  apply_pic_flip
+8  damp
+9  rest                # all three engines
+10 advect
+11 clamp_velocity
+12 resolve_collision
+13 enforce_boundary
+```
 
-**PROPOSED winner:** Shared spine **forces → FLIP → damp → advect → clamp → collision → boundary**. Organic (when present) after turb/voronoi and before FLIP (Rust order). JS legacy fluid/swarm/automata inside `applyExternalForces` before turb is a cleanness debt — consolidate onto `organicBehavior` later; not a formula change this pass. C++ keeps absent voronoi/organic. Rest threshold: keep on JS/Rust (cheap; stops micro-drift). C++ may stay without rest until a suit need appears (performance). Position `timeScale`: settle on **forces use raw `dt`, positions use `dt` already scaled by the caller** (JS/Rust). C++ should stop multiplying `timeScale` again inside `step` when the session already scales, or document that C++ owns the scale — **PROPOSED: match JS/Rust — integrate with the `dt` passed into `step`; callers apply timeScale once.**
+**`timeScale` = playback rate:** `physics_dt = time_step * time_scale` once at entry of `step`; every phase uses `physics_dt` (recording / baked-animation clock). Same on JS, Rust, C++. No position-only scale; no host-only multiply carve-out.
 
-**Priority argument:** cleanness + one workflow; C++ skips absent products.
+**Deferred:** touch vs turb/voronoi/organic fighting (JS neutralize prelude remains until that pass).
 
-**Lock:** open
+**Lock:** LOCKED — executed (see Step-order pass status).
 
 ---
 
 ## 2. Gravity, damping, integrate, clamp
 
-**Logic:** match formulas; C++ gravity has no enable gate; C++ no rest.
+**Logic:** match formulas; C++ gravity has no enable gate; rest now on all three (done under §1).
 **Naming:** `velocityDamping` / `velocity_damping` — keep local case; shared word **velocityDamping** in docs.
 **Workflow:** match (after forces, before collision).
 
-**PROPOSED winner:** JS/Rust formulas. Gravity enable gate stays on lab engines. Rest stays JS/Rust. No code change required for formulas this pass beyond `timeScale` under row 1.
+**PROPOSED winner:** JS/Rust formulas. Gravity enable gate stays on lab engines. Rest thresholds already on JS/Rust/C++ via §1. `timeScale` playback owned by §1 (done).
 
-**Lock:** open
+**Lock:** open — next discuss row after §1
 
 ---
 
@@ -231,8 +240,25 @@ Mass “split every large file” is **not** a separate pass. Structure is **§0
 
 ---
 
+## Step-order pass status (§1)
+
+**Executed** (Pass 2 for this row):
+
+| Done | Detail |
+|------|--------|
+| Spine | Flat `ParticleSystem.step` call list on JS / Rust / C++ (shape B) |
+| `timeScale` | Engine-entry `physics_dt = time_step * time_scale` on all three; forces + advect share it |
+| Rest | C++ gained `velocityThreshold` / `positionThreshold` (defaults match lab) |
+| Touch | Apply inside `step` (C++ / Rust module; JS `applyInStep` from state). Session no longer applies touch before `step` |
+| Organic (JS) | One `apply_organic` slot after voronoi (legacy + `OrganicBehavior`) |
+| Hosts | Rust `slice_step` / lab wasm: raw `dt` + `set_time_scale`; C++ session passes raw `timeStep` |
+
+**Verified:** `compare-slice` gravity + noise green; Rust lib tests 35 (`cargo +stable-x86_64-pc-windows-gnullvm test`).
+
+---
+
 ## Pass 2 queue (formulas)
 
-Empty until formula rows (§1–§9) are discussed and LOCKED. Former premature formula edits (noise polarity, Classic Drop taps/pullReshape, C++ timescale, Rust FLIP skip, related host tests, JS comment) were **reverted** before the structure pass.
+Former premature formula edits were **reverted** before the structure pass. §1 is done.
 
-Deferred candidates (still PROPOSED): JS organic consolidation; JS voronoi deterministic; C++ boundary fidelity; C++ aspect/warp; grid mode ID renumber; docs/flowcharts.
+Deferred candidates (still PROPOSED): touch/field interaction; JS voronoi deterministic; C++ boundary fidelity; C++ aspect/warp; grid mode ID renumber; docs/flowcharts. Rows §2–§9 stay open until discussed.

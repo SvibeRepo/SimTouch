@@ -2,6 +2,7 @@
 
 use crate::core::collision::CollisionBins;
 use crate::forces::turbulence::{self, FIELD_AREA};
+use crate::forces::touch::Touch;
 use crate::core::velocity_grid::VelocityGrid;
 use crate::grid::{Grid, MODE_NOISE};
 use crate::behaviors::organic;
@@ -38,6 +39,7 @@ pub struct ParticleSystem {
     vor_gy: Vec<f32>,
     vor_edge: Vec<f32>,
     flip: VelocityGrid,
+    touch: Touch,
     org_state: Vec<f32>,
     org_state_next: Vec<f32>,
     org_read_vx: Vec<f32>,
@@ -82,6 +84,7 @@ impl ParticleSystem {
             vor_gy: vec![0.0; FIELD_AREA],
             vor_edge: vec![0.0; FIELD_AREA],
             flip: VelocityGrid::new(),
+            touch: Touch::default(),
             org_state: vec![0.5; capacity],
             org_state_next: vec![0.5; capacity],
             org_read_vx: vec![0.0; capacity],
@@ -115,18 +118,43 @@ impl ParticleSystem {
         self.bias_vy = data[id::BIAS_VY];
     }
 
-    pub fn step(&mut self, dt: f32) {
+    pub fn set_touch(&mut self, x: f32, y: f32, active: bool) {
+        self.touch.set_touch(x, y, active);
+    }
+
+    pub fn set_time_scale(&mut self, scale: f32) {
+        self.params.time_scale = if scale.is_finite() && scale > 0.0 {
+            scale
+        } else {
+            1.0
+        };
+    }
+
+    /// `time_step` is the raw frame dt. Playback: `physics_dt = time_step * time_scale`.
+    pub fn step(&mut self, time_step: f32) {
+        if !time_step.is_finite() {
+            return;
+        }
+        let dt = time_step * self.params.time_scale;
         if !dt.is_finite() {
             return;
         }
-        // Always advance time/rotation/bias/field — Bias_01 is noise-only with
-        // particle count 0, and still needs T-RotSpd / T-Speed to animate.
+        // Flat spine (ledger §1). Call list only — workers own the math.
         self.advance_fields(dt);
         if self.count == 0 {
             return;
         }
-        self.apply_forces(dt);
-        self.integrate(dt);
+        self.apply_gravity(dt);
+        self.apply_turbulence(dt);
+        self.apply_voronoi(dt);
+        self.apply_organic(dt);
+        self.apply_touch();
+        self.apply_pic_flip(dt);
+        self.damp();
+        self.rest_and_advect(dt);
+        self.clamp_velocity();
+        self.resolve_collision();
+        self.enforce_boundary();
     }
 
     fn advance_fields(&mut self, dt: f32) {
@@ -202,59 +230,70 @@ impl ParticleSystem {
         }
     }
 
-    fn apply_forces(&mut self, dt: f32) {
+    fn apply_gravity(&mut self, dt: f32) {
+        let p = &self.params;
+        if !(p.gravity_enabled && (p.gravity_x.abs() + p.gravity_y.abs()) > 1e-6) {
+            return;
+        }
+        for i in 0..self.count {
+            self.vx[i] += p.gravity_x * dt;
+            self.vy[i] += p.gravity_y * dt;
+        }
+    }
+
+    fn apply_turbulence(&mut self, dt: f32) {
+        let p = self.params.clone();
+        let turb_on = p.turb_affect_position || p.turb_affect_scale || p.turb_scale_field;
+        if !turb_on {
+            return;
+        }
+        for i in 0..self.count {
+            let (nvx, nvy, noise) = turbulence::sample_force(
+                &self.field,
+                self.x[i],
+                self.y[i],
+                self.vx[i],
+                self.vy[i],
+                dt,
+                &p,
+                self.time,
+                self.rotation,
+                self.bias_x,
+                self.bias_y,
+            );
+            self.vx[i] = nvx;
+            self.vy[i] = nvy;
+            if p.turb_affect_scale {
+                self.radius[i] =
+                    turbulence::radius_from_noise(noise, p.turb_min_scale, p.turb_max_scale);
+            }
+        }
+    }
+
+    fn apply_voronoi(&mut self, dt: f32) {
+        let p = self.params.clone();
+        if !(p.voronoi_strength > 0.0 && self.vor_count >= 2) {
+            return;
+        }
+        for i in 0..self.count {
+            let edge = voronoi::sample_edge(
+                &self.vor_dist,
+                &self.vor_gx,
+                &self.vor_gy,
+                &self.vor_edge,
+                self.x[i],
+                self.y[i],
+            );
+            let (nvx, nvy) = voronoi::accelerate(self.vx[i], self.vy[i], edge, dt, &p);
+            self.vx[i] = nvx;
+            self.vy[i] = nvy;
+        }
+    }
+
+    fn apply_organic(&mut self, dt: f32) {
         let count = self.count;
         let p = self.params.clone();
-        if p.gravity_enabled && (p.gravity_x.abs() + p.gravity_y.abs()) > 1e-6 {
-            for i in 0..count {
-                self.vx[i] += p.gravity_x * dt;
-                self.vy[i] += p.gravity_y * dt;
-            }
-        }
-        let turb_on = p.turb_affect_position || p.turb_affect_scale || p.turb_scale_field;
-        if turb_on {
-            for i in 0..count {
-                let (nvx, nvy, noise) = turbulence::sample_force(
-                    &self.field,
-                    self.x[i],
-                    self.y[i],
-                    self.vx[i],
-                    self.vy[i],
-                    dt,
-                    &p,
-                    self.time,
-                    self.rotation,
-                    self.bias_x,
-                    self.bias_y,
-                );
-                self.vx[i] = nvx;
-                self.vy[i] = nvy;
-                if p.turb_affect_scale {
-                    self.radius[i] =
-                        turbulence::radius_from_noise(noise, p.turb_min_scale, p.turb_max_scale);
-                }
-            }
-        }
-        if p.voronoi_strength > 0.0 && self.vor_count >= 2 {
-            for i in 0..count {
-                let edge = voronoi::sample_edge(
-                    &self.vor_dist,
-                    &self.vor_gx,
-                    &self.vor_gy,
-                    &self.vor_edge,
-                    self.x[i],
-                    self.y[i],
-                );
-                let (nvx, nvy) = voronoi::accelerate(self.vx[i], self.vy[i], edge, dt, &p);
-                self.vx[i] = nvx;
-                self.vy[i] = nvy;
-            }
-        }
-        // Swarm and fluid read neighbor velocity. The JS pass computed every
-        // force from the pre-update arrays, then applied them. Writing vx[i]
-        // before particle i+1 is evaluated lets alignment chase that fresh
-        // velocity; on the clockwise spawn rings, collision turns it into a
-        // growing clockwise current.
+        // Swarm/fluid read neighbor velocity from a pre-update snapshot.
         self.org_read_vx[..count].copy_from_slice(&self.vx[..count]);
         self.org_read_vy[..count].copy_from_slice(&self.vy[..count]);
         organic::apply(
@@ -274,6 +313,17 @@ impl ParticleSystem {
             &p,
             dt,
         );
+    }
+
+    fn apply_touch(&mut self) {
+        let count = self.count;
+        self.touch
+            .apply(&self.x, &self.y, &mut self.vx, &mut self.vy, count);
+    }
+
+    fn apply_pic_flip(&mut self, dt: f32) {
+        let count = self.count;
+        let p = self.params.clone();
         crate::core::pic_flip::apply(
             &mut self.flip,
             &self.x,
@@ -286,12 +336,17 @@ impl ParticleSystem {
         );
     }
 
-    fn integrate(&mut self, dt: f32) {
-        let count = self.count;
-        let p = self.params.clone();
-        for i in 0..count {
-            self.vx[i] *= p.velocity_damping;
-            self.vy[i] *= p.velocity_damping;
+    fn damp(&mut self) {
+        let d = self.params.velocity_damping;
+        for i in 0..self.count {
+            self.vx[i] *= d;
+            self.vy[i] *= d;
+        }
+    }
+
+    fn rest_and_advect(&mut self, dt: f32) {
+        let p = &self.params;
+        for i in 0..self.count {
             let speed = (self.vx[i] * self.vx[i] + self.vy[i] * self.vy[i]).sqrt();
             let motion = speed * dt;
             if speed < p.velocity_threshold && motion < p.position_threshold {
@@ -302,29 +357,43 @@ impl ParticleSystem {
             self.x[i] += self.vx[i] * dt;
             self.y[i] += self.vy[i] * dt;
         }
-        let max_v = p.max_velocity;
-        for i in 0..count {
+    }
+
+    fn clamp_velocity(&mut self) {
+        let max_v = self.params.max_velocity;
+        for i in 0..self.count {
             self.vx[i] = self.vx[i].clamp(-max_v, max_v);
             self.vy[i] = self.vy[i].clamp(-max_v, max_v);
         }
-        if p.collision_enabled {
-            let (sx, sy) =
-                crate::core::metric::collision_scales(p.boundary_shape, p.render_width, p.render_height);
-            self.bins
-                .rebuild(&self.x, &self.y, count, p.collision_grid, sx, sy);
-            crate::core::collision::resolve(
-                &self.bins,
-                &mut self.x,
-                &mut self.y,
-                &mut self.vx,
-                &mut self.vy,
-                &self.radius,
-                count,
-                p.collision_grid,
-                &p,
-                p.turb_affect_scale,
-            );
+    }
+
+    fn resolve_collision(&mut self) {
+        let count = self.count;
+        let p = self.params.clone();
+        if !p.collision_enabled {
+            return;
         }
+        let (sx, sy) =
+            crate::core::metric::collision_scales(p.boundary_shape, p.render_width, p.render_height);
+        self.bins
+            .rebuild(&self.x, &self.y, count, p.collision_grid, sx, sy);
+        crate::core::collision::resolve(
+            &self.bins,
+            &mut self.x,
+            &mut self.y,
+            &mut self.vx,
+            &mut self.vy,
+            &self.radius,
+            count,
+            p.collision_grid,
+            &p,
+            p.turb_affect_scale,
+        );
+    }
+
+    fn enforce_boundary(&mut self) {
+        let count = self.count;
+        let p = self.params.clone();
         for i in 0..count {
             let radius = if p.turb_affect_scale {
                 self.radius[i]

@@ -49,6 +49,16 @@ impl SimCore {
         self.inner.params.render_height = height.max(1e-8);
     }
 
+    /// Playback rate for the whole tick (`physics_dt = time_step * time_scale`).
+    pub fn set_time_scale(&mut self, scale: f32) {
+        self.inner.set_time_scale(scale);
+    }
+
+    pub fn set_touch(&mut self, x: f32, y: f32, active: bool) {
+        self.inner.set_touch(x, y, active);
+    }
+
+    /// `dt` is the raw frame time step; engine applies `time_scale`.
     pub fn step(&mut self, dt: f32) {
         self.inner.step(dt);
     }

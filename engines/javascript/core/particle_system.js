@@ -240,56 +240,89 @@ export class ParticleSystem {
   }
 
   step() {
+    // Playback: physics_dt = timeStep * timeScale for the whole spine.
     const dt = this.timeStep * this.timeScale;
 
-    // Allow mouse forces to neutralize other forces if active
+    // Deferred interaction debt: mute fields while pointer is active.
+    // Real fix is a later touch-vs-fields pass; keep prelude until then.
+    this.mouseForces.syncActiveFromState();
     if (this.mouseForces.isActive) {
       this.mouseForces.neutralizeOtherForces(this);
     } else {
       this.mouseForces.restoreOtherForces(this);
     }
 
-    // Update field generators - no conditional checks needed
-    this.turbulence.update(dt);
-    this.voronoi.update(dt);
-
-    // Apply external forces
-    this.applyExternalForces(dt);
-
-    // Apply organic behavior forces
-    if (this.organicBehavior.currentBehavior !== "None") {
-      this.organicBehavior.updateParticles(this, dt);
-    }
-
-    // 0 is PIC, 1 is FLIP. Negative leaves particle velocities alone.
-    if (this.picFlipRatio >= 0) {
-      this.updateFLIP(dt);
-    }
-
-    // Update positions
-    this.updateParticles(dt);
-
-
-    // Emit event after step calculations are complete
-    // eventBus.emit('simulationStepComplete');
+    // Flat spine (ledger §1). Call list only — workers own the math.
+    this.advance_fields(dt);
+    this.apply_gravity(dt);
+    this.apply_turbulence(dt);
+    this.apply_voronoi(dt);
+    this.apply_organic(dt);
+    this.apply_touch();
+    this.apply_pic_flip(dt);
+    this.damp();
+    this.rest_and_advect(dt);
+    this.clamp_velocity();
+    this.resolve_collision();
+    this.enforce_boundary();
   }
 
-  applyExternalForces(dt) {
-    // Apply gravity using the controller
+  advance_fields(dt) {
+    this.turbulence.update(dt);
+    this.voronoi.update(dt);
+  }
+
+  apply_gravity(dt) {
     this.gravity.apply(
       this.velocitiesX,
       this.velocitiesY,
       this.numParticles,
       dt
     );
+  }
 
-    // Track if organic behavior is active
+  apply_turbulence(dt) {
+    if (
+      !(
+        this.turbulence.affectScale ||
+        this.turbulence.affectPosition ||
+        this.turbulence.scaleField
+      )
+    ) {
+      return;
+    }
+    for (let i = 0; i < this.numParticles; i++) {
+      const pos = [this.particles[i * 2], this.particles[i * 2 + 1]];
+      const vel = [this.velocitiesX[i], this.velocitiesY[i]];
+      [this.velocitiesX[i], this.velocitiesY[i]] =
+        this.turbulence.applyTurbulence(pos, vel, dt, i, this);
+    }
+  }
+
+  apply_voronoi(dt) {
+    if (!(this.voronoi.strength > 0)) {
+      return;
+    }
+    try {
+      for (let i = 0; i < this.numParticles; i++) {
+        const pos = [this.particles[i * 2], this.particles[i * 2 + 1]];
+        const vel = [this.velocitiesX[i], this.velocitiesY[i]];
+        [this.velocitiesX[i], this.velocitiesY[i]] =
+          this.voronoi.applyTurbulence(pos, vel, dt, i, this);
+      }
+    } catch (error) {
+      console.error("Error applying voronoi field:", error);
+      this.voronoi.regenerateCells();
+    }
+  }
+
+  apply_organic(dt) {
+    // One slot: legacy fluid/swarm/automata, then OrganicBehavior (chain etc.).
     this.organicBehaviorActive =
       this.fluidBehavior?.enabled ||
       this.swarmBehavior?.enabled ||
       this.automataBehavior?.enabled;
 
-    // Apply organic behaviors first
     if (this.fluidBehavior?.enabled) {
       this.fluidBehavior.apply(
         this.particles,
@@ -313,63 +346,53 @@ export class ParticleSystem {
       );
     }
 
-    // Apply turbulence - no conditional checks needed
-    if (
-      this.turbulence.affectScale ||
-      this.turbulence.affectPosition ||
-      this.turbulence.scaleField
-    ) {
-      for (let i = 0; i < this.numParticles; i++) {
-        const pos = [this.particles[i * 2], this.particles[i * 2 + 1]];
-        const vel = [this.velocitiesX[i], this.velocitiesY[i]];
-        [this.velocitiesX[i], this.velocitiesY[i]] =
-          this.turbulence.applyTurbulence(pos, vel, dt, i, this);
-      }
-    }
-
-    // Apply voronoi field - strength check is appropriate but no null check needed
-    if (this.voronoi.strength > 0) {
-      try {
-        for (let i = 0; i < this.numParticles; i++) {
-          const pos = [this.particles[i * 2], this.particles[i * 2 + 1]];
-          const vel = [this.velocitiesX[i], this.velocitiesY[i]];
-          [this.velocitiesX[i], this.velocitiesY[i]] =
-            this.voronoi.applyTurbulence(pos, vel, dt, i, this);
-        }
-      } catch (error) {
-        console.error("Error applying voronoi field:", error);
-        // Reset the voronoi field to recover from error
-        this.voronoi.regenerateCells();
-      }
+    if (this.organicBehavior.currentBehavior !== "None") {
+      this.organicBehavior.updateParticles(this, dt);
     }
   }
 
-  updateParticles(dt) {
+  apply_touch() {
+    // Once-per-step apply from pointer state (events only update state).
+    this.mouseForces.applyInStep(this);
+  }
+
+  apply_pic_flip(dt) {
+    if (this.picFlipRatio >= 0) {
+      this.updateFLIP(dt);
+    }
+  }
+
+  damp() {
     for (let i = 0; i < this.numParticles; i++) {
-      // 1. Apply velocity damping
       this.velocitiesX[i] *= this.velocityDamping;
       this.velocitiesY[i] *= this.velocityDamping;
+    }
+  }
 
-      // 2. Check rest state
+  rest_and_advect(dt) {
+    for (let i = 0; i < this.numParticles; i++) {
       if (this.checkRestState(i, dt)) continue;
-
-      // 3. Update position
       this.particles[i * 2] += this.velocitiesX[i] * dt;
       this.particles[i * 2 + 1] += this.velocitiesY[i] * dt;
-
     }
+  }
 
-    // Apply velocity clamping to ensure max velocity is respected
-    // regardless of whether FLIP simulation is used
+  clamp_velocity() {
     for (let i = 0; i < this.numParticles; i++) {
-      this.velocitiesX[i] = Math.max(-this.maxVelocity, Math.min(this.maxVelocity, this.velocitiesX[i]));
-      this.velocitiesY[i] = Math.max(-this.maxVelocity, Math.min(this.maxVelocity, this.velocitiesY[i]));
+      this.velocitiesX[i] = Math.max(
+        -this.maxVelocity,
+        Math.min(this.maxVelocity, this.velocitiesX[i])
+      );
+      this.velocitiesY[i] = Math.max(
+        -this.maxVelocity,
+        Math.min(this.maxVelocity, this.velocitiesY[i])
+      );
     }
+  }
 
+  resolve_collision() {
     const sx = this.metricScaleX ?? 1;
     const sy = this.metricScaleY ?? 1;
-
-    // Use collision system ONCE - not twice
     this.collisionSystem.update(
       this.particles,
       this.velocitiesX,
@@ -377,34 +400,36 @@ export class ParticleSystem {
       sx,
       sy
     );
+  }
 
-    // Finally check boundary collisions for all particles
-    const affectScale = this.turbulence?.affectScale; // Check turbulence scale mode once before the loop
+  enforce_boundary() {
+    const sx = this.metricScaleX ?? 1;
+    const sy = this.metricScaleY ?? 1;
+    const affectScale = this.turbulence?.affectScale;
     for (let i = 0; i < this.numParticles; i++) {
       const position = [this.particles[i * 2], this.particles[i * 2 + 1]];
       const velocity = [this.velocitiesX[i], this.velocitiesY[i]];
-      // Determine the correct radius for physics based on affectScale
-      const physicsRadius = affectScale ? this.particleRadii[i] : this.particleRadius;
+      const physicsRadius = affectScale
+        ? this.particleRadii[i]
+        : this.particleRadius;
 
-      // Get current boundary from manager inside the loop
       const currentBoundary = this.boundaryManager.getPhysicsBoundary();
       if (!currentBoundary) {
-        console.error(`ParticleSystem.updateParticles: Could not get boundary from manager for particle ${i}! Skipping collision.`);
-        continue; // Skip collision for this particle if boundary is missing
+        console.error(
+          `ParticleSystem.enforce_boundary: no boundary for particle ${i}`
+        );
+        continue;
       }
 
       currentBoundary.metricScaleX = sx;
       currentBoundary.metricScaleY = sy;
-
-      // Pass boundary damping to the boundary collision resolver
-      currentBoundary.resolveCollision( // Use currentBoundary
+      currentBoundary.resolveCollision(
         position,
         velocity,
-        physicsRadius, // Use the correctly determined radius
+        physicsRadius,
         this.boundaryDamping
       );
 
-      // Store updated values
       this.particles[i * 2] = position[0];
       this.particles[i * 2 + 1] = position[1];
       this.velocitiesX[i] = velocity[0];
