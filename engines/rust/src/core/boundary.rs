@@ -3,15 +3,15 @@
 use crate::core::metric::collision_scales;
 use crate::config::params::{boundary_mode, boundary_shape, Params};
 
-pub fn resolve(p: &Params, x: &mut f32, y: &mut f32, vx: &mut f32, vy: &mut f32, radius: f32) {
+pub fn enforce(p: &Params, x: &mut f32, y: &mut f32, vx: &mut f32, vy: &mut f32, radius: f32) {
     if p.boundary_shape == boundary_shape::RECTANGULAR {
-        resolve_rect(p, x, y, vx, vy, radius);
+        enforce_rect(p, x, y, vx, vy, radius);
     } else {
-        resolve_circle(p, x, y, vx, vy, radius);
+        enforce_circle(p, x, y, vx, vy, radius);
     }
 }
 
-fn resolve_circle(p: &Params, x: &mut f32, y: &mut f32, vx: &mut f32, vy: &mut f32, radius: f32) {
+fn enforce_circle(p: &Params, x: &mut f32, y: &mut f32, vx: &mut f32, vy: &mut f32, radius: f32) {
     let dx = *x - p.boundary_cx;
     let dy = *y - p.boundary_cy;
     let dist = (dx * dx + dy * dy).sqrt();
@@ -58,7 +58,7 @@ fn resolve_circle(p: &Params, x: &mut f32, y: &mut f32, vx: &mut f32, vy: &mut f
     }
 }
 
-fn resolve_rect(p: &Params, x: &mut f32, y: &mut f32, vx: &mut f32, vy: &mut f32, radius: f32) {
+fn enforce_rect(p: &Params, x: &mut f32, y: &mut f32, vx: &mut f32, vy: &mut f32, radius: f32) {
     let (sx, sy) = collision_scales(p.boundary_shape, p.render_width, p.render_height);
     let inset_x = radius / sx.max(1e-8);
     let inset_y = radius / sy.max(1e-8);
@@ -157,7 +157,7 @@ mod tests {
         let mut y = 0.5;
         let mut vx = 0.2;
         let mut vy = 0.0;
-        resolve(&p, &mut x, &mut y, &mut vx, &mut vy, 0.01);
+        enforce(&p, &mut x, &mut y, &mut vx, &mut vy, 0.01);
         assert!(vx < 0.0, "outward velocity should bounce inward, got {vx}");
         assert!(x < p.boundary_cx + p.boundary_radius, "particle should sit inside the circle");
         assert!((x - y).abs() > 0.0 || x < 0.95);
@@ -179,7 +179,7 @@ mod tests {
         let mut y = 0.5;
         let mut vx = -0.2;
         let mut vy = 0.0;
-        resolve(&p, &mut x, &mut y, &mut vx, &mut vy, 0.01);
+        enforce(&p, &mut x, &mut y, &mut vx, &mut vy, 0.01);
         assert!(vx > 0.0, "left-wall hit should reverse vx, got {vx}");
         assert!(x > 0.1, "position should be written back inside");
     }
@@ -203,7 +203,7 @@ mod tests {
         let mut y = 0.5;
         let mut vx = -0.1;
         let mut vy = 0.0;
-        resolve(&p, &mut x, &mut y, &mut vx, &mut vy, radius);
+        enforce(&p, &mut x, &mut y, &mut vx, &mut vy, radius);
         let expected = radius / 0.5 + 0.001;
         assert!(
             (x - expected).abs() < 1e-4,

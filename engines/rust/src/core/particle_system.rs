@@ -401,7 +401,7 @@ impl ParticleSystem {
             } else {
                 p.particle_radius
             };
-            crate::core::boundary::resolve(
+            crate::core::boundary::enforce(
                 &p,
                 &mut self.x[i],
                 &mut self.y[i],

@@ -2,9 +2,9 @@
 
 JavaScript is where comparison starts. A winner is chosen **with the human** before any port. Priorities for arguing: (1) C++ / suit performance, (2) cleanness. Documentation of the settled tree is a later plan.
 
-Status: **§0–§2 LOCKED and executed.** Rows §3–§9 stay PROPOSED until discussed. Pass 2 code for a row waits until that row is LOCKED here.
+Status: **§0–§3 LOCKED and executed.** Rows §4–§9 stay PROPOSED until discussed. Pass 2 code for a row waits until that row is LOCKED here.
 
-**Order of work:** §0–§2 done. Next: discuss and lock **§3** (collision / boundary), then remaining formula rows.
+**Order of work:** §0–§3 done. Next: discuss and lock **§4** (turbulence sample), then remaining formula rows.
 
 | Verdict | Meaning |
 |---------|---------|
@@ -123,9 +123,19 @@ engines/
 **Naming:** `resolve` / `enforce` — settle word **enforce** for the boundary call; collision **resolve**.
 **Workflow:** match (collision then boundary).
 
-**PROPOSED winner:** Pair collision math = current shared formula (already green on gravity fixture). Boundary: **JS/Rust circular path** is the lab truth; C++ lean path stays for suit until a fixture demands wall fidelity (performance). Cap C++ collision grid at 16 stays (RAM). Do not port JS grid realloc.
+**Organization rule (C++ / suit):** Same spine as JS/Rust. Performance may omit work, but omitted steps stay in place as early `return` (or no-op) with the lab-aligned body commented beside the live lean override. Alternatives override; they do not fork structure.
 
-**Lock:** open
+**LOCKED winner:**
+| Topic | Decision |
+|-------|----------|
+| Pair collision | Shared formula (metric bins, spacing, ¾-power). Cap C++ grid at 16. No JS grid realloc. |
+| Boundary spine | Same `enforce` steps as lab: outside → warp **or** bounce; else soft repulsion zone. |
+| C++ circular live | Lean bounce (whole-velocity × `boundaryDamping`); soft zone early-out. Lab restitution split + repulsion block kept commented for a later fidelity flip. |
+| Naming | Boundary call **enforce**; collision **resolve**. |
+
+**Deferred:** Port lean → lab fidelity when a boundary-contact fixture demands wall match on C++.
+
+**Lock:** LOCKED — executed (see Collision/boundary pass status).
 
 ---
 
@@ -281,8 +291,23 @@ Mass “split every large file” is **not** a separate pass. Structure is **§0
 
 ---
 
+## Collision/boundary pass status (§3)
+
+**Executed** (Pass 2 for this row):
+
+| Done | Detail |
+|------|--------|
+| Collision | Unchanged shared formula; C++ grid cap 16 |
+| C++ `Boundary::enforce` | Circular (and rect) reshaped to lab spine; lean bounce live; lab restitution/repulsion commented; soft zone early-out |
+| Rust naming | `boundary::resolve` → `boundary::enforce` |
+| Fidelity | C++ wall math still lean until boundary fixture demands match |
+
+**Verified:** `compare-slice` gravity + noise green; Rust lib tests 35; C++ `simcore_test` OK.
+
+---
+
 ## Pass 2 queue (formulas)
 
-Former premature formula edits were **reverted** before the structure pass. §1–§2 done.
+Former premature formula edits were **reverted** before the structure pass. §1–§3 done.
 
-Deferred candidates (still PROPOSED): polarity invert with presets; touch/field interaction; JS voronoi deterministic; C++ boundary fidelity; C++ aspect/warp; grid mode ID renumber; docs/flowcharts. Rows §3–§9 stay open until discussed.
+Deferred candidates (still PROPOSED): polarity invert with presets; touch/field interaction; JS voronoi deterministic; C++ boundary fidelity (when fixture demands); C++ aspect/warp; grid mode ID renumber; docs/flowcharts. Rows §4–§9 stay open until discussed.
