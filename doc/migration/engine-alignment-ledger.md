@@ -2,9 +2,9 @@
 
 JavaScript is where comparison starts. A winner is chosen **with the human** before any port. Priorities for arguing: (1) C++ / suit performance, (2) cleanness. Documentation of the settled tree is a later plan.
 
-Status: **§0–§3 LOCKED and executed.** Rows §4–§9 stay PROPOSED until discussed. Pass 2 code for a row waits until that row is LOCKED here.
+Status: **§0–§5 LOCKED and executed.** Rows §6–§9 stay PROPOSED until discussed. Pass 2 code for a row waits until that row is LOCKED here.
 
-**Order of work:** §0–§3 done. Next: discuss and lock **§4** (turbulence sample), then remaining formula rows.
+**Order of work:** §0–§5 done. Next: discuss and lock **§6** (voronoi), then remaining formula rows.
 
 | Verdict | Meaning |
 |---------|---------|
@@ -142,16 +142,19 @@ engines/
 ## 4. Turbulence sample
 
 **Logic:** blur 0 = phase only on all three (match). Blur > 0: JS/Rust ring (4 taps Classic Drop); C++ always 16 taps; C++ `reshape01` always applies pull; JS/Rust zero pullReshape on Classic Drop. Domain warp / aspect / amplitude: differ on C++.
-**Naming:** `pullReshape`, `quantize`, `domainWarp` already shared — **PROPOSED keep**.
+**Naming:** `pullReshape`, `quantize`, `domainWarp` already shared — **keep**.
 **Workflow:** match (reshape inside blur ring only).
 
-**PROPOSED winner:**
-- Blur 0 phase-only (already).
-- Classic Drop: **4-tap ring** and **pullReshape = 0** (JS/Rust). Port into C++ — cheaper and matches lab. Performance wins on Classic Drop (fewer taps).
-- Amortized 128² field (Rust) is the **suit/lab-Rust** model when a field is filled. C++ keeps on-demand `sampleLab` + `fastPath` above 80 particles (performance). No mandatory 128² on ESP32 this pass.
-- Aspect / warp absolute vs center: remaining differ; follow-up slice after Classic Drop port.
+**LOCKED winner:**
+| Topic | Decision |
+|-------|----------|
+| Blur 0 | Phase only (already). |
+| Classic Drop ring | **4 taps** + **`pullReshape = 0`** on JS / Rust / C++. |
+| Field model | Rust may amortize 128²; C++ keeps on-demand `sampleLab` + `fastPath` >80. Same sample math spine. No mandatory 128² on ESP32. |
+| Naming | Keep `pullReshape` / `quantize` / `domainWarp`. |
+| Aspect / warp | **Deferred** (unsure) — follow-up slice; do not block this pass. |
 
-**Lock:** open
+**Lock:** LOCKED — executed with §5 (see Turbulence sample/force pass status).
 
 ---
 
@@ -160,9 +163,9 @@ engines/
 **Logic:** largely match; Classic Drop `onRipple` gate for pull force on JS/Rust, missing on C++.
 **Workflow:** match (in force phase before integrate).
 
-**PROPOSED winner:** Keep current force path. Classic Drop pullForce ripple gate = JS/Rust; port to C++ when Classic Drop is used on suit (same pass as sample). Bias second-step fixture stays GOALS queue.
+**LOCKED winner:** Keep current force path. Classic Drop `onRipple` (`pattern > 0.08`) gates pullForce on C++ to match JS/Rust. Bias second-step fixture stays GOALS queue.
 
-**Lock:** open
+**Lock:** LOCKED — executed with §4 (see Turbulence sample/force pass status).
 
 ---
 
@@ -306,8 +309,24 @@ Mass “split every large file” is **not** a separate pass. Structure is **§0
 
 ---
 
+## Turbulence sample/force pass status (§4–§5)
+
+**Executed** (Pass 2 for these rows):
+
+| Done | Detail |
+|------|--------|
+| Classic Drop ring | C++ `sampleLab` uses 4 taps when style == 9 |
+| `pullReshape` | C++ `reshape01` forces 0 on Classic Drop |
+| `onRipple` | C++ `apply` gates pullForce when Classic Drop pattern ≤ 0.08 |
+| Field model | C++ on-demand + fastPath unchanged |
+| Deferred | Aspect / warp absolute vs center |
+
+**Verified:** `compare-slice` gravity + noise green; C++ `simcore_test` OK (incl. Classic Drop reshape gate).
+
+---
+
 ## Pass 2 queue (formulas)
 
-Former premature formula edits were **reverted** before the structure pass. §1–§3 done.
+Former premature formula edits were **reverted** before the structure pass. §1–§5 done.
 
-Deferred candidates (still PROPOSED): polarity invert with presets; touch/field interaction; JS voronoi deterministic; C++ boundary fidelity (when fixture demands); C++ aspect/warp; grid mode ID renumber; docs/flowcharts. Rows §4–§9 stay open until discussed.
+Deferred candidates (still PROPOSED): polarity invert with presets; touch/field interaction; JS voronoi deterministic; C++ boundary fidelity (when fixture demands); C++ aspect/warp (unsure); grid mode ID renumber; docs/flowcharts. Rows §6–§9 stay open until discussed.
