@@ -131,7 +131,7 @@ impl Grid {
             return;
         }
         match mode {
-            MODE_NOISE => self.eval_noise(width, height, field),
+            MODE_NOISE => self.compute_noise(width, height, field),
             MODE_PROXIMITY => {
                 if count > 0 {
                     self.eval_proximity(x, y, count, width, height);
@@ -196,7 +196,7 @@ impl Grid {
         }
     }
 
-    fn eval_noise(&mut self, width: f32, height: f32, field: &[f32]) {
+    fn compute_noise(&mut self, width: f32, height: f32, field: &[f32]) {
         const NOISE_TUNE: f32 = 2.2;
         for i in 0..self.count {
             let cell = self.cells[i];

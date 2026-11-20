@@ -188,7 +188,7 @@ export class GridRenderModes {
         this.calculateOverlap(particleSystem);
         break;
       case this.modes.NOISE:
-        this.calculateNoise(particleSystem);
+        this.computeNoise(particleSystem);
         break;
       default:
         console.warn("Unsupported render mode:", this.currentMode);
@@ -988,7 +988,7 @@ export class GridRenderModes {
     return this.targetValues;
   }
 
-  calculateNoise(particleSystem) {
+  computeNoise(particleSystem) {
     this.targetValues.fill(0);
 
     if (!particleSystem?.turbulence) {

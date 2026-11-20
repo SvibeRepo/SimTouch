@@ -2,9 +2,9 @@
 
 JavaScript is where comparison starts. A winner is chosen **with the human** before any port. Priorities for arguing: (1) C++ / suit performance, (2) cleanness. Documentation of the settled tree is a later plan.
 
-Status: **§0–§8 LOCKED and executed.** Row §9 stays PROPOSED until discussed. Pass 2 code for a row waits until that row is LOCKED here.
+Status: **§0–§9 LOCKED and executed.** Pass 2 code for a row waits until that row is LOCKED here.
 
-**Order of work:** §0–§8 done. Next: discuss and lock **§9** (noise readers).
+**Order of work:** §0–§9 done. §10 follows §0 (already done for this pass). Alignment Pass 1 rows closed — next work is the deferred formula queue below (or GOALS boundary-contact fixture).
 
 | Verdict | Meaning |
 |---------|---------|
@@ -238,18 +238,20 @@ engines/
 
 ## 9. Noise readers (grid / points / preview)
 
-| | Sample | Scale / polarity |
-|---|--------|------------------|
-| JS `calculateNoise` | `noise2D(..., true)` per cell | `× noiseTune (2.2)` |
-| Rust `eval_noise` | bilinear of filled field | `× 2.2` |
-| C++ `GridModes::computeNoise` | `sampleTurbulence01` once | **`(1 - noise01) / maxDensity`** — inverted |
-| C++ `PointModes::computeNoise` | same sample | `noise01 * 2.2 / maxDensity` |
+**Logic:** One sample per cell/point from the turbulence sample path. Bright = high noise. Scale `noiseTune = 2.2`, then `/ maxDensity` on C++ uint8 paths. No `(1 − noise)` invert.
+**Naming:** shared word **`compute_noise`** — JS `computeNoise`, Rust `compute_noise`, C++ already `computeNoise` (GridModes + PointModes).
+**Workflow:** Amortized field (Rust) when available; on-demand sample (C++/JS) otherwise. Lab JS may keep the blur ring inside `noise2D` for authoring quality.
 
-**PROPOSED winner:** **One sample per cell/point from the turbulence sample path. Bright = high noise. Scale `noiseTune = 2.2`, then `/ maxDensity` on uint8 paths.** No polarity invert. Amortized field (Rust) when available; on-demand sample (C++/JS) otherwise. Lab JS may keep the blur ring inside `noise2D` for authoring quality; suit/grid must not invert.
+**LOCKED winner:**
+| Topic | Decision |
+|-------|----------|
+| Sample | One turbulence sample per cell/point. |
+| Noise polarity | Bright = high noise. No `(1 − noise)`. |
+| Scale | `noiseTune = 2.2`; C++ uint8 paths then `/ maxDensity`. |
+| Pass 2 | Fix `GridModes::computeNoise` → match `PointModes` (`noise × 2.2 / maxDensity`). Rename JS `calculateNoise` / Rust `eval_noise` → `compute_noise` / `computeNoise`. |
+| Deferred | maxDensity slider polarity invert (0.1↔12 feel), with other retain-style knobs, after ledger. |
 
-**If locked:** Fix `GridModes::computeNoise` to match `PointModes`.
-
-**Lock:** open
+**Lock:** LOCKED — executed (see Noise readers pass status).
 
 ---
 
@@ -390,8 +392,22 @@ Mass “split every large file” is **not** a separate pass. Structure is **§0
 
 ---
 
+## Noise readers pass status (§9)
+
+**Executed** (Pass 2 for this row):
+
+| Done | Detail |
+|------|--------|
+| C++ `GridModes::computeNoise` | `noise01 * 2.2 / maxDensity` (match `PointModes`; no invert) |
+| Naming | JS `calculateNoise` → `computeNoise`; Rust `eval_noise` → `compute_noise` |
+| Deferred | maxDensity slider polarity invert (later retain-style pass) |
+
+**Verified:** `compare-slice` gravity + noise green; Rust lib tests 35; C++ `simcore_test` OK (incl. `test_gridmodes_noise_matches_lab_scale`).
+
+---
+
 ## Pass 2 queue (formulas)
 
-Former premature formula edits were **reverted** before the structure pass. §1–§8 done.
+Former premature formula edits were **reverted** before the structure pass. §1–§9 done.
 
-Deferred candidates (still PROPOSED): polarity invert with presets; touch/field interaction; voronoi grid-as-NOISE; C++ voronoi cheap path; C++ boundary fidelity (when fixture demands); C++ aspect/warp (unsure); docs/flowcharts. Row §9 (noise readers) open until discussed.
+Deferred candidates (still PROPOSED): polarity invert with presets (incl. maxDensity slider); touch/field interaction; voronoi grid-as-NOISE; C++ voronoi cheap path; C++ boundary fidelity (when fixture demands); C++ aspect/warp (unsure); docs/flowcharts.
