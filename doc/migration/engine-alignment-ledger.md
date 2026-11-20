@@ -2,9 +2,9 @@
 
 JavaScript is where comparison starts. A winner is chosen **with the human** before any port. Priorities for arguing: (1) C++ / suit performance, (2) cleanness. Documentation of the settled tree is a later plan.
 
-Status: **§0–§6 LOCKED and executed.** Rows §7–§9 stay PROPOSED until discussed. Pass 2 code for a row waits until that row is LOCKED here.
+Status: **§0–§7 LOCKED and executed.** Rows §8–§9 stay PROPOSED until discussed. Pass 2 code for a row waits until that row is LOCKED here.
 
-**Order of work:** §0–§6 done. Next: discuss and lock **§7** (organic / FLIP), then remaining formula rows.
+**Order of work:** §0–§7 done. Next: discuss and lock **§8** (grid modes), then remaining formula rows.
 
 | Verdict | Meaning |
 |---------|---------|
@@ -193,12 +193,18 @@ engines/
 
 ## 7. Organic and FLIP/PIC
 
-**Organic:** JS + Rust; C++ absent. Rust pre-snapshot of velocity — **PROPOSED keep** (correct neighbor read; cleanness).
-**FLIP:** JS/Rust run pressure solve with scale 0 (dead work); C++ splat-only.
+**Organic:** JS + Rust; C++ absent. Rust pre-snapshot of velocity — **keep** (correct neighbor read; cleanness).
+**FLIP:** JS already early-outs pressure when `pressureScale` ≤ 0; Rust ran dead Jacobi at scale 0; C++ splat-only.
 
-**PROPOSED winner:** PIC/FLIP blend semantics = shared. Pressure: **skip the solve when it does not push velocity** (C++ behavior / performance). Rust must early-out the dead pressure iterations. Full incompressibility remains a future lab option behind a non-zero scale.
+**LOCKED winner:**
+| Topic | Decision |
+|-------|----------|
+| Organic snapshot | Keep Rust pre-snapshot of neighbor velocity. |
+| Organic C++ | Absent product — `apply_organic` spine stub (early return). |
+| PIC/FLIP blend | Shared semantics unchanged. |
+| Pressure | **Skip solve when it does not push velocity** (`pressureScale` / scale ≤ 0). JS already; Rust early-out; C++ stays splat-only. Full incompressibility later behind non-zero scale. |
 
-**Lock:** open
+**Lock:** LOCKED — executed (see Organic/FLIP pass status).
 
 ---
 
@@ -350,8 +356,23 @@ Mass “split every large file” is **not** a separate pass. Structure is **§0
 
 ---
 
+## Organic/FLIP pass status (§7)
+
+**Executed** (Pass 2 for this row):
+
+| Done | Detail |
+|------|--------|
+| Organic Rust | Pre-snapshot kept |
+| Organic C++ | `apply_organic` early-return stub in spine |
+| Pressure | Rust `velocity_grid::solve` early-outs when scale ≤ 0 (JS already); Jacobi path kept for non-zero scale |
+| Blend | Unchanged |
+
+**Verified:** `compare-slice` gravity + noise green; Rust lib tests 35; C++ `simcore_test` OK.
+
+---
+
 ## Pass 2 queue (formulas)
 
-Former premature formula edits were **reverted** before the structure pass. §1–§6 done.
+Former premature formula edits were **reverted** before the structure pass. §1–§7 done.
 
-Deferred candidates (still PROPOSED): polarity invert with presets; touch/field interaction; voronoi grid-as-NOISE; C++ voronoi cheap path; C++ boundary fidelity (when fixture demands); C++ aspect/warp (unsure); grid mode ID renumber; docs/flowcharts. Rows §7–§9 stay open until discussed.
+Deferred candidates (still PROPOSED): polarity invert with presets; touch/field interaction; voronoi grid-as-NOISE; C++ voronoi cheap path; C++ boundary fidelity (when fixture demands); C++ aspect/warp (unsure); grid mode ID renumber; docs/flowcharts. Rows §8–§9 stay open until discussed.

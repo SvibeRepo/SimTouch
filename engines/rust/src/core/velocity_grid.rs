@@ -110,6 +110,24 @@ pub(crate) fn splat(grid: &mut VelocityGrid, x: &[f32], y: &[f32], vx: &[f32], v
 }
 
 pub(crate) fn solve(grid: &mut VelocityGrid, n: usize, p: &Params, dt: f32) {
+    let cells = n * n;
+    // Match JS `pressureScale` default 0: identity PIC, no gradient push.
+    // Also skip the JS `gasConstant/50` clamp (always 0.8 at default gas=2), which
+    // acted like velocityDamping=0.8 on every PIC readback once velocities were preserved.
+    // Ledger §7: skip divergence + Jacobi when scale does not push velocity.
+    // Default matches JS `pressureScale = 0`. Non-zero enables the Jacobi path below.
+    let pressure_scale = 0.0_f32;
+    if !(pressure_scale > 0.0) {
+        let _ = (p, dt); // used when scale > 0
+        for i in 0..cells {
+            if grid.solid[i] != 0 {
+                grid.u[i] = 0.0;
+                grid.v[i] = 0.0;
+            }
+        }
+        return;
+    }
+
     let h = 1.0 / n as f32;
     for row in 0..n {
         for col in 0..n {
@@ -135,7 +153,6 @@ pub(crate) fn solve(grid: &mut VelocityGrid, n: usize, p: &Params, dt: f32) {
         }
     }
 
-    let cells = n * n;
     for i in 0..cells {
         grid.pressure[i] = 0.0;
     }
@@ -143,10 +160,6 @@ pub(crate) fn solve(grid: &mut VelocityGrid, n: usize, p: &Params, dt: f32) {
     let base = dt / (h * h);
     let density = p.flip_gas.powf(1.5) / p.rest_density.max(0.1);
     let pressure_coefficient = base * (density * 0.5).clamp(0.1, 10.0);
-    // Match undefined JS `pressureScale`: solve pressure but do not push it onto velocity.
-    // Also skip the JS `gasConstant/50` clamp (always 0.8 at the default gas=2), which
-    // acted like velocityDamping=0.8 on every PIC readback once velocities were preserved.
-    let pressure_scale = 0.0;
     let over = p.flip_overrelax;
 
     for _ in 0..p.flip_iterations {
@@ -182,37 +195,28 @@ pub(crate) fn solve(grid: &mut VelocityGrid, n: usize, p: &Params, dt: f32) {
         }
     }
 
-    if pressure_scale != 0.0 {
-        for row in 0..n {
-            for col in 0..n {
-                let center = row * n + col;
-                if col + 1 < n && grid.solid[center] == 0 && grid.solid[center + 1] == 0 {
-                    let grad = (grid.pressure[center + 1] - grid.pressure[center]) / h;
-                    grid.u[center] -= grad * dt * pressure_scale;
-                }
-                if row + 1 < n && grid.solid[center] == 0 && grid.solid[center + n] == 0 {
-                    let grad = (grid.pressure[center + n] - grid.pressure[center]) / h;
-                    grid.v[center + n] -= grad * dt * pressure_scale;
-                }
+    for row in 0..n {
+        for col in 0..n {
+            let center = row * n + col;
+            if col + 1 < n && grid.solid[center] == 0 && grid.solid[center + 1] == 0 {
+                let grad = (grid.pressure[center + 1] - grid.pressure[center]) / h;
+                grid.u[center] -= grad * dt * pressure_scale;
+            }
+            if row + 1 < n && grid.solid[center] == 0 && grid.solid[center + n] == 0 {
+                let grad = (grid.pressure[center + n] - grid.pressure[center]) / h;
+                grid.v[center + n] -= grad * dt * pressure_scale;
             }
         }
-        let gas = (p.flip_gas / 50.0).clamp(0.8, 1.5);
-        for i in 0..cells {
-            if grid.solid[i] != 0 {
-                grid.u[i] = 0.0;
-                grid.v[i] = 0.0;
-                continue;
-            }
-            grid.u[i] *= gas;
-            grid.v[i] *= gas;
+    }
+    let gas = (p.flip_gas / 50.0).clamp(0.8, 1.5);
+    for i in 0..cells {
+        if grid.solid[i] != 0 {
+            grid.u[i] = 0.0;
+            grid.v[i] = 0.0;
+            continue;
         }
-    } else {
-        for i in 0..cells {
-            if grid.solid[i] != 0 {
-                grid.u[i] = 0.0;
-                grid.v[i] = 0.0;
-            }
-        }
+        grid.u[i] *= gas;
+        grid.v[i] *= gas;
     }
 }
 
