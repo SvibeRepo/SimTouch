@@ -2,9 +2,9 @@
 
 JavaScript is where comparison starts. A winner is chosen **with the human** before any port. Priorities for arguing: (1) C++ / suit performance, (2) cleanness. Documentation of the settled tree is a later plan.
 
-Status: **§0–§7 LOCKED and executed.** Rows §8–§9 stay PROPOSED until discussed. Pass 2 code for a row waits until that row is LOCKED here.
+Status: **§0–§8 LOCKED and executed.** Row §9 stays PROPOSED until discussed. Pass 2 code for a row waits until that row is LOCKED here.
 
-**Order of work:** §0–§7 done. Next: discuss and lock **§8** (grid modes), then remaining formula rows.
+**Order of work:** §0–§8 done. Next: discuss and lock **§9** (noise readers).
 
 | Verdict | Meaning |
 |---------|---------|
@@ -210,24 +210,29 @@ engines/
 
 ## 8. Grid modes
 
-**Mode IDs:** JS/Rust `GridField` order; C++ uses a **different** numeric map (2=ProximityB, 3=Density, …).
+**Mode IDs:** JS/Rust `GridField` order; C++ previously used a different numeric map.
 **Algorithms:** proximity splat on C++ vs pair geometry on JS/Rust; vorticity absent on C++.
 
-**PROPOSED winner:** Algorithms may stay cheaper on C++ (splat) for suit display. **Mode IDs stay local on C++** with an explicit remap table in this ledger — renumbering would break NVS presets (performance/stability of shipped boards). Remap (lab id → C++ id) when projecting presets later.
+**LOCKED winner:**
+| Topic | Decision |
+|-------|----------|
+| Mode IDs | **Align C++ `gridMode` to Lab/Rust** `GridField` order. Suit NVS presets not important this pass. |
+| Algorithms | Keep cheap C++ splat paths (no formula port). |
+| Vorticity | Absent on C++ (id 7 reserved → clear). |
 
-| Lab / Rust id | Name | C++ `gridMode` |
-|---------------|------|----------------|
-| 0 | NOISE | 0 |
-| 1 | PROXIMITY | 1 |
-| 5 | PROXIMITY_B | 2 |
-| 6 | DENSITY | 3 |
-| 2 | VELOCITY | 4 |
-| 3 | PRESSURE | 5 |
-| 7 | VORTICITY | absent (6 reserved / deferred) |
-| 4 | COLLISION | 7 |
-| 8 | OVERLAP | 8 |
+| id | Name |
+|----|------|
+| 0 | NOISE |
+| 1 | PROXIMITY |
+| 2 | VELOCITY |
+| 3 | PRESSURE |
+| 4 | COLLISION |
+| 5 | PROXIMITY_B |
+| 6 | DENSITY |
+| 7 | VORTICITY (absent / reserved) |
+| 8 | OVERLAP |
 
-**Lock:** open
+**Lock:** LOCKED — executed (see Grid modes pass status).
 
 ---
 
@@ -371,8 +376,22 @@ Mass “split every large file” is **not** a separate pass. Structure is **§0
 
 ---
 
+## Grid modes pass status (§8)
+
+**Executed** (Pass 2 for this row):
+
+| Done | Detail |
+|------|--------|
+| C++ IDs | `GridModes::compute` switch matches Lab/Rust `GridField` order |
+| Algorithms | Unchanged cheap splat |
+| Vorticity | id 7 → clearToZero |
+
+**Verified:** `compare-slice` gravity + noise green; C++ `simcore_test` OK.
+
+---
+
 ## Pass 2 queue (formulas)
 
-Former premature formula edits were **reverted** before the structure pass. §1–§7 done.
+Former premature formula edits were **reverted** before the structure pass. §1–§8 done.
 
-Deferred candidates (still PROPOSED): polarity invert with presets; touch/field interaction; voronoi grid-as-NOISE; C++ voronoi cheap path; C++ boundary fidelity (when fixture demands); C++ aspect/warp (unsure); grid mode ID renumber; docs/flowcharts. Rows §8–§9 stay open until discussed.
+Deferred candidates (still PROPOSED): polarity invert with presets; touch/field interaction; voronoi grid-as-NOISE; C++ voronoi cheap path; C++ boundary fidelity (when fixture demands); C++ aspect/warp (unsure); docs/flowcharts. Row §9 (noise readers) open until discussed.
