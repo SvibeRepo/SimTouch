@@ -44,6 +44,44 @@ export function fadeRateToDuration(rate) {
   );
 }
 
+/** Lab Sensitivity (Density) gain: 0 = dim, 1 = bright. Engine still divides by max. */
+export const DENSITY_GAIN_MIN = 0;
+export const DENSITY_GAIN_MAX = 1;
+/** Engine divisor at gain 0 / 1 (legacy slider endpoints, polarity flipped). */
+export const DENSITY_ENGINE_AT_MIN_GAIN = 12;
+export const DENSITY_ENGINE_AT_MAX_GAIN = 0.1;
+
+/**
+ * UI gain → engine maxDensity divisor.
+ * Linear in the divisor (same usable span as the old 0.1..12 slider, flipped):
+ * 0 → 12 (dim), 1 → 0.1 (bright). Not linear in 1/max — that crushed the range.
+ */
+export function densityGainToEngineMax(gain) {
+  const g = Math.max(
+    DENSITY_GAIN_MIN,
+    Math.min(DENSITY_GAIN_MAX, Number(gain) || 0)
+  );
+  return (
+    DENSITY_ENGINE_AT_MIN_GAIN +
+    g * (DENSITY_ENGINE_AT_MAX_GAIN - DENSITY_ENGINE_AT_MIN_GAIN)
+  );
+}
+
+/** Legacy engine max → UI gain 0..1 (factory preset remap). */
+export function engineMaxToDensityGain(engineMax) {
+  const m = Math.max(
+    DENSITY_ENGINE_AT_MAX_GAIN,
+    Math.min(
+      DENSITY_ENGINE_AT_MIN_GAIN,
+      Number(engineMax) || DENSITY_ENGINE_AT_MIN_GAIN
+    )
+  );
+  return (
+    (DENSITY_ENGINE_AT_MIN_GAIN - m) /
+    (DENSITY_ENGINE_AT_MIN_GAIN - DENSITY_ENGINE_AT_MAX_GAIN)
+  );
+}
+
 export class GridRenderModes {
   constructor({ gridParams, gridMap, dimensions, rustCore = null, simParams = null }) {
     this.gridParams = gridParams;

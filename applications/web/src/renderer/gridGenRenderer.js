@@ -4,7 +4,12 @@ import { GridGeometry } from "../simulation/grid/lattice/grid_geometry.js";
 import { OverlayManager } from "./overlayRenderer.js";
 import { eventBus } from '../util/eventManager.js';
 import { Gradients } from "../shader/gradients.js";
-import { GridRenderModes, GridField, fadeDurationToRate } from "../simulation/grid/grid_render_modes.js";
+import {
+  GridRenderModes,
+  GridField,
+  fadeDurationToRate,
+  densityGainToEngineMax,
+} from "../simulation/grid/grid_render_modes.js";
 import { comManager } from "../com/comManager.js";
 import { debugManager } from "../util/debugManager.js";
 
@@ -730,7 +735,10 @@ export class GridGenRenderer extends BaseRenderer {
 
     let modeChanged = false; // Track if mode actually changes
     if (simParams.rendering) {
-      this.maxDensity = simParams.rendering.maxDensity ?? this.maxDensity;
+      // Lab stores Sensitivity gain 0..1; renderer divides by engine max (linear divisor flip).
+      if (simParams.rendering.maxDensity !== undefined && simParams.rendering.maxDensity !== null) {
+        this.maxDensity = densityGainToEngineMax(simParams.rendering.maxDensity);
+      }
       if (this.db) console.log(`  Updated this.maxDensity to: ${this.maxDensity}`);
       // Update render mode if needed
       if (this.renderModes && simParams.rendering.gridMode) {

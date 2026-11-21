@@ -248,7 +248,7 @@ export class RandomizerUi extends BaseUi {
     const categorizedTargets = {};
 
     const getComponentName = (targetName) => {
-      if (/^(Density|FadInSpd|FadOutSpd|Time Step|SimSpeed|VeloDamp|MaxVelocity|PicFlipRatio|Boundary|Mode|FieldType)$/i.test(targetName)) return "Simulation";
+      if (/^(Sensitivity|Density|FadInSpd|FadOutSpd|Time Step|SimSpeed|VeloDamp|MaxVelocity|PicFlipRatio|Boundary|Mode|FieldType)$/i.test(targetName)) return "Simulation";
       if (/^P-(Count|Size|Opacity|Color|VeloDamp|VeloMax)$/i.test(targetName)) return "Particles";
       if (/^G-(X|Y)$/i.test(targetName)) return "Gravity";
       if (/^J-(X|Y|G-Strength|T-BiasStrength|Spring)$/i.test(targetName)) return "Joystick";

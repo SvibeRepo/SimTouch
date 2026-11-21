@@ -55,8 +55,9 @@ export class ParamUi extends BaseUi {
     // presetSelect.classList = "preset-select";
 
 
-    this.maxDensityController = this.gui.add(this.main.simParams.rendering, "maxDensity", 0.1, 12, 0.1)
-      .name("Density").onChange((value) => {
+    // Gain: 0 = dim, 1 = bright. Converted to engine divisor at apply edge.
+    this.maxDensityController = this.gui.add(this.main.simParams.rendering, "maxDensity", 0, 1, 0.01)
+      .name("Sensitivity").onChange((value) => {
         eventBus.emit('uiControlChanged', { paramPath: 'rendering.maxDensity', value });
       });
 
@@ -97,7 +98,7 @@ export class ParamUi extends BaseUi {
   getControlTargets() {
     const targets = {};
     targets["Mode"] = this.fieldTypeController;
-    targets["Density"] = this.maxDensityController;
+    targets["Sensitivity"] = this.maxDensityController;
     targets["FadInSpd"] = this.fadeInSpeedController;
     targets["FadOutSpd"] = this.fadeOutSpeedController;
     targets["Time Step"] = this.timeStepController;

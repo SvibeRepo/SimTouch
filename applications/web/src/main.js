@@ -67,7 +67,8 @@ export class Main {
       },
       rendering: {
         gridMode: "Proximity",
-        maxDensity: 2.10
+        // Gain 0..1 (0 = dim, 1 = bright). Linear divisor flip of prior engine max 2.10.
+        maxDensity: 0.83193
       },
       // Duration (0 = instant, 0.5 = longest). Linear-in-time from prior rates 0.1 / 0.05.
       smoothing: {

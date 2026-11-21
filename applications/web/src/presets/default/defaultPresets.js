@@ -270,7 +270,7 @@ export const defaultPresets = {
             "threshold": 0,
             "min": 10,
             "max": 3.81,
-            "targetName": "Density",
+            "targetName": "Sensitivity",
             "customFreq": 1000,
             "customWidth": 100
           },
@@ -348,7 +348,7 @@ export const defaultPresets = {
             "threshold": 0,
             "min": 7.59,
             "max": 1.6,
-            "targetName": "Density",
+            "targetName": "Sensitivity",
             "customFreq": 1000,
             "customWidth": 100
           },
@@ -398,7 +398,7 @@ export const defaultPresets = {
         "controllers": {
           "Mode": false,
           "Boundary": false,
-          "Density": false,
+          "Sensitivity": false,
           "FadInSpd": false,
           "FadOutSpd": false,
           "SimSpeed": false,
@@ -479,7 +479,7 @@ export const defaultPresets = {
         "controllers": {
           "Mode": false,
           "Boundary": false,
-          "Density": false,
+          "Sensitivity": false,
           "FadInSpd": false,
           "FadOutSpd": false,
           "SimSpeed": false,
@@ -624,7 +624,7 @@ export const defaultPresets = {
         "paramUi": {
           "controllers": {
             "Mode": "Velocity",
-            "Density": 1.7,
+            "Sensitivity": 0.86554,
             "FadInSpd": 0.04546,
             "FadOutSpd": 0.09597,
             "Time Step": 0.032,
@@ -742,7 +742,7 @@ export const defaultPresets = {
         "randomizerUi": {
           "controllers": {
             "Mode": false,
-            "Density": false,
+            "Sensitivity": false,
             "FadInSpd": false,
             "FadOutSpd": false,
             "SimSpeed": false,
@@ -831,7 +831,7 @@ export const defaultPresets = {
         "paramUi": {
           "controllers": {
             "Mode": "--- NOISE ---",
-            "Density": 2.1,
+            "Sensitivity": 0.83195,
             "FadInSpd": 0.02862,
             "FadOutSpd": 0.05809,
             "Time Step": 0.016666666666666666,
@@ -963,7 +963,7 @@ export const defaultPresets = {
         "randomizerUi": {
           "controllers": {
             "Mode": false,
-            "Density": false,
+            "Sensitivity": false,
             "FadInSpd": false,
             "FadOutSpd": false,
             "SimSpeed": false,
@@ -1048,7 +1048,7 @@ export const defaultPresets = {
         "paramUi": {
           "controllers": {
             "Mode": "--- NOISE ---",
-            "Density": 1.9,
+            "Sensitivity": 0.84874,
             "FadInSpd": 0.02862,
             "FadOutSpd": 0.05809,
             "Time Step": 0.016666666666666666,
@@ -1166,7 +1166,7 @@ export const defaultPresets = {
         "randomizerUi": {
           "controllers": {
             "Mode": false,
-            "Density": false,
+            "Sensitivity": false,
             "FadInSpd": false,
             "FadOutSpd": false,
             "SimSpeed": false,
@@ -1251,7 +1251,7 @@ export const defaultPresets = {
         "paramUi": {
           "controllers": {
             "Mode": "Proximity",
-            "Density": 1.8,
+            "Sensitivity": 0.85715,
             "FadInSpd": 0.02382,
             "FadOutSpd": 0.05809,
             "Time Step": 0.016666666666666666,
@@ -1369,7 +1369,7 @@ export const defaultPresets = {
         "randomizerUi": {
           "controllers": {
             "Mode": false,
-            "Density": false,
+            "Sensitivity": false,
             "FadInSpd": false,
             "FadOutSpd": false,
             "SimSpeed": false,
@@ -1454,7 +1454,7 @@ export const defaultPresets = {
         "paramUi": {
           "controllers": {
             "Mode": "Proximity",
-            "Density": 4.4,
+            "Sensitivity": 0.63874,
             "FadInSpd": 0.02862,
             "FadOutSpd": 0.05809,
             "Time Step": 0.016666666666666666,
@@ -1599,7 +1599,7 @@ export const defaultPresets = {
         "randomizerUi": {
           "controllers": {
             "Mode": false,
-            "Density": false,
+            "Sensitivity": false,
             "FadInSpd": false,
             "FadOutSpd": false,
             "SimSpeed": false,
@@ -1686,7 +1686,7 @@ export const defaultPresets = {
         "paramUi": {
           "controllers": {
             "Mode": "Collision",
-            "Density": 12,
+            "Sensitivity": 0,
             "FadInSpd": 0.04403,
             "FadOutSpd": 0.10461,
             "Time Step": 0.016666666666666666,
@@ -1804,7 +1804,7 @@ export const defaultPresets = {
         "randomizerUi": {
           "controllers": {
             "Mode": false,
-            "Density": false,
+            "Sensitivity": false,
             "FadInSpd": false,
             "FadOutSpd": false,
             "SimSpeed": false,
@@ -1889,7 +1889,7 @@ export const defaultPresets = {
         "paramUi": {
           "controllers": {
             "Mode": "Proximity",
-            "Density": 1.4,
+            "Sensitivity": 0.89076,
             "FadInSpd": 0.03074,
             "FadOutSpd": 0.05809,
             "Time Step": 0.016666666666666666,
@@ -2007,7 +2007,7 @@ export const defaultPresets = {
         "randomizerUi": {
           "controllers": {
             "Mode": false,
-            "Density": false,
+            "Sensitivity": false,
             "FadInSpd": false,
             "FadOutSpd": false,
             "SimSpeed": false,
@@ -2092,7 +2092,7 @@ export const defaultPresets = {
         "paramUi": {
           "controllers": {
             "Mode": "Proximity",
-            "Density": 3.4,
+            "Sensitivity": 0.72273,
             "FadInSpd": 0.02862,
             "FadOutSpd": 0.05809,
             "Time Step": 0.016666666666666666,
@@ -2224,7 +2224,7 @@ export const defaultPresets = {
         "randomizerUi": {
           "controllers": {
             "Mode": false,
-            "Density": false,
+            "Sensitivity": false,
             "FadInSpd": false,
             "FadOutSpd": false,
             "SimSpeed": false,
@@ -2309,7 +2309,7 @@ export const defaultPresets = {
         "paramUi": {
           "controllers": {
             "Mode": "--- NOISE ---",
-            "Density": 1.9,
+            "Sensitivity": 0.84874,
             "FadInSpd": 0.03074,
             "FadOutSpd": 0.05809,
             "Time Step": 0.016666666666666666,
@@ -2427,7 +2427,7 @@ export const defaultPresets = {
         "randomizerUi": {
           "controllers": {
             "Mode": false,
-            "Density": false,
+            "Sensitivity": false,
             "FadInSpd": false,
             "FadOutSpd": false,
             "SimSpeed": false,
@@ -2512,7 +2512,7 @@ export const defaultPresets = {
         "paramUi": {
           "controllers": {
             "Mode": "Proximity",
-            "Density": 4.1,
+            "Sensitivity": 0.66384,
             "FadInSpd": 0.03074,
             "FadOutSpd": 0.05809,
             "Time Step": 0.016666666666666666,
@@ -2630,7 +2630,7 @@ export const defaultPresets = {
         "randomizerUi": {
           "controllers": {
             "Mode": false,
-            "Density": false,
+            "Sensitivity": false,
             "FadInSpd": false,
             "FadOutSpd": false,
             "SimSpeed": false,
@@ -2719,7 +2719,7 @@ export const defaultPresets = {
         "paramUi": {
           "controllers": {
             "Mode": "--- NOISE ---",
-            "Density": 1.4,
+            "Sensitivity": 0.89076,
             "FadInSpd": 0.03074,
             "FadOutSpd": 0.05809,
             "Time Step": 0.016666666666666666,
@@ -2837,7 +2837,7 @@ export const defaultPresets = {
         "randomizerUi": {
           "controllers": {
             "Mode": false,
-            "Density": false,
+            "Sensitivity": false,
             "FadInSpd": false,
             "FadOutSpd": false,
             "SimSpeed": false,
@@ -2922,7 +2922,7 @@ export const defaultPresets = {
         "paramUi": {
           "controllers": {
             "Mode": "Proximity",
-            "Density": 2.9,
+            "Sensitivity": 0.76471,
             "FadInSpd": 0.03074,
             "FadOutSpd": 0.05809,
             "Time Step": 0.016666666666666666,
@@ -3040,7 +3040,7 @@ export const defaultPresets = {
         "randomizerUi": {
           "controllers": {
             "Mode": false,
-            "Density": false,
+            "Sensitivity": false,
             "FadInSpd": false,
             "FadOutSpd": false,
             "SimSpeed": false,
@@ -3125,7 +3125,7 @@ export const defaultPresets = {
         "paramUi": {
           "controllers": {
             "Mode": "Proximity",
-            "Density": 3.1,
+            "Sensitivity": 0.74793,
             "FadInSpd": 0.04546,
             "FadOutSpd": 0.09597,
             "Time Step": 0.016666666666666666,
@@ -3243,7 +3243,7 @@ export const defaultPresets = {
         "randomizerUi": {
           "controllers": {
             "Mode": false,
-            "Density": false,
+            "Sensitivity": false,
             "FadInSpd": false,
             "FadOutSpd": false,
             "SimSpeed": false,
@@ -3328,7 +3328,7 @@ export const defaultPresets = {
         "paramUi": {
           "controllers": {
             "Mode": "Proximity",
-            "Density": 3.1,
+            "Sensitivity": 0.74793,
             "FadInSpd": 0.04546,
             "FadOutSpd": 0.09597,
             "Time Step": 0.016666666666666666,
@@ -3446,7 +3446,7 @@ export const defaultPresets = {
         "randomizerUi": {
           "controllers": {
             "Mode": false,
-            "Density": false,
+            "Sensitivity": false,
             "FadInSpd": false,
             "FadOutSpd": false,
             "SimSpeed": false,
@@ -3531,7 +3531,7 @@ export const defaultPresets = {
         "paramUi": {
           "controllers": {
             "Mode": "Proximity",
-            "Density": 3.1,
+            "Sensitivity": 0.74793,
             "FadInSpd": 0.04546,
             "FadOutSpd": 0.09597,
             "Time Step": 0.016666666666666666,
@@ -3649,7 +3649,7 @@ export const defaultPresets = {
         "randomizerUi": {
           "controllers": {
             "Mode": false,
-            "Density": false,
+            "Sensitivity": false,
             "FadInSpd": false,
             "FadOutSpd": false,
             "SimSpeed": false,
@@ -3734,7 +3734,7 @@ export const defaultPresets = {
         "paramUi": {
           "controllers": {
             "Mode": "Proximity",
-            "Density": 4.5,
+            "Sensitivity": 0.63033,
             "FadInSpd": 0.04546,
             "FadOutSpd": 0.09597,
             "Time Step": 0.016666666666666666,
@@ -3852,7 +3852,7 @@ export const defaultPresets = {
         "randomizerUi": {
           "controllers": {
             "Mode": false,
-            "Density": false,
+            "Sensitivity": false,
             "FadInSpd": false,
             "FadOutSpd": false,
             "SimSpeed": false,
@@ -3937,7 +3937,7 @@ export const defaultPresets = {
         "paramUi": {
           "controllers": {
             "Mode": "Proximity",
-            "Density": 2.1,
+            "Sensitivity": 0.83195,
             "FadInSpd": 0.04546,
             "FadOutSpd": 0.09597,
             "Time Step": 0.016666666666666666,
@@ -4055,7 +4055,7 @@ export const defaultPresets = {
         "randomizerUi": {
           "controllers": {
             "Mode": false,
-            "Density": false,
+            "Sensitivity": false,
             "FadInSpd": false,
             "FadOutSpd": false,
             "SimSpeed": false,
@@ -4140,7 +4140,7 @@ export const defaultPresets = {
         "paramUi": {
           "controllers": {
             "Mode": "Velocity",
-            "Density": 0.4,
+            "Sensitivity": 0.97479,
             "FadInSpd": 0.04546,
             "FadOutSpd": 0.09597,
             "Time Step": 0.016666666666666666,
@@ -4258,7 +4258,7 @@ export const defaultPresets = {
         "randomizerUi": {
           "controllers": {
             "Mode": false,
-            "Density": false,
+            "Sensitivity": false,
             "FadInSpd": false,
             "FadOutSpd": false,
             "SimSpeed": false,
