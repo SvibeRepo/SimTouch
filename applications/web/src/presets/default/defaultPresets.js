@@ -637,7 +637,7 @@ export const defaultPresets = {
             "P-Count": 3,
             "P-Size": 0.05,
             "P-VeloMax": 1,
-            "P-VeloDamp": 1,
+            "P-VeloDamp": 0,
             "P-Opacity": 0.65,
             "P-Color": "FFFFFF"
           }
@@ -844,7 +844,7 @@ export const defaultPresets = {
             "P-Count": 0,
             "P-Size": 0.015,
             "P-VeloMax": 1,
-            "P-VeloDamp": 1,
+            "P-VeloDamp": 0,
             "P-Opacity": 0.1,
             "P-Color": "FFFFFF"
           }
@@ -1061,7 +1061,7 @@ export const defaultPresets = {
             "P-Count": 500,
             "P-Size": 0.006,
             "P-VeloMax": 1,
-            "P-VeloDamp": 1,
+            "P-VeloDamp": 0,
             "P-Opacity": 0.1,
             "P-Color": "FFFFFF"
           }
@@ -1264,7 +1264,7 @@ export const defaultPresets = {
             "P-Count": 389,
             "P-Size": 0.01,
             "P-VeloMax": 1,
-            "P-VeloDamp": 1,
+            "P-VeloDamp": 0,
             "P-Opacity": 0.1,
             "P-Color": "FFFFFF"
           }
@@ -1467,7 +1467,7 @@ export const defaultPresets = {
             "P-Count": 500,
             "P-Size": 0.01,
             "P-VeloMax": 1,
-            "P-VeloDamp": 0.98,
+            "P-VeloDamp": 0.02,
             "P-Opacity": 0.1,
             "P-Color": "FFFFFF"
           }
@@ -1699,7 +1699,7 @@ export const defaultPresets = {
             "P-Count": 784,
             "P-Size": 0.01,
             "P-VeloMax": 1,
-            "P-VeloDamp": 1,
+            "P-VeloDamp": 0,
             "P-Opacity": 0.1,
             "P-Color": "FFFFFF"
           }
@@ -1902,7 +1902,7 @@ export const defaultPresets = {
             "P-Count": 500,
             "P-Size": 0.015,
             "P-VeloMax": 1,
-            "P-VeloDamp": 1,
+            "P-VeloDamp": 0,
             "P-Opacity": 0.1,
             "P-Color": "FFFFFF"
           }
@@ -2105,7 +2105,7 @@ export const defaultPresets = {
             "P-Count": 500,
             "P-Size": 0.015,
             "P-VeloMax": 1,
-            "P-VeloDamp": 1,
+            "P-VeloDamp": 0,
             "P-Opacity": 0.1,
             "P-Color": "FFFFFF"
           }
@@ -2322,7 +2322,7 @@ export const defaultPresets = {
             "P-Count": 500,
             "P-Size": 0.009,
             "P-VeloMax": 1,
-            "P-VeloDamp": 1,
+            "P-VeloDamp": 0,
             "P-Opacity": 0.1,
             "P-Color": "FFFFFF"
           }
@@ -2525,7 +2525,7 @@ export const defaultPresets = {
             "P-Count": 500,
             "P-Size": 0.009,
             "P-VeloMax": 1,
-            "P-VeloDamp": 1,
+            "P-VeloDamp": 0,
             "P-Opacity": 0.1,
             "P-Color": "FFFFFF"
           }
@@ -2732,7 +2732,7 @@ export const defaultPresets = {
             "P-Count": 0,
             "P-Size": 0.015,
             "P-VeloMax": 1,
-            "P-VeloDamp": 1,
+            "P-VeloDamp": 0,
             "P-Opacity": 0.1,
             "P-Color": "FFFFFF"
           }
@@ -2935,7 +2935,7 @@ export const defaultPresets = {
             "P-Count": 517,
             "P-Size": 0.015,
             "P-VeloMax": 1,
-            "P-VeloDamp": 1,
+            "P-VeloDamp": 0,
             "P-Opacity": 0.1,
             "P-Color": "FFFFFF"
           }
@@ -3138,7 +3138,7 @@ export const defaultPresets = {
             "P-Count": 500,
             "P-Size": 0.008,
             "P-VeloMax": 1,
-            "P-VeloDamp": 1,
+            "P-VeloDamp": 0,
             "P-Opacity": 0.1,
             "P-Color": "FFFFFF"
           }
@@ -3341,7 +3341,7 @@ export const defaultPresets = {
             "P-Count": 500,
             "P-Size": 0.008,
             "P-VeloMax": 1,
-            "P-VeloDamp": 1,
+            "P-VeloDamp": 0,
             "P-Opacity": 0.11,
             "P-Color": "FFFFFF"
           }
@@ -3544,7 +3544,7 @@ export const defaultPresets = {
             "P-Count": 500,
             "P-Size": 0.008,
             "P-VeloMax": 1,
-            "P-VeloDamp": 1,
+            "P-VeloDamp": 0,
             "P-Opacity": 0.11,
             "P-Color": "FFFFFF"
           }
@@ -3747,7 +3747,7 @@ export const defaultPresets = {
             "P-Count": 500,
             "P-Size": 0.01,
             "P-VeloMax": 1,
-            "P-VeloDamp": 1,
+            "P-VeloDamp": 0,
             "P-Opacity": 0.1,
             "P-Color": "FFFFFF"
           }
@@ -3950,7 +3950,7 @@ export const defaultPresets = {
             "P-Count": 500,
             "P-Size": 0.01,
             "P-VeloMax": 1,
-            "P-VeloDamp": 1,
+            "P-VeloDamp": 0,
             "P-Opacity": 0.1,
             "P-Color": "FFFFFF"
           }
@@ -4153,7 +4153,7 @@ export const defaultPresets = {
             "P-Count": 146,
             "P-Size": 0.013,
             "P-VeloMax": 1,
-            "P-VeloDamp": 0.912,
+            "P-VeloDamp": 0.088,
             "P-Opacity": 0.71,
             "P-Color": "#000000"
           }

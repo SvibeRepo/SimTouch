@@ -53,10 +53,8 @@ export class PresetBaseHandler {
 
       // Ensure minimalDefaults are present (merge underneath factory)
       this.presets = { ...this.minimalDefaults, ...this.presets };
-
-      this.saveToStorage(); // Save the full set to storage for next time
     } else {
-      // Storage has data - use it
+      // Storage has data - keep user-created names; refresh factory names below
       if (this.db) console.log(`Loading presets from storage for ${this.storageKey}.`);
       this.presets = loadedPresets;
 
@@ -64,6 +62,17 @@ export class PresetBaseHandler {
       // Merge minimal defaults underneath existing ones
       this.presets = { ...this.minimalDefaults, ...this.presets };
     }
+
+    // Always refresh factory-named presets from code so a bad polarity experiment
+    // cannot stick in localStorage. User-only names are left alone.
+    if (this.type && factoryDefaultPresets[this.type]) {
+      const factory = factoryDefaultPresets[this.type];
+      for (const name of Object.keys(factory)) {
+        this.presets[name] = JSON.parse(JSON.stringify(factory[name]));
+      }
+    }
+
+    this.saveToStorage();
 
     // Set initial selection (first protected or first overall)
     this.selectedPreset = this.protectedPresets.find(name => this.presets[name]) || Object.keys(this.presets)[0] || null;

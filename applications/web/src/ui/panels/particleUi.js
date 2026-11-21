@@ -26,7 +26,8 @@ export class ParticleUi extends BaseUi {
     this.maxVelocityController = this.gui.add(this.main.simParams.simulation, "maxVelocity", 0.01, 1, 0.01).name("P-VeloMax")
       .onChange((value) => { eventBus.emit('uiControlChanged', { paramPath: 'simulation.maxVelocity', value }); });
 
-    this.collisionDampingController = this.gui.add(this.main.simParams.simulation, "velocityDamping", 0.8, 1.0, 0.001).name("P-VeloDamp")
+    // Amount 0–0.2 (0 = no damp). Higher amounts crush motion too fast at 60 Hz.
+    this.collisionDampingController = this.gui.add(this.main.simParams.simulation, "velocityDamping", 0.0, 0.2, 0.001).name("P-VeloDamp")
       .onChange((value) => { eventBus.emit('uiControlChanged', { paramPath: 'simulation.velocityDamping', value }); });
 
     this.engineController = this.gui.add(this.main.simParams.simulation, "engine", ["js", "rust"]).name("Engine")

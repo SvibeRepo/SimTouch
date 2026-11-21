@@ -14,7 +14,7 @@
   "fields": {
     "gravityX": 0,
     "gravityY": 0,
-    "velocityDamping": 1,
+    "velocityDamping": 0,
     "collisionEnabled": 0,
     "collisionGrid": 10,
     "collisionRepulsion": 0.5,

@@ -85,6 +85,12 @@ fn main() {
     ps.params.flip_ratio = -1.0;
 
     for (index, value) in slots {
+        // Shared chart velocityDamping is amount (0 = none); pack stores retain.
+        let value = if index == sim_core::config::params::id::VELOCITY_DAMPING {
+            1.0 - value
+        } else {
+            value
+        };
         if !ps.set_pack_slot(index, value) {
             eprintln!("slice_step: rust pack slot {index} is not on the shared slice");
             exit(1);

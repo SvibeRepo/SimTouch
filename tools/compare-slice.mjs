@@ -23,7 +23,8 @@ function applyFields(ps, boundary, turbulence, fields) {
   const set = {
     gravityX(v) { ps.gravity.directionX = v; ps.gravity.updateMagnitude(); },
     gravityY(v) { ps.gravity.directionY = v; ps.gravity.updateMagnitude(); },
-    velocityDamping(v) { ps.velocityDamping = v; },
+    // Shared field is amount (0 = none); JS engine keeps retain.
+    velocityDamping(v) { ps.velocityDamping = 1 - v; },
     boundaryDamping(v) { boundary.damping = v; ps.boundaryDamping = v; },
     collisionEnabled(v) { ps.collisionSystem.enabled = v !== 0; },
     collisionGrid(v) { ps.collisionSystem.gridSizeCollision = v; ps.collisionSystem.initializeGrid(); },

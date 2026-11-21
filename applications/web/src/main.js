@@ -47,7 +47,8 @@ export class Main {
         paused: false,
         timeStep: 1 / 60,
         timeScale: 1.0,
-        velocityDamping: 1.0,
+        // Amount: 0 = no damp, 0.2 = max useful. Engine retain = 1 - amount.
+        velocityDamping: 0,
         maxVelocity: 1,
         picFlipRatio: 0,
         particleCount: 500,

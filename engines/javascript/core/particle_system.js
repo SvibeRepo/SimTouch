@@ -544,7 +544,13 @@ export class ParticleSystem {
       // For simplicity, we'll apply them regardless, reinitializeParticles should reset things correctly anyway.
       this.timeStep = simParams.simulation.timeStep ?? this.timeStep;
       this.timeScale = simParams.simulation.timeScale ?? this.timeScale;
-      this.velocityDamping = simParams.simulation.velocityDamping ?? this.velocityDamping;
+      // Lab UI stores amount (0 = none); engine keeps retain (1 = none).
+      {
+        const amount = simParams.simulation.velocityDamping;
+        this.velocityDamping = amount === undefined || amount === null
+          ? this.velocityDamping
+          : 1 - amount;
+      }
       this.maxVelocity = simParams.simulation.maxVelocity ?? this.maxVelocity;
       this.picFlipRatio = simParams.simulation.picFlipRatio ?? this.picFlipRatio;
       this.restDensity = simParams.simulation.restDensity ?? this.restDensity;

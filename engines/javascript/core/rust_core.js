@@ -276,7 +276,8 @@ export class RustCore {
     p[PARAM.GRAVITY_X] = gravityOn ? gx : 0;
     p[PARAM.GRAVITY_Y] = gravityOn ? gy : 0;
     p[PARAM.GRAVITY_ENABLED] = flag(gravityOn);
-    p[PARAM.VELOCITY_DAMPING] = num(sim.simulation.velocityDamping, ps.velocityDamping);
+    // Lab UI amount (0 = none) → engine retain (1 = none).
+    p[PARAM.VELOCITY_DAMPING] = 1 - num(sim.simulation.velocityDamping, 0);
     p[PARAM.EXTERNAL_DAMPING] = num(boundaryParams.damping, 0.8);
     p[PARAM.MAX_VELOCITY] = num(sim.simulation.maxVelocity, ps.maxVelocity);
     p[PARAM.VELOCITY_THRESHOLD] = num(ps.velocityThreshold, 0.001);

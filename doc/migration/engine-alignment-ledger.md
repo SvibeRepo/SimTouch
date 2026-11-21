@@ -4,7 +4,7 @@ JavaScript is where comparison starts. A winner is chosen **with the human** bef
 
 Status: **§0–§9 LOCKED and executed.** Pass 2 code for a row waits until that row is LOCKED here.
 
-**Order of work:** §0–§9 done. §10 follows §0 (already done for this pass). Alignment Pass 1 rows closed — boundary-contact fixture green; next is GOALS developer-preset (or deferred formula queue below).
+**Order of work:** §0–§9 done. §10 follows §0 (already done for this pass). Boundary fixture green. Polarity: factory preset refresh + **P-VeloDamp amount** on lab/C++/fixtures done; next B-Friction (lab then C++).
 
 | Verdict | Meaning |
 |---------|---------|
@@ -110,7 +110,7 @@ engines/
 | Shared default | `velocityDamping = 1.0` on JS / Rust / C++ / lab. |
 | Rest / advect / clamp | Already match; unchanged. |
 
-**Deferred:** polarity invert (`0 = no damp`, `1 = max damp`) and other retain-style knobs — separate pass with lab presets / NVS remap in parallel (otherwise presets break).
+**Deferred:** remaining polarity knobs (B-Friction, Density, Fade) — P-VeloDamp amount (`0 = none`, `1 = max`; retain = `1 - amount`) done on lab + C++ / fixtures.
 
 **Lock:** LOCKED — executed (see Gravity/damp pass status).
 
@@ -312,9 +312,9 @@ Mass “split every large file” is **not** a separate pass. Structure is **§0
 | Damp default | JS ctor `velocityDamping` aligned to `1.0` (match Rust / C++ / lab) |
 | Damp formula | Unchanged retain scale (`v *= d`) |
 
-**Deferred:** polarity invert + preset/NVS remap (separate pass).
+**Follow-up:** P-VeloDamp amount polarity on lab + C++ (fixtures/chart amount, slider/registry **0–0.2**). Other retain-style knobs still queued.
 
-**Verified:** `compare-slice` gravity + noise green; Rust lib tests 35; C++ `simcore_test` OK.
+**Verified:** `compare-slice` gravity + noise + boundary green after amount remap; C++ `simcore_test` OK.
 
 ---
 

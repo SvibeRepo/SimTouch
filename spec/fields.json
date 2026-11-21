@@ -6,7 +6,7 @@
   "fields": [
     {"index": 0, "name": "gravityX", "group": "gravity", "rustName": "GRAVITY_X", "rust": 0, "cpp": 80, "cppLabel": "Gravity X", "js": "gravity.directionX"},
     {"index": 1, "name": "gravityY", "group": "gravity", "rustName": "GRAVITY_Y", "rust": 1, "cpp": 81, "cppLabel": "Gravity Y", "js": "gravity.directionY"},
-    {"index": 2, "name": "velocityDamping", "group": "damping", "rustName": "VELOCITY_DAMPING", "rust": 3, "cpp": 51, "cppLabel": "Velocity Damping", "js": "simulation.velocityDamping"},
+    {"index": 2, "name": "velocityDamping", "group": "damping", "note": "Amount 0=none 0.2=max useful (retain=1-amount). Slider/registry capped at 0.2.", "rustName": "VELOCITY_DAMPING", "rust": 3, "cpp": 51, "cppLabel": "Velocity Damping", "js": "simulation.velocityDamping"},
     {"index": 3, "name": "boundaryDamping", "group": "damping", "rustName": "BOUNDARY_DAMPING", "rust": 28, "cpp": 73, "cppLabel": "Boundary Damping", "js": "boundary.damping"},
     {"index": 4, "name": "collisionEnabled", "group": "collision", "rustName": "COLLISION_ENABLED", "rust": 16, "cpp": 90, "cppLabel": "Collision Enabled", "js": "collision.enabled"},
     {"index": 5, "name": "collisionGrid", "group": "collision", "rustName": "COLLISION_GRID", "rust": 17, "cpp": 91, "cppLabel": "Collision Grid Size", "js": "collision.gridSizeCollision"},
