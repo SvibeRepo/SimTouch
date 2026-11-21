@@ -15,6 +15,35 @@ export const GridField = {
 /** Mode ids match `Object.values(GridField)` and engines/rust/src/grid/grid.rs. */
 export const GRID_MODE_IDS = Object.values(GridField);
 
+/** Lab FadIn/FadOut duration: 0 = instant, max = slowest catch-up. */
+export const FADE_DURATION_MAX = 0.5;
+/** Engine rate at FADE_DURATION_MAX (matches prior slider floor). */
+export const FADE_RATE_AT_MAX_DURATION = 0.01;
+
+/**
+ * UI duration → per-frame lerp rate.
+ * Linear in 1/rate (catch-up time), not in rate — otherwise 0..~0.4 feels
+ * instant and only the last notch is slow (exponential lerp perception).
+ * 0 → rate 1, max → FADE_RATE_AT_MAX_DURATION.
+ */
+export function fadeDurationToRate(duration) {
+  const d = Math.max(0, Math.min(FADE_DURATION_MAX, Number(duration) || 0));
+  if (d <= 0) return 1;
+  const t = d / FADE_DURATION_MAX;
+  const invRate = 1 + t * (1 / FADE_RATE_AT_MAX_DURATION - 1);
+  return 1 / invRate;
+}
+
+/** Engine rate → UI duration (factory preset remap). */
+export function fadeRateToDuration(rate) {
+  const r = Math.max(FADE_RATE_AT_MAX_DURATION, Math.min(1, Number(rate) || 0));
+  if (r >= 1) return 0;
+  return (
+    (FADE_DURATION_MAX * (1 / r - 1)) /
+    (1 / FADE_RATE_AT_MAX_DURATION - 1)
+  );
+}
+
 export class GridRenderModes {
   constructor({ gridParams, gridMap, dimensions, rustCore = null, simParams = null }) {
     this.gridParams = gridParams;
@@ -33,10 +62,10 @@ export class GridRenderModes {
     this.cellCount = 0;
     this.cellsDirty = false;
 
-    // Smoothing configuration - simplified
+    // Engine rates (higher = faster). Lab UI stores duration; convert at apply edge.
     this.smoothing = {
-      rateIn: 0.15, // Speed to reach target (higher = faster)
-      rateOut: 0.08, // Speed to return to zero (lower = smoother)
+      rateIn: 0.15,
+      rateOut: 0.08,
     };
 
     // Modes configuration

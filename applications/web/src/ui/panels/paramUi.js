@@ -60,17 +60,18 @@ export class ParamUi extends BaseUi {
         eventBus.emit('uiControlChanged', { paramPath: 'rendering.maxDensity', value });
       });
 
-    this.fadeInSpeedController = this.gui.add(this.main.simParams.smoothing, "rateIn", 0.01, 0.5)
+    // Duration: 0 = no fade (instant), 0.5 = longest catch-up. Converted to rate at apply edge.
+    this.fadeInSpeedController = this.gui.add(this.main.simParams.smoothing, "rateIn", 0, 0.5, 0.01)
       .name("FadInSpd").onChange((value) => {
         eventBus.emit('uiControlChanged', { paramPath: 'smoothing.rateIn', value });
       })
-      .onFinishChange(() => { if (this.db) console.log("Smoothing in:", this.main.simParams.smoothing.rateIn); });
+      .onFinishChange(() => { if (this.db) console.log("Fade-in duration:", this.main.simParams.smoothing.rateIn); });
 
-    this.fadeOutSpeedController = this.gui.add(this.main.simParams.smoothing, "rateOut", 0.01, 0.5)
+    this.fadeOutSpeedController = this.gui.add(this.main.simParams.smoothing, "rateOut", 0, 0.5, 0.01)
       .name("FadOutSpd").onChange((value) => {
         eventBus.emit('uiControlChanged', { paramPath: 'smoothing.rateOut', value });
       })
-      .onFinishChange(() => { if (this.db) console.log("Smoothing out:", this.main.simParams.smoothing.rateOut); });
+      .onFinishChange(() => { if (this.db) console.log("Fade-out duration:", this.main.simParams.smoothing.rateOut); });
 
     this.timeStepController = this.gui.add(this.main.simParams.simulation, "timeStep", 0.001, 0.05, 0.001)
       .name("Time Step").onChange((value) => {

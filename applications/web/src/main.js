@@ -69,9 +69,10 @@ export class Main {
         gridMode: "Proximity",
         maxDensity: 2.10
       },
+      // Duration (0 = instant, 0.5 = longest). Linear-in-time from prior rates 0.1 / 0.05.
       smoothing: {
-        rateIn: 0.1,
-        rateOut: 0.05
+        rateIn: 0.04545,
+        rateOut: 0.09596
       },
       gravity: {
         directionX: 0,

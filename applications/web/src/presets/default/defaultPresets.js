@@ -625,8 +625,8 @@ export const defaultPresets = {
           "controllers": {
             "Mode": "Velocity",
             "Density": 1.7,
-            "FadInSpd": 0.1,
-            "FadOutSpd": 0.05,
+            "FadInSpd": 0.04546,
+            "FadOutSpd": 0.09597,
             "Time Step": 0.032,
             "SimSpeed": 1,
             "PicFlipRatio": 1
@@ -832,8 +832,8 @@ export const defaultPresets = {
           "controllers": {
             "Mode": "--- NOISE ---",
             "Density": 2.1,
-            "FadInSpd": 0.15,
-            "FadOutSpd": 0.08,
+            "FadInSpd": 0.02862,
+            "FadOutSpd": 0.05809,
             "Time Step": 0.016666666666666666,
             "SimSpeed": 1,
             "PicFlipRatio": 0
@@ -1049,8 +1049,8 @@ export const defaultPresets = {
           "controllers": {
             "Mode": "--- NOISE ---",
             "Density": 1.9,
-            "FadInSpd": 0.15,
-            "FadOutSpd": 0.08,
+            "FadInSpd": 0.02862,
+            "FadOutSpd": 0.05809,
             "Time Step": 0.016666666666666666,
             "SimSpeed": 1,
             "PicFlipRatio": 0
@@ -1252,8 +1252,8 @@ export const defaultPresets = {
           "controllers": {
             "Mode": "Proximity",
             "Density": 1.8,
-            "FadInSpd": 0.17493,
-            "FadOutSpd": 0.08,
+            "FadInSpd": 0.02382,
+            "FadOutSpd": 0.05809,
             "Time Step": 0.016666666666666666,
             "SimSpeed": 1,
             "PicFlipRatio": 1
@@ -1455,8 +1455,8 @@ export const defaultPresets = {
           "controllers": {
             "Mode": "Proximity",
             "Density": 4.4,
-            "FadInSpd": 0.15,
-            "FadOutSpd": 0.08,
+            "FadInSpd": 0.02862,
+            "FadOutSpd": 0.05809,
             "Time Step": 0.016666666666666666,
             "SimSpeed": 1,
             "PicFlipRatio": 0
@@ -1687,8 +1687,8 @@ export const defaultPresets = {
           "controllers": {
             "Mode": "Collision",
             "Density": 12,
-            "FadInSpd": 0.1029,
-            "FadOutSpd": 0.04606,
+            "FadInSpd": 0.04403,
+            "FadOutSpd": 0.10461,
             "Time Step": 0.016666666666666666,
             "SimSpeed": 0.8,
             "PicFlipRatio": 0
@@ -1890,8 +1890,8 @@ export const defaultPresets = {
           "controllers": {
             "Mode": "Proximity",
             "Density": 1.4,
-            "FadInSpd": 0.14112,
-            "FadOutSpd": 0.08,
+            "FadInSpd": 0.03074,
+            "FadOutSpd": 0.05809,
             "Time Step": 0.016666666666666666,
             "SimSpeed": 1,
             "PicFlipRatio": 0
@@ -2093,8 +2093,8 @@ export const defaultPresets = {
           "controllers": {
             "Mode": "Proximity",
             "Density": 3.4,
-            "FadInSpd": 0.15,
-            "FadOutSpd": 0.08,
+            "FadInSpd": 0.02862,
+            "FadOutSpd": 0.05809,
             "Time Step": 0.016666666666666666,
             "SimSpeed": 1,
             "PicFlipRatio": 0
@@ -2310,8 +2310,8 @@ export const defaultPresets = {
           "controllers": {
             "Mode": "--- NOISE ---",
             "Density": 1.9,
-            "FadInSpd": 0.14112,
-            "FadOutSpd": 0.08,
+            "FadInSpd": 0.03074,
+            "FadOutSpd": 0.05809,
             "Time Step": 0.016666666666666666,
             "SimSpeed": 1,
             "PicFlipRatio": 0
@@ -2513,8 +2513,8 @@ export const defaultPresets = {
           "controllers": {
             "Mode": "Proximity",
             "Density": 4.1,
-            "FadInSpd": 0.14112,
-            "FadOutSpd": 0.08,
+            "FadInSpd": 0.03074,
+            "FadOutSpd": 0.05809,
             "Time Step": 0.016666666666666666,
             "SimSpeed": 0.5,
             "PicFlipRatio": 0
@@ -2720,8 +2720,8 @@ export const defaultPresets = {
           "controllers": {
             "Mode": "--- NOISE ---",
             "Density": 1.4,
-            "FadInSpd": 0.14112,
-            "FadOutSpd": 0.08,
+            "FadInSpd": 0.03074,
+            "FadOutSpd": 0.05809,
             "Time Step": 0.016666666666666666,
             "SimSpeed": 1,
             "PicFlipRatio": 0
@@ -2923,8 +2923,8 @@ export const defaultPresets = {
           "controllers": {
             "Mode": "Proximity",
             "Density": 2.9,
-            "FadInSpd": 0.14112,
-            "FadOutSpd": 0.08,
+            "FadInSpd": 0.03074,
+            "FadOutSpd": 0.05809,
             "Time Step": 0.016666666666666666,
             "SimSpeed": 1,
             "PicFlipRatio": 0
@@ -3126,8 +3126,8 @@ export const defaultPresets = {
           "controllers": {
             "Mode": "Proximity",
             "Density": 3.1,
-            "FadInSpd": 0.1,
-            "FadOutSpd": 0.05,
+            "FadInSpd": 0.04546,
+            "FadOutSpd": 0.09597,
             "Time Step": 0.016666666666666666,
             "SimSpeed": 1,
             "PicFlipRatio": 0
@@ -3329,8 +3329,8 @@ export const defaultPresets = {
           "controllers": {
             "Mode": "Proximity",
             "Density": 3.1,
-            "FadInSpd": 0.1,
-            "FadOutSpd": 0.05,
+            "FadInSpd": 0.04546,
+            "FadOutSpd": 0.09597,
             "Time Step": 0.016666666666666666,
             "SimSpeed": 1,
             "PicFlipRatio": 0
@@ -3532,8 +3532,8 @@ export const defaultPresets = {
           "controllers": {
             "Mode": "Proximity",
             "Density": 3.1,
-            "FadInSpd": 0.1,
-            "FadOutSpd": 0.05,
+            "FadInSpd": 0.04546,
+            "FadOutSpd": 0.09597,
             "Time Step": 0.016666666666666666,
             "SimSpeed": 1,
             "PicFlipRatio": 0
@@ -3735,8 +3735,8 @@ export const defaultPresets = {
           "controllers": {
             "Mode": "Proximity",
             "Density": 4.5,
-            "FadInSpd": 0.1,
-            "FadOutSpd": 0.05,
+            "FadInSpd": 0.04546,
+            "FadOutSpd": 0.09597,
             "Time Step": 0.016666666666666666,
             "SimSpeed": 1,
             "PicFlipRatio": 0
@@ -3938,8 +3938,8 @@ export const defaultPresets = {
           "controllers": {
             "Mode": "Proximity",
             "Density": 2.1,
-            "FadInSpd": 0.1,
-            "FadOutSpd": 0.05,
+            "FadInSpd": 0.04546,
+            "FadOutSpd": 0.09597,
             "Time Step": 0.016666666666666666,
             "SimSpeed": 1,
             "PicFlipRatio": 0
@@ -4141,8 +4141,8 @@ export const defaultPresets = {
           "controllers": {
             "Mode": "Velocity",
             "Density": 0.4,
-            "FadInSpd": 0.1,
-            "FadOutSpd": 0.05,
+            "FadInSpd": 0.04546,
+            "FadOutSpd": 0.09597,
             "Time Step": 0.016666666666666666,
             "SimSpeed": 1,
             "PicFlipRatio": 1

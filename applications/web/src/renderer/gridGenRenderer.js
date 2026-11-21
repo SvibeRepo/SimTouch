@@ -4,7 +4,7 @@ import { GridGeometry } from "../simulation/grid/lattice/grid_geometry.js";
 import { OverlayManager } from "./overlayRenderer.js";
 import { eventBus } from '../util/eventManager.js';
 import { Gradients } from "../shader/gradients.js";
-import { GridRenderModes, GridField } from "../simulation/grid/grid_render_modes.js";
+import { GridRenderModes, GridField, fadeDurationToRate } from "../simulation/grid/grid_render_modes.js";
 import { comManager } from "../com/comManager.js";
 import { debugManager } from "../util/debugManager.js";
 
@@ -747,10 +747,14 @@ export class GridGenRenderer extends BaseRenderer {
         }
       }
     }
-    // Also update smoothing if renderModes exists
+    // Lab stores fade duration; engine smoothValues uses rate (0 → instant).
     if (simParams?.smoothing && this.renderModes?.smoothing) {
-      this.renderModes.smoothing.rateIn = simParams.smoothing.rateIn ?? this.renderModes.smoothing.rateIn;
-      this.renderModes.smoothing.rateOut = simParams.smoothing.rateOut ?? this.renderModes.smoothing.rateOut;
+      if (simParams.smoothing.rateIn !== undefined && simParams.smoothing.rateIn !== null) {
+        this.renderModes.smoothing.rateIn = fadeDurationToRate(simParams.smoothing.rateIn);
+      }
+      if (simParams.smoothing.rateOut !== undefined && simParams.smoothing.rateOut !== null) {
+        this.renderModes.smoothing.rateOut = fadeDurationToRate(simParams.smoothing.rateOut);
+      }
     }
 
     // Emit event ONLY if the mode actually changed
