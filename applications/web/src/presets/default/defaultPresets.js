@@ -661,7 +661,7 @@ export const defaultPresets = {
             "B-Mode": "BOUNCE",
             "B-Scale": 1,
             "B-Repulse": 0,
-            "B-Friction": 0.8,
+            "B-Friction": 0.2,
             "B-Bounce": 1
           }
         },
@@ -868,7 +868,7 @@ export const defaultPresets = {
             "B-Mode": "BOUNCE",
             "B-Scale": 1.03,
             "B-Repulse": 0.1,
-            "B-Friction": 0.95,
+            "B-Friction": 0.05,
             "B-Bounce": 0.8
           }
         },
@@ -1085,7 +1085,7 @@ export const defaultPresets = {
             "B-Mode": "BOUNCE",
             "B-Scale": 1,
             "B-Repulse": 0.1,
-            "B-Friction": 0.95,
+            "B-Friction": 0.05,
             "B-Bounce": 0.8
           }
         },
@@ -1288,7 +1288,7 @@ export const defaultPresets = {
             "B-Mode": "BOUNCE",
             "B-Scale": 1,
             "B-Repulse": 1.16,
-            "B-Friction": 0.95,
+            "B-Friction": 0.05,
             "B-Bounce": 0.8
           }
         },
@@ -1491,7 +1491,7 @@ export const defaultPresets = {
             "B-Mode": "WARP",
             "B-Scale": 1,
             "B-Repulse": 0.1,
-            "B-Friction": 0.95,
+            "B-Friction": 0.05,
             "B-Bounce": 0.8
           }
         },
@@ -1723,7 +1723,7 @@ export const defaultPresets = {
             "B-Mode": "BOUNCE",
             "B-Scale": 1,
             "B-Repulse": 0,
-            "B-Friction": 1,
+            "B-Friction": 0,
             "B-Bounce": 1
           }
         },
@@ -1926,7 +1926,7 @@ export const defaultPresets = {
             "B-Mode": "BOUNCE",
             "B-Scale": 1,
             "B-Repulse": 0,
-            "B-Friction": 0.95,
+            "B-Friction": 0.05,
             "B-Bounce": 0.8
           }
         },
@@ -2129,7 +2129,7 @@ export const defaultPresets = {
             "B-Mode": "BOUNCE",
             "B-Scale": 1,
             "B-Repulse": 0.1,
-            "B-Friction": 0.95,
+            "B-Friction": 0.05,
             "B-Bounce": 0.8
           }
         },
@@ -2346,7 +2346,7 @@ export const defaultPresets = {
             "B-Mode": "BOUNCE",
             "B-Scale": 1,
             "B-Repulse": 0,
-            "B-Friction": 0.95,
+            "B-Friction": 0.05,
             "B-Bounce": 0.8
           }
         },
@@ -2549,7 +2549,7 @@ export const defaultPresets = {
             "B-Mode": "BOUNCE",
             "B-Scale": 1,
             "B-Repulse": 0,
-            "B-Friction": 0.95,
+            "B-Friction": 0.05,
             "B-Bounce": 0.8
           }
         },
@@ -2756,7 +2756,7 @@ export const defaultPresets = {
             "B-Mode": "BOUNCE",
             "B-Scale": 1,
             "B-Repulse": 0,
-            "B-Friction": 0.95,
+            "B-Friction": 0.05,
             "B-Bounce": 0.8
           }
         },
@@ -2959,7 +2959,7 @@ export const defaultPresets = {
             "B-Mode": "BOUNCE",
             "B-Scale": 1,
             "B-Repulse": 0,
-            "B-Friction": 0.95,
+            "B-Friction": 0.05,
             "B-Bounce": 0.8
           }
         },
@@ -3162,7 +3162,7 @@ export const defaultPresets = {
             "B-Mode": "BOUNCE",
             "B-Scale": 1,
             "B-Repulse": 0,
-            "B-Friction": 0.8,
+            "B-Friction": 0.2,
             "B-Bounce": 1
           }
         },
@@ -3365,7 +3365,7 @@ export const defaultPresets = {
             "B-Mode": "BOUNCE",
             "B-Scale": 1,
             "B-Repulse": 0,
-            "B-Friction": 0.8,
+            "B-Friction": 0.2,
             "B-Bounce": 1
           }
         },
@@ -3568,7 +3568,7 @@ export const defaultPresets = {
             "B-Mode": "BOUNCE",
             "B-Scale": 1,
             "B-Repulse": 0,
-            "B-Friction": 0.8,
+            "B-Friction": 0.2,
             "B-Bounce": 1
           }
         },
@@ -3771,7 +3771,7 @@ export const defaultPresets = {
             "B-Mode": "BOUNCE",
             "B-Scale": 1,
             "B-Repulse": 0,
-            "B-Friction": 0.8,
+            "B-Friction": 0.2,
             "B-Bounce": 1
           }
         },
@@ -3974,7 +3974,7 @@ export const defaultPresets = {
             "B-Mode": "BOUNCE",
             "B-Scale": 1,
             "B-Repulse": 0,
-            "B-Friction": 0.8,
+            "B-Friction": 0.2,
             "B-Bounce": 1
           }
         },
@@ -4177,7 +4177,7 @@ export const defaultPresets = {
             "B-Mode": "WARP",
             "B-Scale": 1,
             "B-Repulse": 0,
-            "B-Friction": 0.8,
+            "B-Friction": 0.2,
             "B-Bounce": 1
           }
         },

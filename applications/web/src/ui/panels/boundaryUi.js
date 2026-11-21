@@ -34,6 +34,7 @@ export class BoundaryUi extends BaseUi {
     this.boundaryScaleController = this.gui.add(this.main.simParams.boundary, "scale", 0.0, 1.2, 0.01).name("B-Scale")
       .onChange((value) => { eventBus.emit('uiControlChanged', { paramPath: 'boundary.scale', value }); });
 
+    // Amount 0–1 (0 = no friction). Default 0.2 ≡ old retain 0.8.
     this.boundaryFrictionController = this.gui.add(this.main.simParams.boundary, "damping", 0.0, 1.0, 0.01).name("B-Friction")
       .onChange((value) => { eventBus.emit('uiControlChanged', { paramPath: 'boundary.damping', value }); });
 

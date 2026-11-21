@@ -25,7 +25,8 @@ function applyFields(ps, boundary, turbulence, fields) {
     gravityY(v) { ps.gravity.directionY = v; ps.gravity.updateMagnitude(); },
     // Shared field is amount (0 = none); JS engine keeps retain.
     velocityDamping(v) { ps.velocityDamping = 1 - v; },
-    boundaryDamping(v) { boundary.damping = v; ps.boundaryDamping = v; },
+    // Shared field is amount (0 = none); JS boundary keeps retain.
+    boundaryDamping(v) { boundary.damping = 1 - v; ps.boundaryDamping = 1 - v; },
     collisionEnabled(v) { ps.collisionSystem.enabled = v !== 0; },
     collisionGrid(v) { ps.collisionSystem.gridSizeCollision = v; ps.collisionSystem.initializeGrid(); },
     collisionRepulsion(v) { ps.collisionSystem.repulsion = v; },

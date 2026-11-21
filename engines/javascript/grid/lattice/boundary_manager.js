@@ -241,7 +241,13 @@ export class BoundaryManager {
     }
 
     this.physicsBoundary.cBoundaryRestitution = this.simParams.boundary.restitution ?? this.physicsBoundary.cBoundaryRestitution;
-    this.physicsBoundary.damping = this.simParams.boundary.damping ?? this.physicsBoundary.damping;
+    // Lab UI stores amount (0 = none); boundary physics keeps retain (1 = none).
+    {
+      const amount = this.simParams.boundary.damping;
+      this.physicsBoundary.damping = amount === undefined || amount === null
+        ? this.physicsBoundary.damping
+        : 1 - amount;
+    }
     this.physicsBoundary.boundaryRepulsion = this.simParams.boundary.repulsion ?? this.physicsBoundary.boundaryRepulsion;
     this.physicsBoundary.mode = this.simParams.boundary.mode ?? this.physicsBoundary.mode;
 

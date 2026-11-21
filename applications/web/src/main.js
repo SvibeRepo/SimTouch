@@ -60,7 +60,8 @@ export class Main {
         mode: "BOUNCE",
         shape: "CIRCULAR",
         scale: 1,
-        damping: 0.8,
+        // Amount: 0 = no friction, slider max 1. Default 0.2 ≡ old retain 0.8.
+        damping: 0.2,
         restitution: 1.0,
         repulsion: 0,
       },

@@ -4,7 +4,7 @@ JavaScript is where comparison starts. A winner is chosen **with the human** bef
 
 Status: **§0–§9 LOCKED and executed.** Pass 2 code for a row waits until that row is LOCKED here.
 
-**Order of work:** §0–§9 done. §10 follows §0 (already done for this pass). Boundary fixture green. Polarity: factory preset refresh + **P-VeloDamp amount** on lab/C++/fixtures done; next B-Friction (lab then C++).
+**Order of work:** §0–§9 done. Polarity: factory refresh + P-VeloDamp (0–0.2) + B-Friction (0–1) on lab/C++/fixtures done; next Density (lab then C++).
 
 | Verdict | Meaning |
 |---------|---------|

@@ -278,7 +278,8 @@ export class RustCore {
     p[PARAM.GRAVITY_ENABLED] = flag(gravityOn);
     // Lab UI amount (0 = none) → engine retain (1 = none).
     p[PARAM.VELOCITY_DAMPING] = 1 - num(sim.simulation.velocityDamping, 0);
-    p[PARAM.EXTERNAL_DAMPING] = num(boundaryParams.damping, 0.8);
+    // Lab UI amount → retain (same as B-Friction / boundaryDamping).
+    p[PARAM.EXTERNAL_DAMPING] = 1 - num(boundaryParams.damping, 0);
     p[PARAM.MAX_VELOCITY] = num(sim.simulation.maxVelocity, ps.maxVelocity);
     p[PARAM.VELOCITY_THRESHOLD] = num(ps.velocityThreshold, 0.001);
     p[PARAM.POSITION_THRESHOLD] = num(ps.positionThreshold, 0.0001);
@@ -305,7 +306,7 @@ export class RustCore {
     p[PARAM.BOUNDARY_WIDTH] = num(physics?.width, 0.8);
     p[PARAM.BOUNDARY_HEIGHT] = num(physics?.height, 0.8);
     p[PARAM.BOUNDARY_RESTITUTION] = num(boundaryParams.restitution, 1);
-    p[PARAM.BOUNDARY_DAMPING] = num(boundaryParams.damping, 0.8);
+    p[PARAM.BOUNDARY_DAMPING] = 1 - num(boundaryParams.damping, 0);
     p[PARAM.BOUNDARY_REPULSION] = num(boundaryParams.repulsion, 0);
     p[PARAM.RECT_MIN_X] = num(physics?.minX, p[PARAM.BOUNDARY_CX] - p[PARAM.BOUNDARY_WIDTH] * 0.5);
     p[PARAM.RECT_MIN_Y] = num(physics?.minY, p[PARAM.BOUNDARY_CY] - p[PARAM.BOUNDARY_HEIGHT] * 0.5);

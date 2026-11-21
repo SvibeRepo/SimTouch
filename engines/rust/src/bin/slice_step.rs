@@ -85,8 +85,11 @@ fn main() {
     ps.params.flip_ratio = -1.0;
 
     for (index, value) in slots {
-        // Shared chart velocityDamping is amount (0 = none); pack stores retain.
-        let value = if index == sim_core::config::params::id::VELOCITY_DAMPING {
+        // Shared chart damping fields are amount (0 = none); pack stores retain.
+        let value = if index == sim_core::config::params::id::VELOCITY_DAMPING
+            || index == sim_core::config::params::id::BOUNDARY_DAMPING
+            || index == sim_core::config::params::id::EXTERNAL_DAMPING
+        {
             1.0 - value
         } else {
             value

@@ -21,7 +21,7 @@
     "collisionRestitution": 0.8,
     "boundaryMode": 0,
     "boundaryShape": 0,
-    "boundaryDamping": 0.8,
+    "boundaryDamping": 0.2,
     "boundaryRestitution": 0.6,
     "boundaryRepulsion": 0.5,
     "turbStrength": 0,
