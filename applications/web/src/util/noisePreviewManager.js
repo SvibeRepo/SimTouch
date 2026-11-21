@@ -88,6 +88,16 @@ export class NoisePreviewManager {
             if (this.db) console.log(`NoisePreviewManager: Relevance CHANGED: ${wasRelevant} -> ${this.isTurbulenceRelevant}`);
             // Step 2: Trigger refresh state update when relevance changes
             this.updateRefreshState();
+            // When modes turn off, the main rAF loop may already be idle while a
+            // selected-pattern animation still runs on its own rAF. Stop those and
+            // restore per-pattern static thumbs (noise2D), not the frozen WASM field.
+            if (!newRelevance) {
+                this.cleanupFunctions.forEach((cleanup) => {
+                    try { cleanup(); } catch (e) { console.warn('Error during preview cleanup:', e); }
+                });
+                this.cleanupFunctions.clear();
+                this.generateAllStaticPreviews();
+            }
         } else {
             if (this.db) console.log(`NoisePreviewManager: Relevance unchanged (${this.isTurbulenceRelevant}).`);
         }
@@ -503,23 +513,13 @@ export class NoisePreviewManager {
     }
 
     refreshSelectedPreview(forceStart = false) {
-        if (!this.selectedPattern || this.refreshingDisabled) return;
-
-        if (this.db) console.log(`Refreshing preview for ${this.selectedPattern}, visible: ${this.isVisible}, contrast: ${this.turbulenceField.contrast.toFixed(2)}, blur: ${this.turbulenceField.blurAmount.toFixed(2)}`);
-
-        this._inRefreshSelectedPreview = true;
+        if (!this.selectedPattern) return;
 
         const element = this.previewElements.get(this.selectedPattern);
-        if (!element) {
-            this._inRefreshSelectedPreview = false;
-            return;
-        }
+        if (!element) return;
 
         const img = element.querySelector('img');
-        if (!img) {
-            this._inRefreshSelectedPreview = false;
-            return;
-        }
+        if (!img) return;
 
         const existingCleanup = this.cleanupFunctions.get(this.selectedPattern);
         if (existingCleanup) {
@@ -530,6 +530,23 @@ export class NoisePreviewManager {
             }
             this.cleanupFunctions.delete(this.selectedPattern);
         }
+
+        // Paused, or no turb mode / noise grid: do not animate from the shared
+        // WASM fieldView — that buffer freezes when turbulence is idle, so every
+        // clicked pattern would paint as a copy of the last live frame. Use
+        // per-pattern noise2D statics instead.
+        if (this.refreshingDisabled || !this.isTurbulenceRelevant) {
+            img.src = this.generateStaticPreviewImage(
+                this.selectedPattern,
+                this.previewSize,
+                this.previewSize
+            );
+            return;
+        }
+
+        if (this.db) console.log(`Refreshing preview for ${this.selectedPattern}, visible: ${this.isVisible}, contrast: ${this.turbulenceField.contrast.toFixed(2)}, blur: ${this.turbulenceField.blurAmount.toFixed(2)}`);
+
+        this._inRefreshSelectedPreview = true;
 
         try {
             const cleanup = this.generatePreviewAnimation(
