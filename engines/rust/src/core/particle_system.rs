@@ -48,9 +48,11 @@ pub struct ParticleSystem {
     org_link_count: Vec<u16>,
     org_links: Vec<u16>,
     grid: Grid,
-    /// Active lab grid mode. Used to skip the 128² fill when turbulence is idle
+    /// Active lab cell mode. Used to skip the 128² fill when turbulence is idle
     /// and the mode is not NOISE. Set from the host before step.
     grid_mode: u32,
+    /// Per-particle theme levels for the particle output class (visual only).
+    particle_values: Vec<f32>,
 }
 
 impl ParticleSystem {
@@ -94,11 +96,17 @@ impl ParticleSystem {
             org_links: vec![0; capacity * organic::MAX_LINKS],
             grid: Grid::new(capacity),
             grid_mode: MODE_NOISE,
+            particle_values: vec![0.0; capacity],
         }
     }
 
     pub fn set_grid_mode(&mut self, mode: u32) {
         self.grid_mode = mode;
+    }
+
+    /// Alias for [`Self::set_grid_mode`] — lab name is cellMode.
+    pub fn set_cell_mode(&mut self, mode: u32) {
+        self.set_grid_mode(mode);
     }
 
     pub fn set_count(&mut self, count: usize) {
@@ -506,6 +514,31 @@ impl ParticleSystem {
 
     pub fn grid_values(&self) -> &[f32] {
         self.grid.active_values()
+    }
+
+    /// Write one 0..1 theme level per live particle. Visual only; no cell data.
+    /// `max_density` is the engine divisor (lab Sensitivity gain converted).
+    pub fn particle_eval(&mut self, mode: u32, max_density: f32) {
+        let count = self.count;
+        crate::grid::particle_modes::eval(
+            mode,
+            &self.x,
+            &self.y,
+            &self.radius,
+            count,
+            self.params.particle_radius,
+            max_density,
+            &self.field,
+            &mut self.particle_values,
+        );
+    }
+
+    pub fn particle_values(&self) -> &[f32] {
+        &self.particle_values[..self.count]
+    }
+
+    pub fn particle_value_buf(&self) -> &[f32] {
+        &self.particle_values
     }
 
     pub fn grid_value_buf(&self) -> &[f32] {

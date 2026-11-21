@@ -29,6 +29,7 @@ export class ParticleRenderer extends BaseRenderer {
     this.shaderType = "particles";
     this.positionBuffer = gl.createBuffer();
     this.sizeBuffer = gl.createBuffer();
+    this.colorBuffer = gl.createBuffer();
     this.velocityLineBuffer = gl.createBuffer(); // Add buffer for velocity lines
     this.config = {
       size: 10.0,
@@ -77,16 +78,22 @@ export class ParticleRenderer extends BaseRenderer {
   }
 
   ensureScratch(count) {
-    if (this.xyScratch && this.xyScratch.length >= count * 2 && this.sizeScratch.length >= count) {
+    if (this.xyScratch && this.xyScratch.length >= count * 2 && this.sizeScratch.length >= count && this.colorScratch.length >= count * 4) {
       return;
     }
     const n = Math.max(count, this.xyScratch ? this.xyScratch.length / 2 : 0);
     this.xyScratch = new Float32Array(n * 2);
     this.sizeScratch = new Float32Array(n);
+    this.colorScratch = new Float32Array(n * 4);
     this.lineScratch = new Float32Array(n * 4);
   }
 
-  draw(view) {
+  /**
+   * @param {object} view SoA buffers
+   * @param {{ levels?: Float32Array|null, gradientValues?: Array|null }} [theme]
+   *        When levels + gradient are set (particle class), disks use theme colors.
+   */
+  draw(view, theme = null) {
     if (!view || typeof view.count !== "number") {
       throw new Error("ParticleRenderer.draw expects SoA buffers { count, x, y, vx, vy, radius }");
     }
@@ -108,6 +115,15 @@ export class ParticleRenderer extends BaseRenderer {
     const defaultSize = this.config.size;
     const xy = this.xyScratch;
     const sizes = this.sizeScratch;
+    const colors = this.colorScratch;
+    const levels = theme?.levels;
+    const gradientValues = theme?.gradientValues;
+    const useTheme = !!(levels && gradientValues && levels.length >= count);
+    // Opacity 0 would blank the only paint path in particle class; treat as opaque.
+    const opacity = useTheme
+      ? (this.particleOpacity > 0 ? this.particleOpacity : 1)
+      : this.particleOpacity;
+
     for (let i = 0; i < count; i++) {
       const x = view.x ? view.x[i] : view.particles[i * 2];
       const y = view.y ? view.y[i] : view.particles[i * 2 + 1];
@@ -115,38 +131,59 @@ export class ParticleRenderer extends BaseRenderer {
       xy[i * 2 + 1] = y;
       const raw = view.affectScale ? view.radius[i] : view.baseRadius;
       sizes[i] = Math.max(1.0, (raw ?? view.baseRadius ?? 0) * (view.renderScale || 1) || defaultSize);
+
+      const o = i * 4;
+      if (useTheme) {
+        // Gradients.getValues() entries are { r, g, b }, same as gridGenRenderer.
+        const idx = Math.min(255, Math.max(0, Math.floor(levels[i] * 255)));
+        const c = gradientValues[idx];
+        colors[o] = c ? c.r : 1;
+        colors[o + 1] = c ? c.g : 1;
+        colors[o + 2] = c ? c.b : 1;
+        colors[o + 3] = opacity;
+      } else {
+        colors[o] = this.config.color[0];
+        colors[o + 1] = this.config.color[1];
+        colors[o + 2] = this.config.color[2];
+        colors[o + 3] = opacity;
+      }
     }
+
+    const posLoc = program.attributes.position;
+    const sizeLoc = program.attributes.size;
+    const colorLoc = program.attributes.particleColor;
 
     this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.positionBuffer);
     this.gl.bufferData(this.gl.ARRAY_BUFFER, xy.subarray(0, count * 2), this.gl.DYNAMIC_DRAW);
-    this.gl.enableVertexAttribArray(program.attributes.position);
-    this.gl.vertexAttribPointer(program.attributes.position, 2, this.gl.FLOAT, false, 0, 0);
+    this.gl.enableVertexAttribArray(posLoc);
+    this.gl.vertexAttribPointer(posLoc, 2, this.gl.FLOAT, false, 0, 0);
+    // Clear leftover divisors from gridCell instancing on the same locations.
+    this.gl.vertexAttribDivisor(posLoc, 0);
 
     this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.sizeBuffer);
     this.gl.bufferData(this.gl.ARRAY_BUFFER, sizes.subarray(0, count), this.gl.DYNAMIC_DRAW);
-    this.gl.enableVertexAttribArray(program.attributes.size);
-    this.gl.vertexAttribPointer(program.attributes.size, 1, this.gl.FLOAT, false, 0, 0);
-    // Explicitly set divisor to 0 for non-instanced attribute
-    this.gl.vertexAttribDivisor(program.attributes.size, 0);
+    this.gl.enableVertexAttribArray(sizeLoc);
+    this.gl.vertexAttribPointer(sizeLoc, 1, this.gl.FLOAT, false, 0, 0);
+    this.gl.vertexAttribDivisor(sizeLoc, 0);
+
+    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.colorBuffer);
+    this.gl.bufferData(this.gl.ARRAY_BUFFER, colors.subarray(0, count * 4), this.gl.DYNAMIC_DRAW);
+    this.gl.enableVertexAttribArray(colorLoc);
+    this.gl.vertexAttribPointer(colorLoc, 4, this.gl.FLOAT, false, 0, 0);
+    this.gl.vertexAttribDivisor(colorLoc, 0);
 
     // Enable blending for transparent particles
     this.gl.enable(this.gl.BLEND);
     this.gl.blendFunc(this.gl.SRC_ALPHA, this.gl.ONE_MINUS_SRC_ALPHA);
-
-    // Create color with opacity
-    const finalColor = [...this.config.color];
-    finalColor[3] = this.particleOpacity;
-
-    // // Set particle color uniform with opacity
-    this.gl.uniform4fv(program.uniforms.color, finalColor);
 
     // Draw the particles
     this.gl.drawArrays(this.gl.POINTS, 0, count);
 
     // Cleanup GL state
     this.gl.disable(this.gl.BLEND);
-    this.gl.disableVertexAttribArray(program.attributes.position);
-    this.gl.disableVertexAttribArray(program.attributes.size);
+    this.gl.disableVertexAttribArray(posLoc);
+    this.gl.disableVertexAttribArray(sizeLoc);
+    this.gl.disableVertexAttribArray(colorLoc);
 
     // --- START: Velocity Field Rendering ---
     if (this.showVelocityField && count > 0) {
@@ -196,7 +233,10 @@ export class ParticleRenderer extends BaseRenderer {
       this.gl.deleteBuffer(this.sizeBuffer);
       this.sizeBuffer = null;
     }
-    // Add cleanup for velocity line buffer
+    if (this.colorBuffer) {
+      this.gl.deleteBuffer(this.colorBuffer);
+      this.colorBuffer = null;
+    }
     if (this.velocityLineBuffer) {
       this.gl.deleteBuffer(this.velocityLineBuffer);
       this.velocityLineBuffer = null;

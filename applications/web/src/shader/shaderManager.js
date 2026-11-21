@@ -257,16 +257,19 @@ export class ShaderManager {
       vert: `
           attribute vec2 position;
           attribute float size;
+          attribute vec4 particleColor;
+          varying vec4 vColor;
           
           void main() {
             vec2 clipSpace = (position * 2.0) - 1.0;
             gl_Position = vec4(clipSpace, 0.0, 1.0);
             gl_PointSize = size;
+            vColor = particleColor;
           }
         `,
       frag: `
           precision mediump float;
-          uniform vec4 color;
+          varying vec4 vColor;
           
           void main() {
             vec2 coord = gl_PointCoord * 2.0 - 1.0;
@@ -274,7 +277,7 @@ export class ShaderManager {
             if (r > 1.0) {
               discard;
             }
-            gl_FragColor = color;
+            gl_FragColor = vColor;
           }
         `,
     },

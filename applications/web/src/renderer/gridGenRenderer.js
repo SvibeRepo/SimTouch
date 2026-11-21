@@ -10,6 +10,7 @@ import {
   fadeDurationToRate,
   densityGainToEngineMax,
 } from "../simulation/grid/grid_render_modes.js";
+import { ParticleRenderModes } from "../simulation/grid/particle_render_modes.js";
 import { comManager } from "../com/comManager.js";
 import { debugManager } from "../util/debugManager.js";
 
@@ -62,6 +63,7 @@ export class GridGenRenderer extends BaseRenderer {
       // Function providing maxDensity - uses optional chaining and nullish coalescing
       maxDensityRef: () => this.maxDensity
     });
+    this.particleModes = new ParticleRenderModes({ simParams: this.simParams });
 
     this.initBuffers();
     this.currentDimensions = { renderWidth: 0, renderHeight: 0 }; // Initialize dimensions
@@ -106,7 +108,7 @@ export class GridGenRenderer extends BaseRenderer {
       this.setGrid(gridParams, shapeBoundary, physicsBoundary, dimensions);
     });
 
-    // Subscribe to simulation parameter updates (for maxDensity, gridMode)
+    // Subscribe to simulation parameter updates (for maxDensity, cellMode)
     eventBus.on('simParamsUpdated', this.handleParamsUpdate);
 
     // Initialize render modes and max density state
@@ -133,6 +135,14 @@ export class GridGenRenderer extends BaseRenderer {
         this.cellsDirtyPending = false;
       }
     }
+    if (this.particleModes) {
+      this.particleModes.simParams = simParams;
+      this.particleModes.rustCore = rustCore;
+    }
+  }
+
+  particleOutput() {
+    return this.simParams?.rendering?.outputClass === "particle";
   }
 
   initBuffers() {
@@ -489,6 +499,18 @@ export class GridGenRenderer extends BaseRenderer {
       return; // Skip update if data not ready
     }
 
+    // Particle class: no cell evaluation, no cell data array.
+    if (this.particleOutput()) {
+      this.instanceData.colors.fill(0);
+      gl.bindBuffer(gl.ARRAY_BUFFER, this.instanceColorBuffer);
+      gl.bufferData(gl.ARRAY_BUFFER, this.instanceData.colors, gl.DYNAMIC_DRAW);
+      if (this.comManager.shouldSendData) {
+        const themeIndex = this.gradient.getPresetIndex(this.gradient.getCurrentPreset());
+        this.comManager.sendData(new Uint8Array(0), themeIndex);
+      }
+      return;
+    }
+
     // Get latest data values and gradient lookup
     // Fetch dataValues only if needed
     const dataValues = useDataColors ? this.renderModes.getValues(this.ps) : null;
@@ -695,15 +717,28 @@ export class GridGenRenderer extends BaseRenderer {
   }
   // --- End createGridMap helper method ---
 
+  /** Per-particle theme levels when outputClass is particle; otherwise null. */
+  computeParticleLevels() {
+    if (!this.particleOutput() || !this.particleModes || !this.ps) return null;
+    this.particleModes.simParams = this.simParams;
+    this.particleModes.setSmoothingFromParams(this.simParams);
+    const mode = this.simParams?.rendering?.cellMode ?? this.renderModes?.currentMode;
+    if (mode) this.particleModes.currentMode = mode;
+    return this.particleModes.compute(this.ps);
+  }
+
   // --- Add draw method for per-frame updates ---
   draw() {
     if (this.db) console.log(`GridGenRenderer.draw() called. showGridCells: ${this.grid?.flags?.showGridCells}`); // Keep log
 
     const numInstances = this.instanceData.count;
-    if (numInstances === 0) return;
+    if (numInstances === 0 && !this.particleOutput()) return;
 
     // Update colors based on latest data (runs every frame)
     this.updateInstanceColors();
+    if (this.particleOutput()) return;
+
+    if (numInstances === 0) return;
     if (this.db) console.log(`GridGenRenderer.draw(): Calling renderCellsInstanced. Count: ${numInstances}`);
 
     // Draw the instanced cells using pre-prepared data (including colors from prepareInstanceData)
@@ -741,18 +776,22 @@ export class GridGenRenderer extends BaseRenderer {
       }
       if (this.db) console.log(`  Updated this.maxDensity to: ${this.maxDensity}`);
       // Update render mode if needed
-      if (this.renderModes && simParams.rendering.gridMode) {
-        // Ensure the mode exists before assigning
-        const isValidMode = Object.values(this.renderModes.modes).includes(simParams.rendering.gridMode);
+      const cellMode = simParams.rendering.cellMode ?? simParams.rendering.gridMode;
+      if (this.renderModes && cellMode) {
+        const isValidMode = Object.values(this.renderModes.modes).includes(cellMode);
         if (isValidMode) {
-          if (this.renderModes.currentMode !== simParams.rendering.gridMode) {
-            this.renderModes.currentMode = simParams.rendering.gridMode;
-            modeChanged = true; // Mode actually changed
+          if (this.renderModes.currentMode !== cellMode) {
+            this.renderModes.currentMode = cellMode;
+            modeChanged = true;
             if (this.db) console.log(`GridGenRenderer: Set render mode to ${this.renderModes.currentMode}`);
           }
         } else {
-          console.warn(`GridGenRenderer: Invalid gridMode received: ${simParams.rendering.gridMode}`);
+          console.warn(`GridGenRenderer: Invalid cellMode received: ${cellMode}`);
         }
+      }
+      if (this.particleModes && cellMode) {
+        this.particleModes.currentMode = cellMode;
+        this.particleModes.setSmoothingFromParams(simParams);
       }
     }
     // Lab stores fade duration; engine smoothValues uses rate (0 → instant).

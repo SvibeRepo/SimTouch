@@ -1,8 +1,10 @@
 //! Lab grid values. Cell rectangles stay out of the particle step.
 //!
 //! Mode ids follow `Object.values(GridField)` in
-//! `applications/web/src/renderer/gridRenderModes.js`. Positions use the same
+//! `engines/javascript/grid/grid_render_modes.js`. Positions use the same
 //! render Y flip: `py = (1 - y) * height`.
+
+pub mod particle_modes;
 
 use crate::forces::turbulence::{bilinear_sample, FIELD_N};
 

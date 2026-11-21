@@ -115,6 +115,18 @@ impl SimCore {
         self.inner.set_grid_mode(mode);
     }
 
+    pub fn set_cell_mode(&mut self, mode: u32) {
+        self.inner.set_cell_mode(mode);
+    }
+
+    pub fn particle_eval(&mut self, mode: u32, max_density: f32) {
+        self.inner.particle_eval(mode, max_density);
+    }
+
+    pub fn particle_values_ptr(&self) -> u32 {
+        self.inner.particle_value_buf().as_ptr() as u32
+    }
+
     pub fn grid_eval(
         &mut self,
         mode: u32,

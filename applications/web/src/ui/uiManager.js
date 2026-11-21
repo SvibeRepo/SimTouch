@@ -46,7 +46,7 @@ export class UiManager {
     this.initializePresetManager();
 
     eventBus.on('uiControlChanged', ({ paramPath, value }) => {
-      if (paramPath === 'rendering.gridMode') {
+      if (paramPath === "rendering.cellMode" || paramPath === "rendering.gridMode") {
         this.organicUi.updateOrganicFolders(value);
       }
     });

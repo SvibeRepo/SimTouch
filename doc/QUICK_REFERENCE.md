@@ -419,7 +419,7 @@ platformio.ini          → Build configurations
 - 132: IMU Enabled (bool)
 
 ### Grid/Rendering (140-159)
-- 140: Grid Mode (0-8)
+- 140: Cell Mode (0-8)
 - 141: Max Density
 - 142: Smooth In
 - 143: Smooth Out

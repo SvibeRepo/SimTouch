@@ -18,9 +18,15 @@ On `engines/cpp`, the sample follows the same order: blur 0 is the phase sample;
 
 `fixtures/boundary-step.json` is one circular bounce step. Particle 0 starts outside the wall with outward + tangential velocity (restitution and damping both apply). Particle 1 sits in the soft repulsion zone. Mode is bounce, shape is circle, `expectMotion` is on. Positions match within `1e-5`. That fixture also flipped C++ circular `Boundary::enforce` to the lab restitution/tangent split, `0.001` inset, and soft repulsion (ledger §3 deferred fidelity).
 
-## Next (2026-11-20)
+## Lab first
 
-The next plan is the developer-preset projection. Lab JSON (panels, modulators, string enums) projects onto the existing suit mask. The mask, the rectangular domain, the Rust pack slots, and today's `STP1` bag stay as they are.
+New behaviour is authored and watched in the pattern lab (`applications/web`, JS + Rust ticks) before it lands on the suit or `engines/cpp` panel. The lab is the testing ground. Suit/panel ports follow a proven lab path.
+
+## Next (2026-11-21)
+
+Cell class / particle class in the lab (JS + Rust): rename `gridMode` → `cellMode`, exclusive `outputClass`, particle proximity/noise visual-only. C++ panel already has the mirror (`engines/cpp` `db1c833`); lab catches up.
+
+Developer-preset projection onto the suit mask is done. The mask, the rectangular domain, the Rust pack slots, and today's `STP1` bag stay as they are.
 
 Still later:
 

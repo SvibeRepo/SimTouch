@@ -74,7 +74,9 @@ export class NoisePreviewManager {
         const affectPosition = this.main.simParams.turbulence.affectPosition;
         const scaleField = this.main.simParams.turbulence.scaleField;
         const affectScale = this.main.simParams.turbulence.affectScale;
-        const isNoiseMode = this.main.simParams.rendering.gridMode === "--- NOISE ---"; // Use exact string with spaces
+        const isNoiseMode =
+          this.main.simParams.rendering.cellMode === "--- NOISE ---" ||
+          this.main.simParams.rendering.gridMode === "--- NOISE ---";
 
         // Log the state being checked
         if (this.db) console.log(`NoisePreviewManager: Checking relevance state: affectPos=${affectPosition}, scaleField=${scaleField}, affectScale=${affectScale}, isNoiseMode=${isNoiseMode}`);
@@ -117,7 +119,8 @@ export class NoisePreviewManager {
                 'turbulence.affectPosition',
                 'turbulence.scaleField',
                 'turbulence.affectScale',
-                'rendering.gridMode'
+                "rendering.cellMode",
+                "rendering.gridMode"
             ];
             if (relevantPaths.includes(event.paramPath)) {
                 // Log that a relevant path was detected

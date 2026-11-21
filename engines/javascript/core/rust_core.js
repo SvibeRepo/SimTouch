@@ -401,9 +401,10 @@ export class RustCore {
     if (this.core.set_render_size && rw > 0 && rh > 0) {
       this.core.set_render_size(rw, rh);
     }
-    const gridMode = main.gridGenRenderer?.renderModes?.modeId?.();
-    if (typeof gridMode === "number" && this.core.set_grid_mode) {
-      this.core.set_grid_mode(gridMode);
+    const cellMode = main.gridGenRenderer?.renderModes?.modeId?.();
+    if (typeof cellMode === "number") {
+      if (this.core.set_cell_mode) this.core.set_cell_mode(cellMode);
+      else if (this.core.set_grid_mode) this.core.set_grid_mode(cellMode);
     }
   }
 
@@ -447,6 +448,24 @@ export class RustCore {
       this._gridValues = new Float32Array(buffer, this.core.grid_values_ptr(), CAPACITY);
     }
     return this._gridValues;
+  }
+
+  particleEval(mode, maxDensity) {
+    if (!this.ready || !this.core.particle_eval) return;
+    this.core.particle_eval(mode >>> 0, maxDensity);
+  }
+
+  particleValues() {
+    if (!this.ready || !this.core.particle_values_ptr) return null;
+    const buffer = this.memory.buffer;
+    if (!this._particleValues || this._particleValues.buffer !== buffer) {
+      this._particleValues = new Float32Array(
+        buffer,
+        this.core.particle_values_ptr(),
+        CAPACITY
+      );
+    }
+    return this._particleValues;
   }
 
   fieldView() {

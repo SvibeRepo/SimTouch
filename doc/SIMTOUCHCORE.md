@@ -27,7 +27,7 @@ The suit slave (`Svibe_Firmware_Slave`) does not link the library yet. Older not
 2. `SimCore::init()`, then each tick `TouchForces::setTouch` + `apply` (optional) and `SimCore::step(dt, timeSec)`.
 3. Then either `PointModes` (`setPoints` once, then `computeProximity` or `computeNoise`) or `GridGeometry::rebuild` + `GridModes::compute`.
 
-`GridModes::compute` is the only public grid output. Per-mode methods are private on the library. P4 uses `PointModes` on the suit mesh and does not call `GridModes`. Noise mode on P4 (`gridMode == 0`) advances turbulence bias and calls `computeNoise` without `step`.
+`GridModes::compute` is the only public grid output. Per-mode methods are private on the library. P4 uses `PointModes` on the suit mesh and does not call `GridModes`. Noise mode on P4 (`cellMode == 0`) advances turbulence bias and calls `computeNoise` without `step`.
 
 Masks, the preset blob, and the host `g++` lines are in the [library README](../engines/cpp/README.md). Short form: `simParamMaskCore`, `simParamMaskPointModes`, and `simParamMaskGridModes` in `src/config/sim_params.cpp`. P4 merges core with point modes and then clears indices 71 and 72.
 

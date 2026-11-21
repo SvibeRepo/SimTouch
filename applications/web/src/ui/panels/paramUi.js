@@ -39,21 +39,21 @@ export class ParamUi extends BaseUi {
     this.pauseButtonController.domElement.style.marginBottom = "10px";
 
 
-    this.fieldTypeController = this.gui
-      // Bind to simParams instead of fieldControl
-      .add(this.main.simParams.rendering, "gridMode", Object.values(GridField))
-      .name("Mode")
+    this.outputClassController = this.gui
+      .add(this.main.simParams.rendering, "outputClass", ["cell", "particle"])
+      .name("Class")
       .onChange((value) => {
-        // Remove direct modifications
-        // this.main.gridRenderer.renderModes.currentMode = value;
-        // this.fieldTypeController.updateDisplay();
-        // Emit event instead
-        eventBus.emit('uiControlChanged', { paramPath: 'rendering.gridMode', value });
+        eventBus.emit("uiControlChanged", { paramPath: "rendering.outputClass", value });
+      });
+
+    this.fieldTypeController = this.gui
+      .add(this.main.simParams.rendering, "cellMode", Object.values(GridField))
+      .name("Cell Mode")
+      .onChange((value) => {
+        eventBus.emit("uiControlChanged", { paramPath: "rendering.cellMode", value });
       });
 
     this.fieldTypeController.domElement.classList.add("full-width");
-    // presetSelect.classList = "preset-select";
-
 
     // Gain: 0 = dim, 1 = bright. Converted to engine divisor at apply edge.
     this.maxDensityController = this.gui.add(this.main.simParams.rendering, "maxDensity", 0, 1, 0.01)
@@ -97,6 +97,9 @@ export class ParamUi extends BaseUi {
 
   getControlTargets() {
     const targets = {};
+    targets["Class"] = this.outputClassController;
+    targets["Cell Mode"] = this.fieldTypeController;
+    // Legacy factory / user presets still key the mode as "Mode".
     targets["Mode"] = this.fieldTypeController;
     targets["Sensitivity"] = this.maxDensityController;
     targets["FadInSpd"] = this.fadeInSpeedController;
@@ -160,6 +163,7 @@ export class ParamUi extends BaseUi {
     };
 
     // Update render mode controllers
+    safeUpdateDisplay(this.outputClassController);
     safeUpdateDisplay(this.fieldTypeController);
     safeUpdateDisplay(this.maxDensityController);
     safeUpdateDisplay(this.fadeInSpeedController);

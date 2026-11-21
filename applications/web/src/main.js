@@ -66,7 +66,9 @@ export class Main {
         repulsion: 0,
       },
       rendering: {
-        gridMode: "Proximity",
+        // Exclusive class: cell = today's grid levels; particle = visual disks only.
+        outputClass: "cell",
+        cellMode: "Proximity",
         // Gain 0..1 (0 = dim, 1 = bright). Linear divisor flip of prior engine max 2.10.
         maxDensity: 0.83193
       },
@@ -412,6 +414,17 @@ export class Main {
     }
   }
 
+  drawParticles() {
+    const buffers = particleBuffers(this.ps, this.simParams.turbulence.affectScale);
+    if (this.simParams.rendering.outputClass === "particle") {
+      const levels = this.gridGenRenderer.computeParticleLevels();
+      const gradientValues = this.gridGenRenderer.gradient?.getValues?.();
+      this.particleRenderer.draw(buffers, { levels, gradientValues });
+      return;
+    }
+    this.particleRenderer.draw(buffers);
+  }
+
   animate() {
     if (!this.simParams.simulation.paused) this.render();
     requestAnimationFrame(() => this.animate());
@@ -433,7 +446,7 @@ export class Main {
       this.voronoiField.update(this.ps.timeStep);
       this.ps.step();
       this.gridGenRenderer.draw();
-      this.particleRenderer.draw(particleBuffers(this.ps, this.simParams.turbulence.affectScale));
+      this.drawParticles();
     } else {
       // Raw frame dt; wasm applies time_scale inside step (playback contract).
       const timeStep = sim.timeStep ?? this.ps.timeStep;
@@ -459,7 +472,7 @@ export class Main {
       }
 
       this.gridGenRenderer.draw();
-      this.particleRenderer.draw(particleBuffers(this.ps, this.simParams.turbulence.affectScale));
+      this.drawParticles();
     }
 
     const error = this.gl.getError();

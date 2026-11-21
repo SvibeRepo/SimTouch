@@ -216,7 +216,7 @@ engines/
 **LOCKED winner:**
 | Topic | Decision |
 |-------|----------|
-| Mode IDs | **Align C++ `gridMode` to Lab/Rust** `GridField` order. Suit NVS presets not important this pass. |
+| Mode IDs | **Align C++ `cellMode` (was `gridMode`) to Lab/Rust** `GridField` order. Suit NVS presets not important this pass. Index 140 unchanged. |
 | Algorithms | Keep cheap C++ splat paths (no formula port). |
 | Vorticity | Absent on C++ (id 7 reserved → clear). |
 
