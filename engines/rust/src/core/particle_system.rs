@@ -518,16 +518,20 @@ impl ParticleSystem {
 
     /// Write one 0..1 theme level per live particle. Visual only; no cell data.
     /// `max_density` is the engine divisor (lab Sensitivity gain converted).
-    pub fn particle_eval(&mut self, mode: u32, max_density: f32) {
+    /// `max_velocity` is the lab P-VeloMax cap used by Velocity / VelocityC.
+    pub fn particle_eval(&mut self, mode: u32, max_density: f32, max_velocity: f32) {
         let count = self.count;
         crate::grid::particle_modes::eval(
             mode,
             &self.x,
             &self.y,
+            &self.vx,
+            &self.vy,
             &self.radius,
             count,
             self.params.particle_radius,
             max_density,
+            max_velocity,
             &self.field,
             &mut self.particle_values,
         );

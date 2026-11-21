@@ -450,9 +450,9 @@ export class RustCore {
     return this._gridValues;
   }
 
-  particleEval(mode, maxDensity) {
+  particleEval(mode, maxDensity, maxVelocity = 1) {
     if (!this.ready || !this.core.particle_eval) return;
-    this.core.particle_eval(mode >>> 0, maxDensity);
+    this.core.particle_eval(mode >>> 0, maxDensity, maxVelocity);
   }
 
   particleValues() {

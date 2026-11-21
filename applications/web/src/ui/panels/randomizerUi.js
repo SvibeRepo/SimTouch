@@ -333,6 +333,7 @@ export class RandomizerUi extends BaseUi {
               "ProximityB",
               "Density",
               "Velocity",
+              "VelocityC",
               "Pressure",
               "Vorticity",
               "Collision",

@@ -53,7 +53,12 @@ export class ParticleRenderModes {
 
   /** True when this mode name has a particle rewrite. */
   supportsMode(mode) {
-    return mode === this.modes.NOISE || mode === this.modes.PROXIMITY;
+    return (
+      mode === this.modes.NOISE ||
+      mode === this.modes.PROXIMITY ||
+      mode === this.modes.VELOCITY ||
+      mode === this.modes.VELOCITY_C
+    );
   }
 
   particleXy(particleSystem, i) {
@@ -62,6 +67,26 @@ export class ParticleRenderModes {
     }
     const p = particleSystem.particles;
     return [p[i * 2], p[i * 2 + 1]];
+  }
+
+  particleSpeed(particleSystem, i) {
+    const vx = particleSystem.velocitiesX?.[i] ?? 0;
+    const vy = particleSystem.velocitiesY?.[i] ?? 0;
+    return Math.hypot(vx, vy);
+  }
+
+  engineMaxDensity() {
+    return densityGainToEngineMax(this.simParams?.rendering?.maxDensity ?? 0.58824);
+  }
+
+  maxVelocity() {
+    const v = this.simParams?.simulation?.maxVelocity ?? 1;
+    return v > 1e-6 ? v : 1e-6;
+  }
+
+  speedNorm(speed) {
+    // Same product idea as C++ cell velocity: speed / (maxV * Sensitivity divisor).
+    return Math.min(1, Math.max(0, speed / (this.maxVelocity() * this.engineMaxDensity())));
   }
 
   compute(particleSystem) {
@@ -75,15 +100,17 @@ export class ParticleRenderModes {
     }
 
     if (this.canUseRust() && this.rustCore.particleEval) {
-      const maxDensity = densityGainToEngineMax(
-        this.simParams?.rendering?.maxDensity ?? 0.58824
-      );
-      this.rustCore.particleEval(this.modeId(), maxDensity);
+      const maxDensity = this.engineMaxDensity();
+      this.rustCore.particleEval(this.modeId(), maxDensity, this.maxVelocity());
       const src = this.rustCore.particleValues();
       if (src) this.targetValues.set(src.subarray(0, count));
       else this.targetValues.fill(0, 0, count);
     } else if (this.currentMode === this.modes.NOISE) {
       this.computeNoise(particleSystem, count);
+    } else if (this.currentMode === this.modes.VELOCITY) {
+      this.computeVelocity(particleSystem, count);
+    } else if (this.currentMode === this.modes.VELOCITY_C) {
+      this.computeVelocityC(particleSystem, count);
     } else {
       this.computeProximity(particleSystem, count);
     }
@@ -96,9 +123,7 @@ export class ParticleRenderModes {
     const fallback =
       (particleSystem.particleRadius ?? this.simParams?.simulation?.particleRadius ?? 0.01) ||
       1e-4;
-    const maxDensity = densityGainToEngineMax(
-      this.simParams?.rendering?.maxDensity ?? 0.58824
-    );
+    const maxDensity = this.engineMaxDensity();
 
     for (let i = 0; i < count; i++) {
       let density = 0;
@@ -117,15 +142,50 @@ export class ParticleRenderModes {
     }
   }
 
+  /** Own speed → theme level. */
+  computeVelocity(particleSystem, count) {
+    for (let i = 0; i < count; i++) {
+      this.targetValues[i] = this.speedNorm(this.particleSpeed(particleSystem, i));
+    }
+  }
+
+  /**
+   * Neighbour-weighted speed (Gaussian kernel, self excluded).
+   * Same neighbourhood idea as proximity; value is average neighbour speed.
+   */
+  computeVelocityC(particleSystem, count) {
+    const radii = particleSystem.particleRadii;
+    const fallback =
+      (particleSystem.particleRadius ?? this.simParams?.simulation?.particleRadius ?? 0.01) ||
+      1e-4;
+
+    for (let i = 0; i < count; i++) {
+      let wSum = 0;
+      let speedSum = 0;
+      const [xi, yi] = this.particleXy(particleSystem, i);
+      for (let j = 0; j < count; j++) {
+        if (j === i) continue;
+        const [xj, yj] = this.particleXy(particleSystem, j);
+        const dx = xi - xj;
+        const dy = yi - yj;
+        const sigma = radii && radii[j] > 1e-4 ? radii[j] : fallback;
+        const e = (dx * dx + dy * dy) / (sigma * sigma);
+        if (e > CUTOFF) continue;
+        const w = Math.exp(-e);
+        wSum += w;
+        speedSum += this.particleSpeed(particleSystem, j) * w;
+      }
+      this.targetValues[i] = wSum > 0 ? this.speedNorm(speedSum / wSum) : 0;
+    }
+  }
+
   computeNoise(particleSystem, count) {
     const turbulence = particleSystem?.turbulence;
     if (!turbulence?.noise2D) {
       this.targetValues.fill(0, 0, count);
       return;
     }
-    const maxDensity = densityGainToEngineMax(
-      this.simParams?.rendering?.maxDensity ?? 0.58824
-    );
+    const maxDensity = this.engineMaxDensity();
 
     for (let i = 0; i < count; i++) {
       const [xi, yi] = this.particleXy(particleSystem, i);

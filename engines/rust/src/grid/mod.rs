@@ -21,6 +21,8 @@ pub const MODE_PROXIMITY_B: u32 = 5;
 pub const MODE_DENSITY: u32 = 6;
 pub const MODE_VORTICITY: u32 = 7;
 pub const MODE_OVERLAP: u32 = 8;
+/// Particle-class only: neighbour-weighted speed. Appended so existing ids stay stable.
+pub const MODE_VELOCITY_C: u32 = 9;
 
 const VIZ_GRID_MAX: usize = 128;
 const VIZ_BINS: usize = VIZ_GRID_MAX * VIZ_GRID_MAX;

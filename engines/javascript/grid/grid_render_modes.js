@@ -10,6 +10,8 @@ export const GridField = {
   DENSITY: "Density",
   VORTICITY: "Vorticity",
   OVERLAP: "Overlap",
+  // Particle-class only for now (own-speed Velocity stays shared; this is neighbour-weighted).
+  VELOCITY_C: "VelocityC",
 };
 
 /** Mode ids match `Object.values(GridField)` and engines/rust/src/grid/grid.rs. */

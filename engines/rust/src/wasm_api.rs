@@ -119,8 +119,8 @@ impl SimCore {
         self.inner.set_cell_mode(mode);
     }
 
-    pub fn particle_eval(&mut self, mode: u32, max_density: f32) {
-        self.inner.particle_eval(mode, max_density);
+    pub fn particle_eval(&mut self, mode: u32, max_density: f32, max_velocity: f32) {
+        self.inner.particle_eval(mode, max_density, max_velocity);
     }
 
     pub fn particle_values_ptr(&self) -> u32 {
