@@ -1,0 +1,15 @@
+pub(crate) mod bubbles;
+pub(crate) mod cells;
+pub(crate) mod checkerboard;
+pub(crate) mod circles;
+pub(crate) mod classic_drop;
+pub(crate) mod diamonds;
+pub(crate) mod dots;
+pub(crate) mod fractal;
+pub(crate) mod grid;
+pub(crate) mod ripples;
+pub(crate) mod spiral;
+pub(crate) mod voronoi;
+pub(crate) mod vortex;
+pub(crate) mod water;
+pub(crate) mod waves;
