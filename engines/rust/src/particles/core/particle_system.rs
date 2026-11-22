@@ -2,6 +2,7 @@
 
 use crate::particles::core::collision::CollisionBins;
 use crate::particles::turbulences::turbulence_manager::{self as turbulence, FIELD_AREA};
+use crate::particles::forces::gravity;
 use crate::particles::forces::touch::Touch;
 use crate::particles::core::velocity_grid::VelocityGrid;
 use crate::grid::{Grid, MODE_NOISE};
@@ -240,14 +241,7 @@ impl ParticleSystem {
 
     fn apply_gravity(&mut self, dt: f32) {
         let p = &self.params;
-        // Nonzero components = on (ledger §2); ignore gravity_enabled for apply.
-        if (p.gravity_x.abs() + p.gravity_y.abs()) <= 1e-6 {
-            return;
-        }
-        for i in 0..self.count {
-            self.vx[i] += p.gravity_x * dt;
-            self.vy[i] += p.gravity_y * dt;
-        }
+        gravity::apply(&mut self.vx, &mut self.vy, self.count, p.gravity_x, p.gravity_y, dt);
     }
 
     fn apply_turbulence(&mut self, dt: f32) {
@@ -383,7 +377,7 @@ impl ParticleSystem {
             return;
         }
         let (sx, sy) =
-            crate::particles::core::metric::collision_scales(p.boundary_shape, p.render_width, p.render_height);
+            crate::particles::core::collision_scales::collision_scales(p.boundary_shape, p.render_width, p.render_height);
         self.bins
             .rebuild(&self.x, &self.y, count, p.collision_grid, sx, sy);
         crate::particles::core::collision::resolve(

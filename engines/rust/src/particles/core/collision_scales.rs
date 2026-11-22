@@ -1,4 +1,4 @@
-//! Framebuffer metric for pair tests and rectangular wall insets.
+//! Pixel-proportional scales for pair tests and rectangular wall insets.
 //! Circular boundaries stay (1, 1). Rectangular callers supply render size.
 
 use crate::config::params::boundary_shape;

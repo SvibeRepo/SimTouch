@@ -1,6 +1,6 @@
 //! Fixed-capacity collision bins: a count per cell plus one particle-index list.
 
-use crate::particles::core::metric::collision_scales;
+use crate::particles::core::collision_scales::collision_scales;
 use crate::config::params::Params;
 
 pub const MAX_GRID: usize = 32;
