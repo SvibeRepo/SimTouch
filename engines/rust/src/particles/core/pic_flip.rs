@@ -1,5 +1,5 @@
 use crate::config::params::Params;
-use crate::core::velocity_grid::{
+use crate::particles::core::velocity_grid::{
     self, sample_uv, VelocityGrid, FLIP_MAX,
 };
 
@@ -47,7 +47,7 @@ pub fn apply(
 mod tests {
     use super::*;
     use crate::config::params::Params;
-    use crate::core::velocity_grid::VelocityGrid;
+    use crate::particles::core::velocity_grid::VelocityGrid;
 
     fn opposing(ratio: f32) -> (f32, f32) {
         let mut grid = VelocityGrid::new();

@@ -1,4 +1,4 @@
-use crate::grid::particle::shared::{
+use crate::particles::render_modes::p_shared::{
     fallback_radius, for_each_candidate, overlap_hash, speed_norm,
 };
 

@@ -1,6 +1,6 @@
 //! Circular and rectangular boundaries. Both write position and velocity in place.
 
-use crate::core::metric::collision_scales;
+use crate::particles::core::metric::collision_scales;
 use crate::config::params::{boundary_mode, boundary_shape, Params};
 
 pub fn enforce(p: &Params, x: &mut f32, y: &mut f32, vx: &mut f32, vy: &mut f32, radius: f32) {
@@ -213,7 +213,7 @@ mod tests {
 
     #[test]
     fn circular_shape_ignores_tall_render_for_rect_inset_path() {
-        let (sx, sy) = crate::core::metric::collision_scales(boundary_shape::CIRCULAR, 480.0, 960.0);
+        let (sx, sy) = crate::particles::core::metric::collision_scales(boundary_shape::CIRCULAR, 480.0, 960.0);
         assert_eq!((sx, sy), (1.0, 1.0));
     }
 }

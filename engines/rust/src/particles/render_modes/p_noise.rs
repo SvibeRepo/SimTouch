@@ -1,5 +1,5 @@
-use crate::forces::turbulence::{bilinear_sample, FIELD_N};
-use crate::grid::particle::shared::{clamp01, NOISE_TUNE};
+use crate::particles::turbulences::turbulence_manager::{bilinear_sample, FIELD_N};
+use crate::particles::render_modes::p_shared::{clamp01, NOISE_TUNE};
 
 pub fn compute(x: &[f32], y: &[f32], n: usize, max_density: f32, field: &[f32], out: &mut [f32]) {
     for i in 0..n {

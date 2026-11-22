@@ -1,18 +1,10 @@
 //! Per-particle theme levels for the lab particle output class.
 //! Visual only: no cell data array.
 
-mod collision;
-mod density;
-mod noise;
-mod overlap;
-mod pressure;
-mod proximity;
-mod proximity_b;
-mod shared;
-mod velocity;
-mod velocity_c;
-mod vorticity;
-
+use super::{
+    p_collision, p_density, p_noise, p_overlap, p_pressure, p_proximity, p_proximity_b,
+    p_velocity, p_velocity_c, p_vorticity,
+};
 use crate::grid::{
     MODE_COLLISION, MODE_DENSITY, MODE_NOISE, MODE_OVERLAP, MODE_PRESSURE, MODE_PROXIMITY,
     MODE_PROXIMITY_B, MODE_VELOCITY, MODE_VELOCITY_C, MODE_VORTICITY,
@@ -54,14 +46,14 @@ pub fn eval(
     };
 
     match mode {
-        MODE_NOISE => noise::compute(x, y, n, max_density, field, out),
-        MODE_PROXIMITY => proximity::compute(x, y, radii, n, fallback_radius, max_density, out),
+        MODE_NOISE => p_noise::compute(x, y, n, max_density, field, out),
+        MODE_PROXIMITY => p_proximity::compute(x, y, radii, n, fallback_radius, max_density, out),
         MODE_PROXIMITY_B => {
-            proximity_b::compute(x, y, radii, n, fallback_radius, max_density, out)
+            p_proximity_b::compute(x, y, radii, n, fallback_radius, max_density, out)
         }
-        MODE_DENSITY => density::compute(x, y, radii, n, fallback_radius, max_density, out),
-        MODE_VELOCITY => velocity::compute(vx, vy, n, max_density, max_velocity, out),
-        MODE_VELOCITY_C => velocity_c::compute(
+        MODE_DENSITY => p_density::compute(x, y, radii, n, fallback_radius, max_density, out),
+        MODE_VELOCITY => p_velocity::compute(vx, vy, n, max_density, max_velocity, out),
+        MODE_VELOCITY_C => p_velocity_c::compute(
             x,
             y,
             vx,
@@ -73,9 +65,9 @@ pub fn eval(
             max_velocity,
             out,
         ),
-        MODE_PRESSURE => pressure::compute(x, y, radii, n, fallback_radius, max_density, out),
-        MODE_OVERLAP => overlap::compute(x, y, radii, n, fallback_radius, max_density, out),
-        MODE_COLLISION => collision::compute(
+        MODE_PRESSURE => p_pressure::compute(x, y, radii, n, fallback_radius, max_density, out),
+        MODE_OVERLAP => p_overlap::compute(x, y, radii, n, fallback_radius, max_density, out),
+        MODE_COLLISION => p_collision::compute(
             x,
             y,
             vx,
@@ -87,7 +79,7 @@ pub fn eval(
             max_velocity,
             out,
         ),
-        MODE_VORTICITY => vorticity::compute(
+        MODE_VORTICITY => p_vorticity::compute(
             x,
             y,
             vx,
@@ -106,7 +98,7 @@ pub fn eval(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::forces::turbulence::FIELD_N;
+    use crate::particles::turbulences::turbulence_manager::FIELD_N;
 
     #[test]
     fn proximity_self_excluded_and_neighbour_adds() {
@@ -273,7 +265,8 @@ mod tests {
         );
         assert!(out[0] > 0.0, "hash path must still see neighbour");
         assert!(out[1] > 0.0, "hash path must still see neighbour");
-        // Isolated particle in the cloud with no close neighbour → ~0
-        assert!(out[40] < 1e-3, "distant particles should not contribute");
+        // The rest of the cloud sits on one point, so those levels saturate.
+        // They must stay above the lone close pair.
+        assert!(out[40] > out[0], "stacked cloud is brighter than the close pair");
     }
 }

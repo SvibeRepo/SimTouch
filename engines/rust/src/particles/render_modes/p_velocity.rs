@@ -1,4 +1,4 @@
-use crate::grid::particle::shared::speed_norm;
+use crate::particles::render_modes::p_shared::speed_norm;
 
 pub fn compute(
     vx: &[f32],

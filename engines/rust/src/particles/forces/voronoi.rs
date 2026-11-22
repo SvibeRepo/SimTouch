@@ -1,7 +1,7 @@
 //! Voronoi edge force. Centers move in fixed slots. The edge distance and
 //! gradient are rasterized onto the turbulence grid and bilinear-sampled.
 
-use crate::forces::turbulence::{bilinear_sample, FIELD_AREA, FIELD_N};
+use crate::particles::turbulences::turbulence_manager::{bilinear_sample, FIELD_AREA, FIELD_N};
 use crate::config::params::Params;
 
 pub const MAX_CELLS: usize = 48;

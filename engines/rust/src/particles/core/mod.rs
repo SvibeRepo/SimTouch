@@ -1,4 +1,3 @@
-pub mod boundary;
 pub mod collision;
 pub mod metric;
 pub mod particle_system;

@@ -1,6 +1,6 @@
 use wasm_bindgen::prelude::*;
 
-use crate::core::ParticleSystem;
+use crate::particles::core::ParticleSystem;
 use crate::config::params::PARAM_COUNT;
 
 #[wasm_bindgen]

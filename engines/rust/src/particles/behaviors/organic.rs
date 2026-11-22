@@ -1,7 +1,7 @@
 //! Organic behaviors over the shared arrays. Neighbor search uses the fixed
 //! collision bins. No per-particle objects.
 
-use crate::core::collision::CollisionBins;
+use crate::particles::core::collision::CollisionBins;
 use crate::config::params::{behavior, Params};
 
 pub const MAX_LINKS: usize = 16;

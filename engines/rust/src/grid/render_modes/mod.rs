@@ -1,0 +1,6 @@
+mod grid_render_manager;
+
+pub(crate) use grid_render_manager::{
+    Grid, MODE_COLLISION, MODE_DENSITY, MODE_NOISE, MODE_OVERLAP, MODE_PRESSURE,
+    MODE_PROXIMITY, MODE_PROXIMITY_B, MODE_VELOCITY, MODE_VELOCITY_C, MODE_VORTICITY,
+};

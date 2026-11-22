@@ -1,13 +1,13 @@
 //! One allocation-free tick: field, forces, integrate, collide, boundary.
 
-use crate::core::collision::CollisionBins;
-use crate::forces::turbulence::{self, FIELD_AREA};
-use crate::forces::touch::Touch;
-use crate::core::velocity_grid::VelocityGrid;
+use crate::particles::core::collision::CollisionBins;
+use crate::particles::turbulences::turbulence_manager::{self as turbulence, FIELD_AREA};
+use crate::particles::forces::touch::Touch;
+use crate::particles::core::velocity_grid::VelocityGrid;
 use crate::grid::{Grid, MODE_NOISE};
-use crate::behaviors::organic;
+use crate::particles::behaviors::organic;
 use crate::config::params::{id, Params, PARAM_COUNT};
-use crate::forces::voronoi;
+use crate::particles::forces::voronoi;
 
 pub const MAX_PARTICLES: usize = 4096;
 
@@ -333,7 +333,7 @@ impl ParticleSystem {
     fn apply_pic_flip(&mut self, dt: f32) {
         let count = self.count;
         let p = self.params.clone();
-        crate::core::pic_flip::apply(
+        crate::particles::core::pic_flip::apply(
             &mut self.flip,
             &self.x,
             &self.y,
@@ -383,10 +383,10 @@ impl ParticleSystem {
             return;
         }
         let (sx, sy) =
-            crate::core::metric::collision_scales(p.boundary_shape, p.render_width, p.render_height);
+            crate::particles::core::metric::collision_scales(p.boundary_shape, p.render_width, p.render_height);
         self.bins
             .rebuild(&self.x, &self.y, count, p.collision_grid, sx, sy);
-        crate::core::collision::resolve(
+        crate::particles::core::collision::resolve(
             &self.bins,
             &mut self.x,
             &mut self.y,
@@ -409,7 +409,7 @@ impl ParticleSystem {
             } else {
                 p.particle_radius
             };
-            crate::core::boundary::enforce(
+            crate::particles::boundary::enforce(
                 &p,
                 &mut self.x[i],
                 &mut self.y[i],
@@ -521,7 +521,7 @@ impl ParticleSystem {
     /// `max_velocity` is the lab P-VeloMax cap used by Velocity / VelocityC.
     pub fn particle_eval(&mut self, mode: u32, max_density: f32, max_velocity: f32) {
         let count = self.count;
-        crate::grid::particle::eval(
+        crate::particles::render_modes::eval(
             mode,
             &self.x,
             &self.y,
