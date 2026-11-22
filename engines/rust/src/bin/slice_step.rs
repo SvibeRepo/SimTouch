@@ -66,7 +66,7 @@ fn main() {
     }
 
     let count = count_of(take(&mut it, "particleCount"));
-    if count < 1 || count > 2048 {
+    if count < 1 || count > 4096 {
         eprintln!("slice_step: particle count {count} is out of range");
         exit(1);
     }

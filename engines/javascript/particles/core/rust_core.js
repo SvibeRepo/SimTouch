@@ -164,7 +164,7 @@ export class RustCore {
   }
 
   async init() {
-    const mod = await import("../../simcore/pkg/sim_core.js");
+    const mod = await import("../../../simcore/pkg/sim_core.js");
     await mod.default();
     this.core = new mod.SimCore(CAPACITY);
     this.memory = mod.wasmMemory();

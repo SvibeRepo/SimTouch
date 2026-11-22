@@ -9,7 +9,7 @@ use crate::behaviors::organic;
 use crate::config::params::{id, Params, PARAM_COUNT};
 use crate::forces::voronoi;
 
-pub const MAX_PARTICLES: usize = 2048;
+pub const MAX_PARTICLES: usize = 4096;
 
 pub struct ParticleSystem {
     pub capacity: usize,
@@ -521,7 +521,7 @@ impl ParticleSystem {
     /// `max_velocity` is the lab P-VeloMax cap used by Velocity / VelocityC.
     pub fn particle_eval(&mut self, mode: u32, max_density: f32, max_velocity: f32) {
         let count = self.count;
-        crate::grid::particle_modes::eval(
+        crate::grid::particle::eval(
             mode,
             &self.x,
             &self.y,

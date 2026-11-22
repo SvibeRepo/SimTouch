@@ -17,17 +17,31 @@ alwaysApply: true
 5. **doc/QUICK_REFERENCE.md** - Command cheat sheet and troubleshooting
 6. **doc/migration/migration-plan.md** - Comprehensive migration strategy (may be slightly outdated)
 
+`doc/ARCHITECTURE.md` and `doc/migration/migration-plan.md` are background. Current work and folder layout are `doc/GOALS.md` and `doc/migration/engine-alignment-ledger.md` section 0.
+
 These documents provide essential context about the project structure, current state, design decisions, terminology, and common workflows.
 
 ## Agent Scope
 
-- Suit-library physics lives in `core/cpp` (the PlatformIO library, its own git repo) and is exercised by `core/cpp/examples/waveshare_esp32p4_3.4c`. The pattern lab in `applications/web` is where that behavior is watched. The order of work is `doc/GOALS.md`.
-- What to build next is `doc/GOALS.md`. The page runs the Rust tick until goal 1 restores the JavaScript tick.
-- `applications/embedded/phase2` is kept, including its copied physics. Do not port it onto `core/cpp` as part of ordinary library work.
-- `applications/embedded/phase1` is the display slave of the pattern lab. The simulation runs in the browser. Do not link it to `core/cpp`.
-- `core/cpp` is gitignored here. Commit library changes in that nested repository (`SvibeRepo/SimTouchCore-Library`).
+- Suit-library physics lives in `engines/cpp` (the PlatformIO library, its own git repo) and is exercised by `engines/cpp/examples/waveshare_esp32p4_3.4c`. The pattern lab in `applications/web` is where that behavior is watched. The order of work is `doc/GOALS.md`.
+- What to build next is `doc/GOALS.md`. The lab runs the JavaScript tick and the Rust tick from `sim.engine`. JavaScript is the reference. Rust matches it.
+- `applications/embedded/phase2` is kept, including its copied physics. Do not port it onto `engines/cpp` as part of ordinary library work.
+- `applications/embedded/phase1` is the display slave of the pattern lab. The simulation runs in the browser. Do not link it to `engines/cpp`.
+- `engines/cpp` is gitignored here. Commit library changes in that nested repository (`SvibeRepo/SimTouchCore-Library`).
 
-## Project Architecture (Phase2)
+## Engine alignment
+
+Before a plan or edit touches more than one engine, write a three-column path table (JavaScript, Rust, C++). The path under `engines/<lang>/` matches ledger section 0 (`core/`, `forces/`, `behaviors/`, `grid/`). Same stem, same job.
+
+Particle theme modes share one directory: `grid/particle/` under `engines/javascript/`, `engines/rust/src/`, and `engines/cpp/src/`. Same file stem per mode (`noise`, `proximity`, `shared`, …). Rust is already there. `engines/javascript/particle/` and `engines/cpp/src/grid/particle_modes.*` are drift; do not add files there. The move is `doc/migration/2026-11-22-particle-theme-alignment.md`.
+
+"Lab only" or "C++ later" still reserves the C++ path. JavaScript and Rust use that path now. Host-only glue (browser smoothing, wasm bind) is named in one line. Mode math is never host-only.
+
+If the plan's file list disagrees with the ledger, rewrite the plan. Do not implement the disagreement. A phase check includes "paths still match the table" before any visual check. Stop for confirmation. Do not start the next phase until asked.
+
+## Project Architecture (Phase2 firmware only)
+
+This section is `applications/embedded/phase2`. It is not the pattern lab and not `engines/cpp`.
 
 ### Phase2 tree (kept)
 ```
@@ -38,7 +52,7 @@ applications/embedded/phase2/
 └── platformio.ini
 ```
 
-Phase2 is not the library. The library is `core/cpp/`.
+Phase2 is not the library. The library is `engines/cpp/`.
 
 ### Key Modules
 - **SimCore.cpp**: Central particle system (50-200 particles, 60Hz fixed timestep)
@@ -75,14 +89,14 @@ Input (Touch/IMU) → Forces → SimCore.step() → Particles [0,1] space
 
 - **Phase 1 firmware**: `applications/embedded/phase1/` (display slave of the pattern lab)
 - **Phase 2 firmware**: `applications/embedded/phase2/` (kept; library work does not land here)
-- **JavaScript sources**: `core/javascript/`
-- **Rust tick**: `core/rust/`
+- **JavaScript sources**: `engines/javascript/` (lab page reaches them through the `applications/web/src/simulation` junction)
+- **Rust tick**: `engines/rust/`
 - **Pattern lab**: `applications/web/`
-- **C++ library**: `core/cpp/` (separate git repo)
+- **C++ library**: `engines/cpp/` (separate git repo)
 - **Project documentation**: `doc/`
 - **Migration docs**: `doc/migration/`
 
-## Configuration System
+## Configuration System (Phase2 firmware only)
 
 ### Parameter Registry
 - **SimConfig.h**: Single source of truth for all 81 parameters
@@ -97,7 +111,9 @@ Input (Touch/IMU) → Forces → SimCore.step() → Particles [0,1] space
 3. Use parameter in relevant module (SimCore, Boundary, etc.)
 4. Web UI auto-updates on next load (no manual UI code needed)
 
-## Code Style (ESP32 C++)
+## Code Style (Phase2 firmware C++)
+
+Applies to `applications/embedded/phase2`. `engines/cpp` file stems follow the alignment ledger (`snake_case`).
 
 ### Memory Management
 - Use fixed-size arrays, no dynamic allocation (`new`, `malloc`)
@@ -129,7 +145,7 @@ Input (Touch/IMU) → Forces → SimCore.step() → Particles [0,1] space
 - Constants: kCamelCase (e.g., `kMaxParticles`, `kParamRegistry`)
 - Enums: UPPER_CASE (e.g., `BOUNDARY_CIRCULAR`, `PARAM_FLOAT`)
 
-## Hardware Targets
+## Hardware Targets (Phase2 firmware only)
 
 ### Primary: LilyGo T-RGB 2.1 (Phase2 Development)
 - Display: ST7701 RGB 480×480 half-circle
@@ -147,7 +163,9 @@ Input (Touch/IMU) → Forces → SimCore.step() → Particles [0,1] space
 - WiFi: AP mode, SSID `ParticleSimulator`, password `MagicMods`
 - Flash: 16MB (LittleFS for web UI assets)
 
-## Performance Guidelines
+## Performance Guidelines (Phase2 firmware only)
+
+Particle caps for the lab, the suit, and `engines/cpp` are not this list. They live with those products and change there.
 
 ### Targets
 - **Simulation**: 60 FPS (60Hz fixed timestep)
@@ -162,7 +180,7 @@ Input (Touch/IMU) → Forces → SimCore.step() → Particles [0,1] space
 - Turbulence is expensive; `turbStrength=0` disables it
 - Grid rendering scales with `targetCellCount`
 
-## Common Workflows
+## Common Workflows (Phase2 firmware only)
 
 ### Making Code Changes
 1. Edit relevant module in `include/*.h` and `src/*.cpp`
@@ -183,7 +201,7 @@ Input (Touch/IMU) → Forces → SimCore.step() → Particles [0,1] space
 3. Visually compare particle behavior and grid output
 4. Check that physics matches (boundary enforcement, collision, forces)
 
-## Debugging
+## Debugging (Phase2 firmware only)
 
 ### Serial Output
 - Baud rate: `115200` (LilyGo), `250000` (Waveshare)
@@ -198,34 +216,22 @@ Input (Touch/IMU) → Forces → SimCore.step() → Particles [0,1] space
 
 ## Integration Roadmap
 
-### Phase 2 (Current): Standalone ESP32 Simulation
-- ✅ Core particle system (SimCore, Boundary, Collision, Gravity)
-- ✅ Input forces (Touch, IMU, Turbulence)
-- ✅ Grid rendering (GridModes, GridGeometry, Graphics)
-- ✅ Web configuration (ConfigWeb, AsyncWebServer, WebSocket)
-- 🚧 Advanced features (Voronoi, FLIP, Organic behaviors - scaffolded)
-
-### Phase 3 (Future): Svibe_Firmware_Slave Integration
-- Package simulation as PlatformIO library (`lib/SimTouch/`)
-- Add `UpdateModulesFromSim()` bridge to suit's `Modules.cpp`
-- Add `SIM_LOCAL` mode alongside Unity/remote sim modes
-- Route touch/IMU to `SimEngine` in suit firmware
-- Map 338 cell values → 338 haptic modules (1:1 direct mapping)
+Work order is `doc/GOALS.md` (lab first, then the suit library). The old "Phase 2 current / Phase 3 future" checklist is not the queue.
 
 ## Best Practices
 
 ### When Starting a Task
-1. Read `START_HERE.md` and `doc/ARCHITECTURE.md` for context
+1. Read `doc/GOALS.md`. Use `START_HERE.md` and `doc/ARCHITECTURE.md` as background.
 2. Check `git status` and `git log -5` for recent changes
 3. Identify which modules are affected by the task
 4. Read relevant header files before editing implementation files
 
 ### When Adding Features
-1. Check if JS Sim has reference implementation in `core/javascript/`
-2. Port algorithms to C++ following memory constraints (fixed-size arrays)
-3. Add configuration parameters to `SimConfig.h` if needed
-4. Test incrementally (build, upload, monitor serial output)
-5. Validate against JS Sim with identical parameters
+1. Author the behaviour in the lab. JavaScript in `engines/javascript/` is the reference. Match it in `engines/rust/` in the same change.
+2. Port to `engines/cpp` only after that lab path is proven. Follow that engine's memory constraints (fixed-size arrays).
+3. Phase2-only parameters still go through `SimConfig.h` in `applications/embedded/phase2`.
+4. Test incrementally (lab in the browser; Phase2 firmware with build, upload, serial).
+5. Validate the engines against each other with the same parameters.
 
 ### When Debugging
 1. Check serial output for errors, FPS drops, validation failures

@@ -4,7 +4,7 @@
 //! `engines/javascript/grid/grid_render_modes.js`. Positions use the same
 //! render Y flip: `py = (1 - y) * height`.
 
-pub mod particle_modes;
+pub mod particle;
 
 use crate::forces::turbulence::{bilinear_sample, FIELD_N};
 
