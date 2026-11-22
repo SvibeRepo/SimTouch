@@ -5,11 +5,16 @@
   left: 0;
   right: 0;
   bottom: 0;
-  /* background: rgba(0, 0, 0, 0.5); */
+  background: rgba(0, 0, 0, 0.55);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: 10000;
+}
+
+.preset-dialog-label {
+  color: #fff;
+  font-size: 13px;
 }
 
 .preset-dialog {
@@ -22,7 +27,7 @@
 }
 
 .preset-input {
-  /* background: #2a2a2a; */
+  background: #2a2a2a;
   border: 1px solid #3a3a3a;
   color: white;
   padding: 8px;
@@ -39,7 +44,7 @@
 .preset-buttons button {
   background: #3a3a3a;
   border: none;
-  /* color: white; */
+  color: white;
   padding: 8px 16px;
   border-radius: 4px;
   cursor: pointer;

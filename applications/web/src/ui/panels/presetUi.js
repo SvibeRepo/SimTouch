@@ -1,5 +1,6 @@
 import { BaseUi } from "../baseUi.js";
 import { PresetManager } from "../../presets/presetManager.js";
+import { askPresetName } from "../../presets/presetNameDialog.js";
 import { debugManager } from '../../util/debugManager.js';
 
 export class PresetUi extends BaseUi {
@@ -56,13 +57,10 @@ export class PresetUi extends BaseUi {
     const actionsContainer = document.createElement("div");
     actionsContainer.classList.add("preset-buttons-container");
 
-    const saveButton = this._createButton("Save", () => {
-      // Get current preset name
+    const saveButton = this._createButton("Save", async () => {
       const currentPreset = this.presetManager.getSelectedPreset(PresetManager.TYPES.MASTER);
-
-      // Only use the current preset name as default if it's not "Default"
       const defaultValue = (currentPreset && currentPreset !== "Default") ? currentPreset : "";
-      const name = prompt("Enter preset name:", defaultValue);
+      const name = await askPresetName("Enter preset name:", defaultValue);
 
       if (name) {
         this.presetManager.savePreset(PresetManager.TYPES.MASTER, name);

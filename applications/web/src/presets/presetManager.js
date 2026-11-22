@@ -3,10 +3,10 @@ import { SimplePresetHandler } from "./simplePresetHandler.js";
 import { ModulatorPresetHandler } from "./modulatorPresetHandler.js";
 import { RandomizerPresetHandler } from "./randomizerPresetHandler.js";
 import { defaultPresets as factoryDefaultPresetsData } from './default/defaultPresets.js';
+import { askPresetName } from "./presetNameDialog.js";
+import { debugManager } from "../util/debugManager.js";
 
 const factoryDefaultPresets = factoryDefaultPresetsData.presets;
-
-import { debugManager } from "../util/debugManager.js";
 export class PresetManager {
   static TYPES = {
     MASTER: "master",
@@ -190,17 +190,15 @@ export class PresetManager {
     return button;
   }
 
-  _handleSave(presetType) {
+  async _handleSave(presetType) {
     if (this.db) console.log(`Save requested for presetType: "${presetType}"`,
       `Handler:`, this.handlers[presetType] ? "exists" : "missing");
 
-    // Get current preset name to pre-populate the prompt
     const currentPreset = this.getSelectedPreset(presetType);
     if (this.db) console.log(`Current preset for ${presetType}:`, currentPreset);
 
-    // Only use the current preset name as default if it's not "Default"
     const defaultValue = (currentPreset && currentPreset !== "Default") ? currentPreset : "";
-    const presetName = prompt(`Enter ${presetType} preset name:`, defaultValue);
+    const presetName = await askPresetName(`Enter ${presetType} preset name:`, defaultValue);
 
     if (this.db) console.log(`User entered name: "${presetName}"`);
     if (!presetName) return;

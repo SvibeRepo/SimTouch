@@ -133,9 +133,15 @@ export class ParamUi extends BaseUi {
 
     try {
       const targets = this.getControlTargets();
+      // Presets written before Class existed are cell themes. A missing
+      // value must still switch class, otherwise load leaves the previous one.
+      const outputClass = data.controllers.Class === "particle" ? "particle" : "cell";
+      if (targets.Class && typeof targets.Class.setValue === "function") {
+        targets.Class.setValue(outputClass);
+      }
 
-      // Apply values from preset to controllers
       for (const [key, value] of Object.entries(data.controllers)) {
+        if (key === "Class") continue;
         if (targets[key] && typeof targets[key].setValue === "function") {
           targets[key].setValue(value);
         }
