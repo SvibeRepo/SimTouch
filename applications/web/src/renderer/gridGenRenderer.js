@@ -9,8 +9,8 @@ import {
   GridField,
   fadeDurationToRate,
   densityGainToEngineMax,
-} from "../simulation/grid/grid_render_modes.js";
-import { ParticleRenderModes } from "../simulation/grid/particle_render_modes.js";
+} from "../simulation/grid/render_modes/grid_render_manager.js";
+import { ParticleRenderModes } from "../simulation/particles/render_modes/particle_render_manager.js";
 import { comManager } from "../com/comManager.js";
 import { debugManager } from "../util/debugManager.js";
 

@@ -1,5 +1,5 @@
-import { CircularBoundary } from "../simulation/core/boundary/circular_boundary.js";
-import { RectangularBoundary } from "../simulation/core/boundary/rectangular_boundary.js";
+import { CircularBoundary } from "../simulation/particles/boundary/circular_boundary.js";
+import { RectangularBoundary } from "../simulation/particles/boundary/rectangular_boundary.js";
 import { eventBus } from '../util/eventManager.js';
 import { debugManager } from '../util/debugManager.js';
 export class BoundaryRenderer {

@@ -1,20 +1,20 @@
 import { ShaderManager } from "./shader/shaderManager.js";
 // Simulation
-import { ParticleSystem } from "./simulation/core/particle_system.js";
-import { RustCore, particleBuffers } from "./simulation/core/rust_core.js";
-import { TurbulenceField } from "./simulation/forces/turbulence.js";
-import { VoronoiField } from "./simulation/forces/voronoi.js";
+import { ParticleSystem } from "./simulation/particles/core/particle_system.js";
+import { RustCore, particleBuffers } from "./simulation/particles/core/rust_core.js";
+import { TurbulenceField } from "./simulation/particles/turbulences/turbulence_manager.js";
+import { VoronoiField } from "./simulation/particles/forces/voronoi.js";
 // CoreGrid   
 import { DimensionManager } from "./simulation/grid/lattice/dimension_manager.js";
 import { BoundaryManager } from "./simulation/grid/lattice/boundary_manager.js";
 // UI
 import { UiManager } from "./ui/uiManager.js";
 // Input
-import { MouseForces } from "./simulation/forces/mouse.js";
+import { MouseForces } from "./simulation/particles/forces/touch.js";
 import { ExternalInputConnector } from "./input/externalInputConnector.js";
-import { EmuForces } from "./simulation/forces/emu.js";
+import { EmuForces } from "./simulation/particles/forces/emu.js";
 import { JoystickRenderer } from "./renderer/joystickRenderer.js";
-import { MicInputForces } from "./simulation/forces/mic.js";
+import { MicInputForces } from "./simulation/particles/forces/mic.js";
 import { DataVisualization } from "./renderer/dataVisualization.js";
 import { SoundVisualizer } from "./sound/soundVisualizer.js";
 // Renderer

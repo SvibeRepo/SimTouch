@@ -1,5 +1,5 @@
 import { BaseUi } from "../baseUi.js";
-import { Behaviors } from "../../simulation/behaviors/organic.js";
+import { Behaviors } from "../../simulation/particles/behaviors/organic.js";
 import { PresetManager } from "../../presets/presetManager.js";
 import { eventBus } from '../../util/eventManager.js';
 import { debugManager } from '../../util/debugManager.js';

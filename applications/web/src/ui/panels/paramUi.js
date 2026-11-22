@@ -1,6 +1,6 @@
 import { BaseUi } from "../baseUi.js";
-import { GridField } from "../../simulation/grid/grid_render_modes.js";
-import { Behaviors } from "../../simulation/behaviors/organic.js";
+import { GridField } from "../../simulation/grid/render_modes/grid_render_manager.js";
+import { Behaviors } from "../../simulation/particles/behaviors/organic.js";
 import { eventBus } from "../../util/eventManager.js";
 import { debugManager } from '../../util/debugManager.js';
 export class ParamUi extends BaseUi {

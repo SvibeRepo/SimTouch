@@ -15,9 +15,9 @@ function chartIndex(name, column) {
   return row[column];
 }
 
-const { ParticleSystem } = await import("../engines/javascript/core/particle_system.js");
-const { CircularBoundary } = await import("../engines/javascript/core/boundary/circular_boundary.js");
-const { TurbulenceField } = await import("../engines/javascript/forces/turbulence.js");
+const { ParticleSystem } = await import("../engines/javascript/particles/core/particle_system.js");
+const { CircularBoundary } = await import("../engines/javascript/particles/boundary/circular_boundary.js");
+const { TurbulenceField } = await import("../engines/javascript/particles/turbulences/turbulence_manager.js");
 
 function applyFields(ps, boundary, turbulence, fields) {
   const set = {

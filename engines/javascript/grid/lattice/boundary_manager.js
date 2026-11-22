@@ -1,7 +1,7 @@
 import { CircularBoundaryShape } from "./boundary/circular_boundary_shape.js";
 import { RectangularBoundaryShape } from "./boundary/rectangular_boundary_shape.js";
-import { CircularBoundary } from "../../core/boundary/circular_boundary.js";
-import { RectangularBoundary } from "../../core/boundary/rectangular_boundary.js";
+import { CircularBoundary } from "../../particles/boundary/circular_boundary.js";
+import { RectangularBoundary } from "../../particles/boundary/rectangular_boundary.js";
 import { eventBus } from '../../../util/eventManager.js';
 import { debugManager } from '../../../util/debugManager.js';
 export class BoundaryManager {
