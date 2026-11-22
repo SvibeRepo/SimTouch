@@ -1,58 +1,48 @@
 //! Lab grid values. Cell rectangles stay out of the particle step.
-//!
-//! Mode ids follow `Object.values(GridField)` in
-//! `engines/javascript/grid/grid_render_modes.js`. Positions use the same
-//! render Y flip: `py = (1 - y) * height`.
-
-use crate::particles::turbulences::turbulence_manager::{bilinear_sample, FIELD_N};
+//! Mode ids live in `g_shared`. Each cell formula lives in its `g_` file.
+//! Circle-rect overlap stays here because the cell modes call it.
+//! Positions use the same render Y flip: `py = (1 - y) * height`.
 
 use std::f32::consts::PI;
 
-pub const MAX_CELLS: usize = 2048;
+pub use super::g_shared::{
+    MODE_COLLISION, MODE_DENSITY, MODE_NOISE, MODE_OVERLAP, MODE_PRESSURE, MODE_PROXIMITY,
+    MODE_PROXIMITY_B, MODE_VELOCITY, MODE_VELOCITY_C, MODE_VORTICITY,
+};
 
-pub const MODE_NOISE: u32 = 0;
-pub const MODE_PROXIMITY: u32 = 1;
-pub const MODE_VELOCITY: u32 = 2;
-pub const MODE_PRESSURE: u32 = 3;
-pub const MODE_COLLISION: u32 = 4;
-pub const MODE_PROXIMITY_B: u32 = 5;
-pub const MODE_DENSITY: u32 = 6;
-pub const MODE_VORTICITY: u32 = 7;
-pub const MODE_OVERLAP: u32 = 8;
-/// Particle-class only: neighbour-weighted speed. Appended so existing ids stay stable.
-pub const MODE_VELOCITY_C: u32 = 9;
+pub const MAX_CELLS: usize = 2048;
 
 const VIZ_GRID_MAX: usize = 128;
 const VIZ_BINS: usize = VIZ_GRID_MAX * VIZ_GRID_MAX;
 
 #[derive(Clone, Copy)]
-struct CellRect {
-    x: f32,
-    y: f32,
-    w: f32,
-    h: f32,
+pub(super) struct CellRect {
+    pub(super) x: f32,
+    pub(super) y: f32,
+    pub(super) w: f32,
+    pub(super) h: f32,
 }
 
 impl CellRect {
-    fn contains_point(self, px: f32, py: f32) -> bool {
+    pub(super) fn contains_point(self, px: f32, py: f32) -> bool {
         px >= self.x && px < self.x + self.w && py >= self.y && py < self.y + self.h
     }
 }
 
 pub(crate) struct Grid {
-    count: usize,
-    cells: Vec<CellRect>,
-    values: Vec<f32>,
-    members: Vec<Vec<u32>>,
-    acc0: Vec<f32>,
-    acc1: Vec<f32>,
-    acc2: Vec<f32>,
-    acc3: Vec<f32>,
-    acc4: Vec<f32>,
-    bin_counts: Vec<u32>,
-    bin_starts: Vec<u32>,
+    pub(super) count: usize,
+    pub(super) cells: Vec<CellRect>,
+    pub(super) values: Vec<f32>,
+    pub(super) members: Vec<Vec<u32>>,
+    pub(super) acc0: Vec<f32>,
+    pub(super) acc1: Vec<f32>,
+    pub(super) acc2: Vec<f32>,
+    pub(super) acc3: Vec<f32>,
+    pub(super) acc4: Vec<f32>,
+    pub(super) bin_counts: Vec<u32>,
+    pub(super) bin_starts: Vec<u32>,
     bin_cursor: Vec<u32>,
-    bin_indices: Vec<u32>,
+    pub(super) bin_indices: Vec<u32>,
 }
 
 impl Grid {
@@ -198,436 +188,13 @@ impl Grid {
         }
     }
 
-    fn compute_noise(&mut self, width: f32, height: f32, field: &[f32]) {
-        const NOISE_TUNE: f32 = 2.2;
-        for i in 0..self.count {
-            let cell = self.cells[i];
-            let cx = cell.x + cell.w * 0.5;
-            let cy = cell.y + cell.h * 0.5;
-            let nx = cx / width;
-            let ny = 1.0 - cy / height;
-            let noise_value = bilinear_sample(field, FIELD_N, nx, ny);
-            self.values[i] = noise_value * NOISE_TUNE;
-        }
-    }
-
-    fn eval_proximity(&mut self, x: &[f32], y: &[f32], count: usize, width: f32, height: f32) {
-        const TUNE: f32 = 0.15;
-        let radius = proximity_radius(width, height);
-        let radius_sq = radius * radius;
-        self.assign_containing(x, y, count, width, height);
-        let n = self.count;
-        for i in 0..n {
-            let npart = self.members[i].len();
-            if npart == 0 {
-                continue;
-            }
-            let mut total = 0.0;
-            for j in 0..n {
-                if !cells_near(self.cells[i], self.cells[j], radius) {
-                    continue;
-                }
-                let a_len = self.members[i].len();
-                let b_len = self.members[j].len();
-                for ia in 0..a_len {
-                    let p1 = self.members[i][ia] as usize;
-                    let (x1, y1) = pixel(x[p1], y[p1], width, height);
-                    for ib in 0..b_len {
-                        let p2 = self.members[j][ib] as usize;
-                        if p1 == p2 {
-                            continue;
-                        }
-                        let (x2, y2) = pixel(x[p2], y[p2], width, height);
-                        let dx = x2 - x1;
-                        let dy = y2 - y1;
-                        let dist_sq = dx * dx + dy * dy;
-                        if dist_sq < radius_sq {
-                            total += 1.0 - dist_sq / radius_sq;
-                        }
-                    }
-                }
-            }
-            self.values[i] = (total / npart as f32) * TUNE;
-        }
-    }
-
-    fn eval_proximity_b(
-        &mut self,
-        x: &[f32],
-        y: &[f32],
-        count: usize,
-        width: f32,
-        height: f32,
-        particle_radius: f32,
-    ) {
-        const TUNE: f32 = 1.0;
-        let radius = proximity_radius(width, height);
-        let pixel_radius = uniform_pixel_radius(particle_radius, width, height);
-        self.assign_overlapping(x, y, count, width, height, pixel_radius);
-        let n = self.count;
-        for i in 0..n {
-            let npart = self.members[i].len();
-            if npart == 0 {
-                continue;
-            }
-            let mut total = 0.0;
-            for j in 0..n {
-                if !cells_near(self.cells[i], self.cells[j], radius) {
-                    continue;
-                }
-                let a_len = self.members[i].len();
-                let b_len = self.members[j].len();
-                for ia in 0..a_len {
-                    let p1 = self.members[i][ia] as usize;
-                    let (x1, y1) = pixel(x[p1], y[p1], width, height);
-                    for ib in 0..b_len {
-                        let p2 = self.members[j][ib] as usize;
-                        if p1 == p2 {
-                            continue;
-                        }
-                        let (x2, y2) = pixel(x[p2], y[p2], width, height);
-                        let dx = x2 - x1;
-                        let dy = y2 - y1;
-                        let dist_sq = dx * dx + dy * dy;
-                        let min_dist = pixel_radius + pixel_radius;
-                        let limit = min_dist + radius;
-                        if dist_sq < limit * limit {
-                            let overlap = (min_dist - dist_sq.sqrt()).max(0.0);
-                            // tune_in_pair and tune_after_avg are both TUNE (1).
-                            let tune_in_pair = TUNE;
-                            total += (overlap / min_dist) * tune_in_pair;
-                        }
-                    }
-                }
-            }
-            let tune_after_avg = TUNE;
-            self.values[i] = (total / npart as f32) * tune_after_avg;
-        }
-    }
-
-    fn eval_density(
-        &mut self,
-        x: &[f32],
-        y: &[f32],
-        radii: &[f32],
-        count: usize,
-        width: f32,
-        height: f32,
-        particle_radius: f32,
-        render_scale: f32,
-        affect_scale: bool,
-    ) {
-        for i in 0..count {
-            let raw = if affect_scale { radii[i] } else { particle_radius };
-            // renderedSize = rawRadius * renderScale; densityRadius = renderedSize / 8.
-            let density_radius = raw * render_scale / 8.0;
-            let (px, py) = pixel(x[i], y[i], width, height);
-            for c in 0..self.count {
-                let cell = self.cells[c];
-                let cell_area = cell.w * cell.h;
-                if cell_area <= 0.0 {
-                    continue;
-                }
-                let overlap_area =
-                    circle_rect_overlap(px, py, density_radius, cell.x, cell.y, cell.w, cell.h);
-                if overlap_area > 0.0 {
-                    const DENSITY_GAIN: f32 = 0.1;
-                    self.values[c] += shaped_coverage(overlap_area, cell_area, DENSITY_GAIN);
-                }
-            }
-        }
-    }
-
-    fn eval_velocity(
-        &mut self,
-        x: &[f32],
-        y: &[f32],
-        vx: &[f32],
-        vy: &[f32],
-        count: usize,
-        width: f32,
-        height: f32,
-        particle_radius: f32,
-    ) {
-        const TUNE: f32 = 5.0;
-        let n = self.count;
-        zero_slice(&mut self.acc0, n);
-        zero_slice(&mut self.acc1, n);
-        let pr = uniform_pixel_radius(particle_radius, width, height);
-        for i in 0..count {
-            let (px, py) = pixel(x[i], y[i], width, height);
-            let speed = (vx[i] * vx[i] + vy[i] * vy[i]).sqrt();
-            for c in 0..n {
-                let cell = self.cells[c];
-                let cell_area = cell.w * cell.h;
-                if cell_area <= 0.0 {
-                    continue;
-                }
-                let overlap = circle_rect_overlap(px, py, pr, cell.x, cell.y, cell.w, cell.h);
-                if overlap > 0.0 {
-                    let weight = shaped_coverage(overlap, cell_area, 0.1);
-                    self.acc0[c] += speed * weight * TUNE;
-                    self.acc1[c] += weight;
-                }
-            }
-        }
-        for i in 0..n {
-            if self.acc1[i] > 0.0 {
-                self.values[i] = self.acc0[i] / self.acc1[i];
-            }
-        }
-    }
-
-    fn eval_pressure(
-        &mut self,
-        x: &[f32],
-        y: &[f32],
-        count: usize,
-        width: f32,
-        height: f32,
-        particle_radius: f32,
-    ) {
-        const TUNE: f32 = 0.5;
-        let n = self.count;
-        zero_slice(&mut self.acc0, n);
-        let pr = uniform_pixel_radius(particle_radius, width, height);
-        for i in 0..count {
-            let (px, py) = pixel(x[i], y[i], width, height);
-            for c in 0..n {
-                let cell = self.cells[c];
-                let cell_area = cell.w * cell.h;
-                if cell_area <= 0.0 {
-                    continue;
-                }
-                let overlap = circle_rect_overlap(px, py, pr, cell.x, cell.y, cell.w, cell.h);
-                if overlap > 0.0 {
-                    self.acc0[c] += shaped_coverage(overlap, cell_area, 0.25);
-                }
-            }
-        }
-        for i in 0..n {
-            if self.acc0[i] > 0.0 {
-                self.values[i] = (self.acc0[i] / 100.0).powf(2.0) * TUNE * 200.0;
-            }
-        }
-    }
-
-    fn eval_vorticity(
-        &mut self,
-        x: &[f32],
-        y: &[f32],
-        vx: &[f32],
-        vy: &[f32],
-        count: usize,
-        width: f32,
-        height: f32,
-        particle_radius: f32,
-    ) {
-        const TUNE: f32 = 5.0;
-        let n = self.count;
-        zero_slice(&mut self.acc0, n);
-        zero_slice(&mut self.acc1, n);
-        zero_slice(&mut self.acc2, n);
-        zero_slice(&mut self.acc3, n);
-        zero_slice(&mut self.acc4, n);
-        let pr = uniform_pixel_radius(particle_radius, width, height);
-        for i in 0..count {
-            let (px, py) = pixel(x[i], y[i], width, height);
-            for c in 0..n {
-                let cell = self.cells[c];
-                let cell_area = cell.w * cell.h;
-                if cell_area <= 0.0 {
-                    continue;
-                }
-                let overlap = circle_rect_overlap(px, py, pr, cell.x, cell.y, cell.w, cell.h);
-                if overlap > 0.0 {
-                    let weight = shaped_coverage(overlap, cell_area, 0.25);
-                    self.acc0[c] += vx[i] * weight;
-                    self.acc1[c] += vy[i] * weight;
-                    self.acc2[c] += weight;
-                }
-            }
-        }
-        for i in 0..n {
-            if self.acc2[i] > 0.0 {
-                self.acc3[i] = self.acc0[i] / self.acc2[i];
-                self.acc4[i] = self.acc1[i] / self.acc2[i];
-            }
-        }
-        for i in 0..n {
-            if self.acc2[i] == 0.0 {
-                continue;
-            }
-            let cell = self.cells[i];
-            let mut dvx_dy = 0.0;
-            let mut dvy_dx = 0.0;
-            let mut valid = 0.0;
-            for j in 0..n {
-                if j == i {
-                    continue;
-                }
-                let other = self.cells[j];
-                let dx = other.x - cell.x;
-                let dy = other.y - cell.y;
-                if dx.abs() > cell.w * 1.5 || dy.abs() > cell.h * 1.5 {
-                    continue;
-                }
-                if self.acc2[j] > 0.0 {
-                    if dy.abs() > 0.001 {
-                        dvx_dy += (self.acc3[j] - self.acc3[i]) / dy;
-                    }
-                    if dx.abs() > 0.001 {
-                        dvy_dx += (self.acc4[j] - self.acc4[i]) / dx;
-                    }
-                    valid += 1.0;
-                }
-            }
-            if valid > 0.0 {
-                dvx_dy /= valid;
-                dvy_dx /= valid;
-                let vorticity = dvy_dx - dvx_dy;
-                let scaled = js_sign(vorticity) * vorticity.abs().powf(0.75);
-                self.values[i] = scaled * TUNE;
-            }
-        }
-    }
-
-    fn eval_collision(
-        &mut self,
-        x: &[f32],
-        y: &[f32],
-        vx: &[f32],
-        vy: &[f32],
-        count: usize,
-        width: f32,
-        height: f32,
-        particle_radius: f32,
-        collision_grid: u32,
-    ) {
-        const TUNE: f32 = 50.0;
-        let grid = viz_grid_size(collision_grid);
-        self.rebuild_viz_bins(x, y, count, grid);
-        let n = self.count;
-        zero_slice(&mut self.acc0, n);
-        zero_slice(&mut self.acc1, n);
-        let pr = uniform_pixel_radius(particle_radius, width, height);
-        let min_dist = pr + pr;
-        let span = min_dist * 2.0;
-        let bins = grid * grid;
-        for bin in 0..bins {
-            let start = self.bin_starts[bin] as usize;
-            let len = self.bin_counts[bin] as usize;
-            if len < 2 {
-                continue;
-            }
-            for j in 0..len {
-                let i1 = self.bin_indices[start + j] as usize;
-                for k in (j + 1)..len {
-                    let i2 = self.bin_indices[start + k] as usize;
-                    let dvx = vx[i2] - vx[i1];
-                    let dvy = vy[i2] - vy[i1];
-                    let relative_speed = (dvx * dvx + dvy * dvy).sqrt();
-                    let (p1x, p1y) = pixel(x[i1], y[i1], width, height);
-                    let (p2x, p2y) = pixel(x[i2], y[i2], width, height);
-                    let dx = p2x - p1x;
-                    let dy = p2y - p1y;
-                    let dist = (dx * dx + dy * dy).sqrt();
-                    if dist < span {
-                        let overlap_pair = (span - dist).max(0.0);
-                        let intensity = (overlap_pair / span) * relative_speed;
-                        for c in 0..n {
-                            let cell = self.cells[c];
-                            let cell_area = cell.w * cell.h;
-                            if cell_area <= 0.0 {
-                                continue;
-                            }
-                            let o1 = circle_rect_overlap(p1x, p1y, pr, cell.x, cell.y, cell.w, cell.h);
-                            let o2 = circle_rect_overlap(p2x, p2y, pr, cell.x, cell.y, cell.w, cell.h);
-                            if o1 > 0.0 || o2 > 0.0 {
-                                let weight = shaped_coverage(o1 + o2, cell_area, 0.25);
-                                self.acc0[c] += intensity * weight * TUNE;
-                                self.acc1[c] += weight;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        for i in 0..n {
-            if self.acc1[i] > 0.0 {
-                self.values[i] = self.acc0[i] / self.acc1[i];
-            }
-        }
-    }
-
-    fn eval_overlap(
-        &mut self,
-        x: &[f32],
-        y: &[f32],
-        count: usize,
-        width: f32,
-        height: f32,
-        particle_radius: f32,
-    ) {
-        let pr = uniform_pixel_radius(particle_radius, width, height);
-        for i in 0..count {
-            let (px, py) = pixel(x[i], y[i], width, height);
-            for c in 0..self.count {
-                let cell = self.cells[c];
-                let cell_area = cell.w * cell.h;
-                if cell_area <= 0.0 {
-                    continue;
-                }
-                let overlap = circle_rect_overlap(px, py, pr, cell.x, cell.y, cell.w, cell.h);
-                if overlap > 0.0 {
-                    self.values[c] += shaped_coverage(overlap, cell_area, 0.1);
-                }
-            }
-        }
-    }
-
-    fn assign_containing(&mut self, x: &[f32], y: &[f32], count: usize, width: f32, height: f32) {
-        self.clear_members();
-        for i in 0..count {
-            let (px, py) = pixel(x[i], y[i], width, height);
-            for c in 0..self.count {
-                if self.cells[c].contains_point(px, py) {
-                    self.members[c].push(i as u32);
-                    break;
-                }
-            }
-        }
-    }
-
-    fn assign_overlapping(
-        &mut self,
-        x: &[f32],
-        y: &[f32],
-        count: usize,
-        width: f32,
-        height: f32,
-        pixel_radius: f32,
-    ) {
-        self.clear_members();
-        for i in 0..count {
-            let (px, py) = pixel(x[i], y[i], width, height);
-            for c in 0..self.count {
-                let cell = self.cells[c];
-                let overlap = circle_rect_overlap(px, py, pixel_radius, cell.x, cell.y, cell.w, cell.h);
-                if overlap > 0.0 {
-                    self.members[c].push(i as u32);
-                }
-            }
-        }
-    }
-
-    fn clear_members(&mut self) {
+    pub(super) fn clear_members(&mut self) {
         for cell in &mut self.members[..self.count] {
             cell.clear();
         }
     }
 
-    fn rebuild_viz_bins(&mut self, x: &[f32], y: &[f32], count: usize, grid: usize) {
+    pub(super) fn rebuild_viz_bins(&mut self, x: &[f32], y: &[f32], count: usize, grid: usize) {
         let cells = grid * grid;
         for c in &mut self.bin_counts[..cells] {
             *c = 0;
@@ -654,25 +221,25 @@ impl Grid {
     }
 }
 
-fn pixel(x: f32, y: f32, width: f32, height: f32) -> (f32, f32) {
+pub(super) fn pixel(x: f32, y: f32, width: f32, height: f32) -> (f32, f32) {
     (x * width, (1.0 - y) * height)
 }
 
-fn proximity_radius(width: f32, height: f32) -> f32 {
+pub(super) fn proximity_radius(width: f32, height: f32) -> f32 {
     let avg = (width + height) * 0.5;
     20.0 * (avg / 240.0)
 }
 
-fn uniform_pixel_radius(particle_radius: f32, width: f32, height: f32) -> f32 {
+pub(super) fn uniform_pixel_radius(particle_radius: f32, width: f32, height: f32) -> f32 {
     particle_radius * width.max(height)
 }
 
-fn cells_near(a: CellRect, b: CellRect, radius: f32) -> bool {
+pub(super) fn cells_near(a: CellRect, b: CellRect, radius: f32) -> bool {
     (a.x - b.x).abs() <= radius && (a.y - b.y).abs() <= radius
 }
 
 /// `collisionGridSize || 10`, rounded already by the caller, clamped to 1..=128.
-fn viz_grid_size(collision_grid: u32) -> usize {
+pub(super) fn viz_grid_size(collision_grid: u32) -> usize {
     let raw = if collision_grid == 0 { 10 } else { collision_grid };
     (raw as usize).clamp(1, VIZ_GRID_MAX)
 }
@@ -687,7 +254,7 @@ fn viz_bin(x: f32, y: f32, grid: usize) -> Option<usize> {
     Some(cy * grid + cx)
 }
 
-fn zero_slice(buf: &mut [f32], n: usize) {
+pub(super) fn zero_slice(buf: &mut [f32], n: usize) {
     for v in &mut buf[..n] {
         *v = 0.0;
     }
@@ -695,13 +262,13 @@ fn zero_slice(buf: &mut [f32], n: usize) {
 
 /// Density content elements match JS `calculateDensity`:
 /// coveragePercent → shapedCoverage → densityValue = min(shapedCoverage * densityGain, 100).
-fn shaped_coverage(overlap_area: f32, cell_area: f32, density_gain: f32) -> f32 {
+pub(super) fn shaped_coverage(overlap_area: f32, cell_area: f32, density_gain: f32) -> f32 {
     let coverage_percent = (overlap_area / cell_area) * 100.0;
     let shaped_coverage = (coverage_percent / 100.0).powf(1.5) * 100.0;
     (shaped_coverage * density_gain).min(100.0)
 }
 
-fn js_sign(v: f32) -> f32 {
+pub(super) fn js_sign(v: f32) -> f32 {
     if v > 0.0 {
         1.0
     } else if v < 0.0 {
@@ -712,7 +279,7 @@ fn js_sign(v: f32) -> f32 {
 }
 
 /// Circle-rectangle overlap copied from `GridRenderModes.calculateCircleRectOverlap`.
-fn circle_rect_overlap(
+pub(super) fn circle_rect_overlap(
     circle_x: f32,
     circle_y: f32,
     radius: f32,
