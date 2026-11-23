@@ -212,6 +212,21 @@ export class MasterPresetHandler extends PresetBaseHandler {
     return allSuccess;
   }
 
+  captureData() {
+    const data = {};
+    for (const key of Object.keys(this.uiComponents || {})) {
+      const uiComponent = this.uiComponents[key];
+      if (uiComponent && typeof uiComponent.getData === "function") {
+        try {
+          data[key] = uiComponent.getData();
+        } catch (error) {
+          console.error(`Error getting data from ${key}:`, error);
+        }
+      }
+    }
+    return data;
+  }
+
   savePresetFromUI(presetName) {
     if (!this.uiComponents) {
       console.warn("No UI components registered");
@@ -219,22 +234,7 @@ export class MasterPresetHandler extends PresetBaseHandler {
     }
 
     try {
-      const data = {};
-      for (const key of Object.keys(this.uiComponents)) {
-        const uiComponent = this.uiComponents[key];
-        if (uiComponent && typeof uiComponent.getData === "function") {
-          try {
-            data[key] = uiComponent.getData();
-            if (this.db) console.log(`Saved data from ${key}`);
-          } catch (error) {
-            console.error(`Error getting data from ${key}:`, error);
-          }
-        } else {
-          console.warn(`Could not save state from ${key}`);
-        }
-      }
-
-      return this.savePreset(presetName, data);
+      return this.savePreset(presetName, this.captureData());
     } catch (error) {
       console.error("Error saving master preset:", error);
       return false;

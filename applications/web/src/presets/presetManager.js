@@ -438,9 +438,13 @@ export class PresetManager {
     if (!handler) return null;
     const name = handler.getSelectedPreset();
     if (!name || !Object.prototype.hasOwnProperty.call(handler.presets, name)) return null;
+    const ui = this.getUIComponent(type);
+    const live = type === PresetManager.TYPES.MASTER && typeof handler.captureData === "function"
+      ? handler.captureData()
+      : (ui && typeof ui.getData === "function" ? ui.getData() : null);
     return {
       name,
-      data: handler.presets[name],
+      data: live || handler.presets[name],
       filename: `${slugPresetName(name)}.json`,
     };
   }

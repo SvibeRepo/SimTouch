@@ -121,6 +121,25 @@ const PATTERNS = [
 ];
 
 const BEHAVIORS = ["None", "Fluid", "Swarm", "Automata", "Chain"];
+const SPLINE_MODE = { bands: 0, fill: 1, along: 2 };
+
+function packSpline(mode, contours) {
+  const out = [SPLINE_MODE[mode] ?? 0, contours.length];
+  for (const contour of contours) {
+    const pts = contour.points || [];
+    out.push(pts.length, contour.closed ? 1 : 0);
+    for (const p of pts) out.push(p.x, p.y);
+  }
+  return out;
+}
+
+function sameFloatList(a, b) {
+  if (!a || !b || a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    if (a[i] !== b[i]) return false;
+  }
+  return true;
+}
 
 function num(value, fallback) {
   return typeof value === "number" && Number.isFinite(value) ? value : fallback;
@@ -161,6 +180,8 @@ export class RustCore {
     this.radius = null;
     this._gridValues = null;
     this._field = null;
+    this._lastSplinePack = null;
+    this._splineUploadedEmpty = false;
   }
 
   async init() {
@@ -406,6 +427,16 @@ export class RustCore {
       if (this.core.set_cell_mode) this.core.set_cell_mode(cellMode);
       else if (this.core.set_grid_mode) this.core.set_grid_mode(cellMode);
     }
+
+    const mode = field?.splineMode || turb.splineMode || "bands";
+    const contours = Array.isArray(field?.splineContours) ? field.splineContours : [];
+    const packed = packSpline(mode, contours);
+    const empty = packed.length === 2 && packed[1] === 0;
+    if (!sameFloatList(packed, this._lastSplinePack) || (empty && !this._splineUploadedEmpty)) {
+      this.setSpline(Float32Array.from(packed));
+      this._lastSplinePack = packed;
+      this._splineUploadedEmpty = empty;
+    }
   }
 
   step(dt) {
@@ -426,6 +457,11 @@ export class RustCore {
   setCells(rects) {
     if (!this.ready) return;
     this.core.set_cells(rects);
+  }
+
+  setSpline(data) {
+    if (!this.ready || !this.core.set_spline) return;
+    this.core.set_spline(data);
   }
 
   gridEval(mode, width, height, particleRadius, renderScale, affectScale, collisionGrid) {

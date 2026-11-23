@@ -165,6 +165,9 @@ pub(crate) fn value(x: f32, y: f32, _cx: f32, _cy: f32, freq: f32) -> f32 {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::sync::Mutex;
+
+    static TEST_LOCK: Mutex<()> = Mutex::new(());
 
     fn square() -> Vec<f32> {
         vec![1.0, 1.0, 4.0, 1.0, 0.2, 0.2, 0.8, 0.2, 0.8, 0.8, 0.2, 0.8]
@@ -172,6 +175,7 @@ mod tests {
 
     #[test]
     fn fill_center_and_outside_corner() {
+        let _guard = TEST_LOCK.lock().expect("spline test lock");
         let mut buf = square();
         buf[0] = 1.0;
         set_buffer(&buf);
@@ -181,6 +185,7 @@ mod tests {
 
     #[test]
     fn bands_center_matches_circles_at_distance_0_3() {
+        let _guard = TEST_LOCK.lock().expect("spline test lock");
         let mut buf = square();
         buf[0] = 0.0;
         set_buffer(&buf);
@@ -191,6 +196,7 @@ mod tests {
 
     #[test]
     fn along_bottom_midpoint_uses_arc_0_3() {
+        let _guard = TEST_LOCK.lock().expect("spline test lock");
         let mut buf = square();
         buf[0] = 2.0;
         set_buffer(&buf);
@@ -202,6 +208,7 @@ mod tests {
 
     #[test]
     fn empty_buffer_returns_0_and_checker_math_is_untouched() {
+        let _guard = TEST_LOCK.lock().expect("spline test lock");
         set_buffer(&[]);
         assert_eq!(value(0.5, 0.5, 0.5, 0.5, 2.0), 0.0);
     }

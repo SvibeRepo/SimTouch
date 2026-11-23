@@ -169,6 +169,10 @@ export class TurbulenceField {
     this.patternOffsetX = patternOffsetX;
     this.patternOffsetY = patternOffsetY;
 
+    this.splineMode = "bands";
+    this.splineContours = [];
+    this.splineFile = "";
+
     // Apply pattern-specific offset immediately when initializing with a pattern
     this.applyPatternSpecificOffset();
 
@@ -350,11 +354,22 @@ export class TurbulenceField {
         this._biasAccelY = turbulenceParams._displayBiasAccelY;
       }
 
-      // Check if dependent values need recalculation after updates
-      // For now, let's assume no specific update method is needed beyond what happens in `update` or `applyTurbulence`
-      // If issues arise, we might need to add calls like `applyPatternSpecificOffset()` here.
+      this.setSpline({
+        file: turbulenceParams.splineFile,
+        mode: turbulenceParams.splineMode,
+      });
     }
-    // if(this.db) console.log (`TurbulenceField updated params via event`);
+  }
+
+  setSpline({ file, mode, contours } = {}) {
+    if (typeof file === "string") this.splineFile = file;
+    if (mode === "bands" || mode === "fill" || mode === "along") this.splineMode = mode;
+    if (Array.isArray(contours)) {
+      this.splineContours = contours.map((contour) => ({
+        closed: !!contour.closed,
+        points: (contour.points || []).map((p) => ({ x: p.x, y: p.y })),
+      }));
+    }
   }
 
   // Apply pattern-specific offset based on current pattern style

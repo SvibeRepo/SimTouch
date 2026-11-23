@@ -111,6 +111,10 @@ impl SimCore {
         self.inner.set_cells(rects);
     }
 
+    pub fn set_spline(&mut self, data: &[f32]) {
+        self.inner.set_spline(data);
+    }
+
     pub fn set_grid_mode(&mut self, mode: u32) {
         self.inner.set_grid_mode(mode);
     }

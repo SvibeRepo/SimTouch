@@ -337,13 +337,13 @@ export class PulseModulator {
 
       // Special handling for selector/dropdown type targets
       if (this.isSelector && this.selectorOptions.length > 0) {
-        // Get indices from min/max values
-        const minIndex = Math.floor(this.min);
-        const maxIndex = Math.floor(this.max);
+        // Either slider can be the high end. The window is the span between them.
+        const lowIndex = Math.min(Math.floor(this.min), Math.floor(this.max));
+        const highIndex = Math.max(Math.floor(this.min), Math.floor(this.max));
 
-        if (minIndex === maxIndex) {
+        if (lowIndex === highIndex) {
           // Just use the single allowed value
-          const optionValue = this.selectorOptions[minIndex];
+          const optionValue = this.selectorOptions[lowIndex];
           this.targetController.setValue(optionValue);
         } else {
           // Simple timing based on frequency
@@ -353,17 +353,17 @@ export class PulseModulator {
 
             // Update index based on wave type
             if (waveType === "forward") {
-              // Forward: increment index, wrap from max to min
+              // Forward: increment index, wrap from high to low
               this.currentIndex++;
-              if (this.currentIndex > maxIndex) {
-                this.currentIndex = minIndex;
+              if (this.currentIndex > highIndex) {
+                this.currentIndex = lowIndex;
               }
             }
             else if (waveType === "backward") {
-              // Backward: decrement index, wrap from min to max
+              // Backward: decrement index, wrap from low to high
               this.currentIndex--;
-              if (this.currentIndex < minIndex) {
-                this.currentIndex = maxIndex;
+              if (this.currentIndex < lowIndex) {
+                this.currentIndex = highIndex;
               }
             }
             else if (waveType === "loop") {
@@ -371,19 +371,19 @@ export class PulseModulator {
               this.currentIndex += this.direction;
 
               // Check boundaries and reverse direction if needed
-              if (this.currentIndex > maxIndex) {
-                this.currentIndex = maxIndex - 1; // Go back one step
+              if (this.currentIndex > highIndex) {
+                this.currentIndex = highIndex - 1; // Go back one step
                 this.direction = -1; // Reverse direction
-              } else if (this.currentIndex < minIndex) {
-                this.currentIndex = minIndex + 1; // Go forward one step
+              } else if (this.currentIndex < lowIndex) {
+                this.currentIndex = lowIndex + 1; // Go forward one step
                 this.direction = 1; // Reverse direction
               }
             }
             else {
               // Default behavior (same as forward)
               this.currentIndex++;
-              if (this.currentIndex > maxIndex) {
-                this.currentIndex = minIndex;
+              if (this.currentIndex > highIndex) {
+                this.currentIndex = lowIndex;
               }
             }
 

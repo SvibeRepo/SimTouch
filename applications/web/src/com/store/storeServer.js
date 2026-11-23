@@ -1,6 +1,7 @@
 /**
- * Read-only preset store. Serves applications/web/store on 127.0.0.1:8081.
- * GET /presets/<folder>/ lists *.json names. GET /presets/<folder>/<file>.json returns the file.
+ * Read-only store. Serves applications/web/store on 127.0.0.1:8081.
+ * GET /presets/<folder>/ lists *.json. GET /presets/<folder>/<file>.json returns the file.
+ * GET /splines/ lists *.svg. GET /splines/<file>.svg returns the file.
  */
 import http from "http";
 import fs from "fs";
@@ -20,15 +21,12 @@ const FOLDERS = new Set([
   "grid",
   "randomizer",
 ]);
-const FILE_NAME = /^[a-z0-9]+(?:-[a-z0-9]+)*\.json$/;
-const LAB_ORIGINS = new Set([
-  "http://127.0.0.1:8080",
-  "http://localhost:8080",
-]);
+const JSON_NAME = /^[a-z0-9]+(?:-[a-z0-9]+)*\.json$/;
+const SVG_NAME = /^[^/\\]+\.svg$/i;
 
 function allowOrigin(req, res) {
   const origin = req.headers.origin;
-  if (origin && LAB_ORIGINS.has(origin)) {
+  if (origin && /^https?:\/\/(127\.0\.0\.1|localhost)(:\d+)?$/i.test(origin)) {
     res.setHeader("Access-Control-Allow-Origin", origin);
   }
   res.setHeader("Vary", "Origin");
@@ -42,12 +40,26 @@ function send(res, status, body, type) {
   res.end(body);
 }
 
-function folderFromUrl(url) {
+function underRoot(candidate) {
+  const root = path.resolve(STORE_ROOT);
+  const resolved = path.resolve(candidate);
+  return resolved === root || resolved.startsWith(root + path.sep);
+}
+
+function routeFromUrl(url) {
   const parts = url.pathname.split("/").filter(Boolean);
-  if (parts[0] !== "presets" || parts.length < 2 || parts.length > 3) return null;
-  if (!FOLDERS.has(parts[1])) return null;
-  if (parts.length === 3 && !FILE_NAME.test(parts[2])) return null;
-  return parts;
+  if (parts[0] === "presets") {
+    if (parts.length < 2 || parts.length > 3) return null;
+    if (!FOLDERS.has(parts[1])) return null;
+    if (parts.length === 3 && !JSON_NAME.test(parts[2])) return null;
+    return { kind: "presets", folder: parts[1], file: parts[2] || null };
+  }
+  if (parts[0] === "splines") {
+    if (parts.length > 2) return null;
+    if (parts.length === 2 && !SVG_NAME.test(parts[1])) return null;
+    return { kind: "splines", file: parts[1] || null };
+  }
+  return null;
 }
 
 const server = http.createServer((req, res) => {
@@ -70,23 +82,57 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  const parts = folderFromUrl(url);
-  if (!parts) {
+  const route = routeFromUrl(url);
+  if (!route) {
     send(res, 404, "Not found", "text/plain; charset=utf-8");
     return;
   }
 
-  const dir = path.resolve(STORE_ROOT, "presets", parts[1]);
-  const root = path.resolve(STORE_ROOT);
-  if (!dir.startsWith(root + path.sep)) {
-    send(res, 400, "Bad request", "text/plain; charset=utf-8");
+  if (route.kind === "presets") {
+    const dir = path.resolve(STORE_ROOT, "presets", route.folder);
+    if (!underRoot(dir)) {
+      send(res, 400, "Bad request", "text/plain; charset=utf-8");
+      return;
+    }
+    if (!route.file) {
+      let names = [];
+      try {
+        names = fs.readdirSync(dir).filter((name) => JSON_NAME.test(name)).sort();
+      } catch (error) {
+        if (error.code !== "ENOENT") {
+          send(res, 500, "Store read failed", "text/plain; charset=utf-8");
+          return;
+        }
+      }
+      send(res, 200, JSON.stringify(names), "application/json; charset=utf-8");
+      return;
+    }
+    const filePath = path.resolve(dir, route.file);
+    if (!underRoot(filePath) || !filePath.startsWith(dir + path.sep)) {
+      send(res, 400, "Bad request", "text/plain; charset=utf-8");
+      return;
+    }
+    try {
+      send(res, 200, fs.readFileSync(filePath), "application/json; charset=utf-8");
+    } catch (error) {
+      if (error.code === "ENOENT") {
+        send(res, 404, "Not found", "text/plain; charset=utf-8");
+        return;
+      }
+      send(res, 500, "Store read failed", "text/plain; charset=utf-8");
+    }
     return;
   }
 
-  if (parts.length === 2) {
+  const dir = path.resolve(STORE_ROOT, "splines");
+  if (!underRoot(dir)) {
+    send(res, 400, "Bad request", "text/plain; charset=utf-8");
+    return;
+  }
+  if (!route.file) {
     let names = [];
     try {
-      names = fs.readdirSync(dir).filter((name) => FILE_NAME.test(name)).sort();
+      names = fs.readdirSync(dir).filter((name) => SVG_NAME.test(name)).sort();
     } catch (error) {
       if (error.code !== "ENOENT") {
         send(res, 500, "Store read failed", "text/plain; charset=utf-8");
@@ -96,15 +142,13 @@ const server = http.createServer((req, res) => {
     send(res, 200, JSON.stringify(names), "application/json; charset=utf-8");
     return;
   }
-
-  const filePath = path.resolve(dir, parts[2]);
-  if (!filePath.startsWith(dir + path.sep)) {
+  const filePath = path.resolve(dir, route.file);
+  if (!underRoot(filePath) || !filePath.startsWith(dir + path.sep)) {
     send(res, 400, "Bad request", "text/plain; charset=utf-8");
     return;
   }
   try {
-    const body = fs.readFileSync(filePath);
-    send(res, 200, body, "application/json; charset=utf-8");
+    send(res, 200, fs.readFileSync(filePath), "image/svg+xml; charset=utf-8");
   } catch (error) {
     if (error.code === "ENOENT") {
       send(res, 404, "Not found", "text/plain; charset=utf-8");

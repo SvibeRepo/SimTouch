@@ -105,7 +105,7 @@ export class PulseModulationUi extends BaseUi {
 
     const bpmSlider = document.createElement("input");
     bpmSlider.type = "range";
-    bpmSlider.min = "1";
+    bpmSlider.min = "0";
     bpmSlider.max = "220";
     bpmSlider.step = "1";
     bpmSlider.value = this.masterBpm.toString();
@@ -127,7 +127,7 @@ export class PulseModulationUi extends BaseUi {
       if (isNaN(value)) {
         value = this.masterBpm;
       } else {
-        value = Math.max(1, Math.min(220, value));
+        value = Math.max(0, Math.min(220, value));
       }
 
       // Update displayed value
@@ -532,16 +532,12 @@ export class PulseModulationUi extends BaseUi {
     // // Store reference to the frequency controller
     // modulator._uiElements.frequencyController = frequencyController;
 
-    // Add BPM controller
+    // Add BPM controller. The Hz slider is gone, so this writes frequency directly.
     const bpmController = folder
-      .add(modulator, "frequencyBpm", 0.5, 300)
+      .add(modulator, "frequencyBpm", 0, 300)
       .name("BPM")
       .onChange((value) => {
-        // Update Hz frequency based on BPM
         modulator.frequency = this.bpmToHz(value);
-
-        // Update frequency slider
-        frequencyController.setValue(modulator.frequency);
       });
 
     // Store reference to the BPM controller
@@ -571,26 +567,10 @@ export class PulseModulationUi extends BaseUi {
     // Add phase control
     folder.add(modulator, "phase", 0, 1).name("Phase");
 
-    // Add min/max controls
-    const minController = folder
-      .add(modulator, "min", 0, 1)
-      .name("Min Value")
-      .onChange((value) => {
-        if (value > modulator.max) {
-          modulator.min = modulator.max;
-          minController.updateDisplay();
-        }
-      });
-
-    const maxController = folder
-      .add(modulator, "max", 0, 1)
-      .name("Max Value")
-      .onChange((value) => {
-        if (value < modulator.min) {
-          modulator.max = modulator.min;
-          maxController.updateDisplay();
-        }
-      });
+    // Min and max are independent. A min above max inverts the sweep.
+    // The target dropdown's onChange closes over these controllers.
+    const minController = folder.add(modulator, "min", 0, 1).name("Min Value");
+    const maxController = folder.add(modulator, "max", 0, 1).name("Max Value");
 
     // Create Remove button to delete the modulator
     const removeButton = { remove: () => this.removeModulator(index) };

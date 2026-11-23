@@ -488,7 +488,7 @@ export class ModulatorManager {
   }
 
   getMasterFrequency() {
-    return this.masterFrequency || 1.0;
+    return typeof this.masterFrequency === "number" ? this.masterFrequency : 1.0;
   }
 
   // Helper method to register targets

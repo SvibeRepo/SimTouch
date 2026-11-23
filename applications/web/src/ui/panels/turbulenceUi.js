@@ -3,6 +3,12 @@ import { PresetManager } from "../../presets/presetManager.js";
 import { NoisePreviewManager } from "../../util/noisePreviewManager.js";
 import { eventBus } from '../../util/eventManager.js';
 import { debugManager } from '../../util/debugManager.js';
+import { presetFlags } from '../../presets/presetFlags.js';
+import {
+  flattenSvg,
+  loadSplineFile,
+  loadSplineList,
+} from '../../splines/spline_loader.js';
 
 export class TurbulenceUi extends BaseUi {
   constructor(main, container) {
@@ -22,6 +28,12 @@ export class TurbulenceUi extends BaseUi {
     this.isTurbulenceFolderOpen = true;
     this.isNoiseFolderOpen = true;
     this.isPreviewsFolderOpen = true;
+    this.isSplineFolderOpen = false;
+    this._folderSwitchGuard = false;
+    this._splinePreviewRaf = null;
+    this._splineDiskName = "";
+    this._lastPatternStyle = String(main.simParams?.turbulence?.patternStyle || "checkerboard").toLowerCase();
+    this._patternBeforeSpline = "";
 
     this.refreshEnabled = true;
 
@@ -259,6 +271,11 @@ export class TurbulenceUi extends BaseUi {
       previewsContent.appendChild(previewContainer);
     }
 
+    const splineFolder = noiseFolder.addFolder("Spline");
+    this.splineFolder = splineFolder;
+    splineFolder.close();
+    this._buildSplineFolder(splineFolder, turbulenceParams, turbulenceField);
+
     // Create Pattern Control folder
     const patternControlsFolder = noiseFolder.addFolder("Pattern Control");
     this.patternControlsFolder = patternControlsFolder;
@@ -305,7 +322,15 @@ export class TurbulenceUi extends BaseUi {
         "Spline": "spline"
       })
       .onChange((value) => {
+        if (this._settingPattern) return;
         eventBus.emit('uiControlChanged', { paramPath: 'turbulence.patternStyle', value });
+        const style = String(value || "").toLowerCase();
+        if (style === "spline" && this._lastPatternStyle && this._lastPatternStyle !== "spline") {
+          this._patternBeforeSpline = this._lastPatternStyle;
+        }
+        this._lastPatternStyle = style;
+        if (style === "spline") this._openSplineClosePreviews();
+        else this._openPreviewsCloseSpline();
         // Keep preview manager update
         if (this.previewManager) {
           this.previewManager.setSelectedPattern(value);
@@ -542,10 +567,24 @@ export class TurbulenceUi extends BaseUi {
       if (e.target.closest('.title')) {
         // Use setTimeout to let the DOM update before checking state
         setTimeout(() => {
+          if (this._folderSwitchGuard) return;
           const isOpen = !previewsFolder.domElement.classList.contains('closed');
           if (this.previewManager) {
             this.previewManager.setFolderOpen(isOpen);
           }
+          if (isOpen) this._openPreviewsCloseSpline(true);
+          else this._stopSplinePreview();
+        }, 0);
+      }
+    });
+
+    splineFolder.domElement.addEventListener('click', (e) => {
+      if (e.target.closest('.title')) {
+        setTimeout(() => {
+          if (this._folderSwitchGuard) return;
+          const isOpen = !splineFolder.domElement.classList.contains('closed');
+          if (isOpen) this._openSplineClosePreviews(true);
+          else this._stopSplinePreview();
         }, 0);
       }
     });
@@ -555,6 +594,7 @@ export class TurbulenceUi extends BaseUi {
     const folderObserver = new MutationObserver((mutations) => {
       for (const mutation of mutations) {
         if (mutation.attributeName === 'class') {
+          if (this._folderSwitchGuard) break;
           const isOpen = !previewsFolder.domElement.classList.contains('closed');
           if (this.previewManager) {
             this.previewManager.setFolderOpen(isOpen);
@@ -714,6 +754,7 @@ export class TurbulenceUi extends BaseUi {
     if (this.turbulencePullFactorController) targets["T-Pull Mode"] = this.turbulencePullFactorController;
 
     if (this.turbulencePatternStyleController) targets["T-PatternStyle"] = this.turbulencePatternStyleController;
+    if (this.splineModeController) targets["T-SplineLook"] = this.splineModeController;
     if (this.turbulencePatternFrequencyController) targets["T-Freq"] = this.turbulencePatternFrequencyController;
     if (this.turbulencePhaseController) targets["T-PhaseSp"] = this.turbulencePhaseController;
     if (this.turbulenceStaticPhaseController) targets["T-Phase"] = this.turbulenceStaticPhaseController;
@@ -789,6 +830,348 @@ export class TurbulenceUi extends BaseUi {
     this.turbulenceSeparationController?.show(visible);
   }
 
+  _buildSplineFolder(splineFolder, turbulenceParams, turbulenceField) {
+    if (turbulenceParams.splineMode === undefined) turbulenceParams.splineMode = "bands";
+    if (turbulenceParams.splineFile === undefined) turbulenceParams.splineFile = "";
+
+    const content = splineFolder.domElement.querySelector(".children");
+    const canvas = document.createElement("canvas");
+    canvas.className = "spline-preview-canvas";
+    canvas.width = 48;
+    canvas.height = 48;
+    canvas.style.width = "100%";
+    canvas.style.display = "block";
+    canvas.style.marginBottom = "8px";
+    this.splinePreviewCanvas = canvas;
+    if (content) content.appendChild(canvas);
+
+    this.splineModeController = splineFolder
+      .add(turbulenceParams, "splineMode", { Bands: "bands", Fill: "fill", Along: "along" })
+      .name("Look")
+      .onChange((value) => {
+        eventBus.emit("uiControlChanged", { paramPath: "turbulence.splineMode", value });
+        turbulenceField.setSpline({ mode: value });
+        this._drawSplinePreview();
+      });
+
+    const fileRow = document.createElement("div");
+    fileRow.className = "spline-file-row";
+    fileRow.style.display = "flex";
+    fileRow.style.gap = "6px";
+    fileRow.style.alignItems = "center";
+    fileRow.style.margin = "6px 0";
+
+    const select = document.createElement("select");
+    select.className = "spline-file-select";
+    select.style.flex = "1";
+    const emptyOpt = document.createElement("option");
+    emptyOpt.value = "";
+    emptyOpt.textContent = "(store file)";
+    select.appendChild(emptyOpt);
+    this.splineFileSelect = select;
+
+    const openButton = document.createElement("button");
+    openButton.type = "button";
+    openButton.textContent = "Open";
+    this.splineOpenButton = openButton;
+
+    const diskLabel = document.createElement("span");
+    diskLabel.className = "spline-disk-label";
+    diskLabel.style.fontSize = "11px";
+    diskLabel.style.opacity = "0.8";
+    this.splineDiskLabel = diskLabel;
+
+    fileRow.appendChild(select);
+    fileRow.appendChild(openButton);
+    if (content) {
+      content.appendChild(fileRow);
+      content.appendChild(diskLabel);
+    }
+
+    const fileInput = document.createElement("input");
+    fileInput.type = "file";
+    fileInput.accept = ".svg,image/svg+xml";
+    fileInput.style.display = "none";
+    this.splineFileInput = fileInput;
+    if (content) content.appendChild(fileInput);
+
+    select.addEventListener("change", async () => {
+      const name = select.value;
+      const chosen = select.selectedOptions[0];
+      if (!name || chosen?.dataset.disk === "1") return;
+      const loadId = this._beginSplineLoad();
+      turbulenceField.setSpline({ file: name, contours: [] });
+      try {
+        const text = await loadSplineFile(presetFlags.storeOrigin, name);
+        if (loadId !== this._splineLoadId) return;
+        this._applySplineSvg(text, name, false);
+      } catch (error) {
+        if (loadId === this._splineLoadId) console.warn("Failed to load store spline", error);
+      }
+    });
+
+    openButton.addEventListener("click", () => fileInput.click());
+    fileInput.addEventListener("change", async () => {
+      const file = fileInput.files && fileInput.files[0];
+      fileInput.value = "";
+      if (!file) return;
+      const loadId = this._beginSplineLoad();
+      turbulenceField.setSpline({ file: "", contours: [] });
+      try {
+        const text = await file.text();
+        if (loadId !== this._splineLoadId) return;
+        this._applySplineSvg(text, file.name, true);
+      } catch (error) {
+        if (loadId === this._splineLoadId) console.warn("Failed to open spline file", error);
+      }
+    });
+
+    this._refreshSplineFileList(turbulenceParams.splineFile);
+    const session = this._readSplineSession();
+    const storedSvg = turbulenceParams.splineSvg || session.svg;
+    if (storedSvg) {
+      const name = turbulenceParams.splineFile || session.name || session.file || "";
+      this._applySplineSvg(storedSvg, name, !turbulenceParams.splineFile && !session.file);
+    } else if (turbulenceParams.splineFile) {
+      this._loadStoreSpline(turbulenceParams.splineFile);
+    }
+  }
+
+  _rememberSplineSvg(svg, file, disk) {
+    const params = this.main?.simParams?.turbulence;
+    if (!params) return;
+    params.splineSvg = svg || "";
+    params.splineFile = disk ? "" : (file || "");
+    try {
+      localStorage.setItem("svibeSpline", JSON.stringify({
+        file: params.splineFile,
+        name: file || "",
+        svg: params.splineSvg,
+        mode: params.splineMode || "bands",
+      }));
+    } catch (error) {
+      console.warn("Could not store spline SVG", error);
+    }
+  }
+
+  _readSplineSession() {
+    try {
+      const raw = localStorage.getItem("svibeSpline");
+      if (!raw) return {};
+      const parsed = JSON.parse(raw);
+      return parsed && typeof parsed === "object" ? parsed : {};
+    } catch {
+      return {};
+    }
+  }
+
+  _applySplineSvg(svg, file, disk) {
+    const params = this.main?.simParams?.turbulence;
+    const field = this.main?.turbulenceField;
+    if (!params || !field) return;
+    const contours = svg ? flattenSvg(svg) : [];
+    this._rememberSplineSvg(svg, file, disk);
+    field.setSpline({ file: params.splineFile, contours });
+    this._showSplineChoice(file || "svg", { disk: !!disk });
+    this._drawSplinePreview();
+    eventBus.emit("uiControlChanged", { paramPath: "turbulence.splineFile", value: params.splineFile });
+  }
+
+  _showSplineChoice(name, { disk } = { disk: false }) {
+    const select = this.splineFileSelect;
+    if (!select) return;
+    if (!name) {
+      select.value = "";
+      this._setDiskLabel("");
+      return;
+    }
+    let opt = [...select.options].find((o) => o.value === name);
+    if (!opt) {
+      opt = document.createElement("option");
+      opt.value = name;
+      select.appendChild(opt);
+    }
+    opt.textContent = disk ? `${name} (this session)` : name;
+    opt.dataset.disk = disk ? "1" : "";
+    select.value = name;
+    this._setDiskLabel(disk ? name : "");
+  }
+
+  _setDiskLabel(name) {
+    this._splineDiskName = name || "";
+    if (this.splineDiskLabel) {
+      this.splineDiskLabel.textContent = "";
+    }
+  }
+
+  async _refreshSplineFileList(selected) {
+    if (!this.splineFileSelect) return;
+    const select = this.splineFileSelect;
+    const current = select.selectedOptions[0];
+    const keepDisk = current?.dataset.disk === "1" ? current.value : "";
+    const keep = keepDisk || selected || (current && current.value) || "";
+    while (select.options.length > 1) select.remove(1);
+    try {
+      const names = await loadSplineList(presetFlags.storeOrigin);
+      for (const name of names) {
+        const opt = document.createElement("option");
+        opt.value = name;
+        opt.textContent = name;
+        select.appendChild(opt);
+      }
+    } catch (error) {
+      console.warn("Spline store list unavailable", error);
+    }
+    if (keepDisk) this._showSplineChoice(keepDisk, { disk: true });
+    else if (keep) this._showSplineChoice(keep, { disk: false });
+  }
+
+  _beginSplineLoad() {
+    this._splineLoadId = (this._splineLoadId || 0) + 1;
+    return this._splineLoadId;
+  }
+
+  async _loadStoreSpline(name) {
+    if (!name || !this.main?.turbulenceField) return;
+    const loadId = this._beginSplineLoad();
+    this.main.turbulenceField.setSpline({ file: name, contours: [] });
+    try {
+      const text = await loadSplineFile(presetFlags.storeOrigin, name);
+      if (loadId !== this._splineLoadId) return;
+      this._applySplineSvg(text, name, false);
+    } catch (error) {
+      if (loadId !== this._splineLoadId) return;
+      console.warn("Failed to restore store spline", error);
+      this.main.turbulenceField.setSpline({ contours: [] });
+    }
+  }
+
+  _patternChoices() {
+    const select = this.turbulencePatternStyleController?.domElement?.querySelector("select");
+    const listed = [];
+    if (select) {
+      for (const opt of select.options) {
+        if (opt.value && opt.value !== "spline") listed.push(opt.value);
+      }
+    }
+    return listed.length ? listed : ["checkerboard"];
+  }
+
+  _setPatternStyle(style) {
+    const params = this.main?.simParams?.turbulence;
+    const field = this.main?.turbulenceField;
+    if (!params || !field || !style) return;
+    this._settingPattern = true;
+    try {
+      params.patternStyle = style;
+      field.patternStyle = style;
+      this.turbulencePatternStyleController?.setValue(style);
+      this.turbulencePatternStyleController?.updateDisplay();
+      eventBus.emit("uiControlChanged", { paramPath: "turbulence.patternStyle", value: style });
+      field.applyPatternSpecificOffset?.();
+    } finally {
+      this._settingPattern = false;
+    }
+  }
+
+  _openSplineClosePreviews(fromClick = false) {
+    if (this._folderSwitchGuard) return;
+    this._folderSwitchGuard = true;
+    try {
+      const current = String(this.main?.simParams?.turbulence?.patternStyle || "").toLowerCase();
+      if (current && current !== "spline") this._patternBeforeSpline = current;
+      this._setPatternStyle("spline");
+      this._lastPatternStyle = "spline";
+      if (this.previewsFolder && !this.previewsFolder.domElement.classList.contains("closed")) {
+        this.previewsFolder.close();
+      }
+      this.previewManager?.setFolderOpen(false);
+      if (this.splineFolder && this.splineFolder.domElement.classList.contains("closed")) {
+        this.splineFolder.open();
+      }
+      this.isSplineFolderOpen = true;
+      this.isPreviewsFolderOpen = false;
+      this._startSplinePreview();
+    } finally {
+      setTimeout(() => { this._folderSwitchGuard = false; }, 0);
+    }
+  }
+
+  _openPreviewsCloseSpline(fromClick = false) {
+    if (this._folderSwitchGuard) return;
+    this._folderSwitchGuard = true;
+    try {
+      const current = String(this.main?.simParams?.turbulence?.patternStyle || "").toLowerCase();
+      if (current === "spline") {
+        const choices = this._patternChoices();
+        const previous = this._patternBeforeSpline;
+        const next = previous && previous !== "spline" && choices.includes(previous)
+          ? previous
+          : choices[Math.floor(Math.random() * choices.length)];
+        this._patternBeforeSpline = "";
+        this._setPatternStyle(next);
+      }
+      if (this.splineFolder && !this.splineFolder.domElement.classList.contains("closed")) {
+        this.splineFolder.close();
+      }
+      this._stopSplinePreview();
+      if (!fromClick && this.previewsFolder && this.previewsFolder.domElement.classList.contains("closed")) {
+        this.previewsFolder.open();
+      }
+      const open = this.previewsFolder && !this.previewsFolder.domElement.classList.contains("closed");
+      this.previewManager?.setFolderOpen(!!open);
+      this.isSplineFolderOpen = false;
+      this.isPreviewsFolderOpen = !!open;
+    } finally {
+      setTimeout(() => { this._folderSwitchGuard = false; }, 0);
+    }
+  }
+
+  _startSplinePreview() {
+    if (this._splinePreviewRaf) return;
+    let last = 0;
+    const tick = (now) => {
+      if (now - last >= 66) {
+        last = now;
+        this._drawSplinePreview();
+      }
+      this._splinePreviewRaf = requestAnimationFrame(tick);
+    };
+    this._splinePreviewRaf = requestAnimationFrame(tick);
+  }
+
+  _stopSplinePreview() {
+    if (this._splinePreviewRaf) {
+      cancelAnimationFrame(this._splinePreviewRaf);
+      this._splinePreviewRaf = null;
+    }
+  }
+
+  _drawSplinePreview() {
+    const canvas = this.splinePreviewCanvas;
+    const field = this.main?.turbulenceField;
+    if (!canvas || !field?.noise2D) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    const { width, height } = canvas;
+    const image = ctx.createImageData(width, height);
+    const data = image.data;
+    for (let y = 0; y < height; y++) {
+      const ny = 1 - y / height;
+      for (let x = 0; x < width; x++) {
+        const nx = x / width;
+        const v = field.noise2D(nx, ny, field.time, false);
+        const tone = Math.max(0, Math.min(255, Math.floor(((v + 1) * 0.5) * 255)));
+        const i = (y * width + x) * 4;
+        data[i] = tone;
+        data[i + 1] = tone;
+        data[i + 2] = tone;
+        data[i + 3] = 255;
+      }
+    }
+    ctx.putImageData(image, 0, 0);
+  }
+
   getData() {
     const controllers = {};
     const targets = this.getControlTargets();
@@ -804,7 +1187,14 @@ export class TurbulenceUi extends BaseUi {
       }
     }
 
-    return { controllers };
+    if (this.splineModeController) {
+      controllers["T-SplineLook"] = this.splineModeController.getValue();
+    }
+    const splineFile = this.main?.simParams?.turbulence?.splineFile || "";
+    const splineSvg = this.main?.simParams?.turbulence?.splineSvg || "";
+    controllers["T-SplineFile"] = splineFile;
+
+    return { controllers, splineFile, splineSvg };
   }
 
   setData(data) {
@@ -837,9 +1227,10 @@ export class TurbulenceUi extends BaseUi {
 
     try {
       const targets = this.getControlTargets();
+      const controllers = data.controllers;
 
       // Apply values from preset to controllers
-      for (const [key, value] of Object.entries(data.controllers)) {
+      for (const [key, value] of Object.entries(controllers)) {
         if (!targets[key]) continue;
 
         try {
@@ -847,6 +1238,27 @@ export class TurbulenceUi extends BaseUi {
         } catch (e) {
           console.warn(`Error setting value for controller ${key}:`, e);
         }
+      }
+
+      const look = controllers["T-SplineLook"];
+      const file = data.splineFile || controllers["T-SplineFile"] || "";
+      const svg = data.splineSvg || "";
+      if (this.main?.simParams?.turbulence) {
+        if (look === "bands" || look === "fill" || look === "along") {
+          this.main.simParams.turbulence.splineMode = look;
+          this.splineModeController?.setValue(look);
+        }
+      }
+      if (svg) {
+        const disk = !file;
+        this._applySplineSvg(svg, file, disk);
+      } else if (file) {
+        this._loadStoreSpline(file);
+      } else {
+        this._rememberSplineSvg("", "", false);
+        this.main?.turbulenceField?.setSpline({ file: "", contours: [] });
+        if (this.splineFileSelect) this.splineFileSelect.value = "";
+        this._setDiskLabel("");
       }
 
       this.updateControllerDisplays();
@@ -858,6 +1270,9 @@ export class TurbulenceUi extends BaseUi {
       // Always reset bias when loading any preset
       this.resetBias();
       this.previewManager?.refreshInactivePreviews();
+      const style = String(this.main?.simParams?.turbulence?.patternStyle || "").toLowerCase();
+      if (style === "spline") this._openSplineClosePreviews();
+      else this._drawSplinePreview();
 
       return true;
     } catch (error) {
@@ -896,6 +1311,7 @@ export class TurbulenceUi extends BaseUi {
   }
 
   dispose() {
+    this._stopSplinePreview();
     if (this.previewFolderObserver) {
       this.previewFolderObserver.disconnect();
       this.previewFolderObserver = null;

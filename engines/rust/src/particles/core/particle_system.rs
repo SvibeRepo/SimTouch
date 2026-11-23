@@ -479,6 +479,10 @@ impl ParticleSystem {
         self.grid.set_cells(rects);
     }
 
+    pub fn set_spline(&mut self, data: &[f32]) {
+        crate::particles::turbulences::set_spline_buffer(data);
+    }
+
     /// Write one float per uploaded cell. Does not step particles.
     pub fn grid_eval(
         &mut self,
