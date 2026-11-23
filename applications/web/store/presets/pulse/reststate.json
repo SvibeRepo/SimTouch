@@ -1,0 +1,20 @@
+{
+  "name": "RestState",
+  "data": {
+    "modulators": [
+      {
+        "type": "sawtooth",
+        "enabled": true,
+        "frequency": 1,
+        "amplitude": 1,
+        "phase": 0,
+        "waveform": "sine",
+        "min": 0,
+        "max": 3,
+        "targetName": "C-RestState",
+        "sync": true,
+        "frequencyBpm": 85
+      }
+    ]
+  }
+}

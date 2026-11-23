@@ -1,0 +1,13 @@
+{
+  "name": "Zero",
+  "data": {
+    "controllers": {
+      "V-Strength": 0,
+      "V-CellSpeed": 0,
+      "V-EdgeWidth": 0.1,
+      "V-Attract": 0,
+      "V-CellCount": 1,
+      "V-Decay": 0.9
+    }
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "name": "None",
+  "data": {
+    "voronoi": {
+      "controllers": [
+        {
+          "property": "strength",
+          "value": 0
+        }
+      ]
+    }
+  }
+}

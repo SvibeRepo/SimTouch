@@ -2,6 +2,7 @@ import { BaseUi } from "../baseUi.js";
 import { PresetManager } from "../../presets/presetManager.js";
 import { askPresetName } from "../../presets/presetNameDialog.js";
 import { debugManager } from '../../util/debugManager.js';
+import { presetFlags } from '../../presets/presetFlags.js';
 
 export class PresetUi extends BaseUi {
   constructor(main, container) {
@@ -35,6 +36,13 @@ export class PresetUi extends BaseUi {
     // Clear existing elements
     containerElement.innerHTML = "";
 
+    if (this.presetManager.storeReachable === false) {
+      const note = document.createElement("div");
+      note.className = "preset-store-notice";
+      note.textContent = "Preset store is unreachable.";
+      containerElement.appendChild(note);
+    }
+
     const actionsContainer = this._createActionButtons(containerElement);
     const presetSelect = this._createPresetSelector(containerElement);
     const navContainer = this._createNavigationControls(containerElement);
@@ -63,8 +71,11 @@ export class PresetUi extends BaseUi {
       const name = await askPresetName("Enter preset name:", defaultValue);
 
       if (name) {
-        this.presetManager.savePreset(PresetManager.TYPES.MASTER, name);
+        const saved = this.presetManager.savePreset(PresetManager.TYPES.MASTER, name);
         this.updatePresetDropdown(this.presetControls.selector);
+        if (!saved) {
+          alert(presetFlags.useLocalStorage ? "Failed to save preset." : "Save refused. Working presets are off.");
+        }
       }
     });
 
@@ -78,27 +89,7 @@ export class PresetUi extends BaseUi {
 
     const exportButton = this._createButton("Export", () => {
       try {
-        const exportData = this.presetManager.exportPresets();
-
-        // Create a data URL for the JSON file
-        const blob = new Blob([exportData], { type: "application/json" });
-        const url = URL.createObjectURL(blob);
-
-        // Create a temporary link to download the file
-        const link = document.createElement("a");
-        link.href = url;
-        link.download = `svibe_presets_${new Date()
-          .toISOString()
-          .slice(0, 10)}.json`;
-        link.style.display = "none";
-        document.body.appendChild(link);
-        link.click();
-
-        // Clean up
-        setTimeout(() => {
-          URL.revokeObjectURL(url);
-          document.body.removeChild(link);
-        }, 100);
+        this.presetManager.downloadSelected(PresetManager.TYPES.MASTER);
       } catch (error) {
         console.error("Export failed:", error);
         alert("Export failed: " + error.message);
@@ -106,54 +97,9 @@ export class PresetUi extends BaseUi {
     });
 
     const importButton = this._createButton("Import", () => {
-      // Create a file input element
-      const fileInput = document.createElement("input");
-      fileInput.type = "file";
-      fileInput.accept = ".json";
-      fileInput.style.display = "none";
-      document.body.appendChild(fileInput);
-
-      fileInput.addEventListener("change", (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-
-        const reader = new FileReader();
-        reader.onload = (event) => {
-          // Create import options dialog
-          const shouldMerge = confirm(
-            "Would you like to merge with existing presets?\n\n" +
-            "• Click OK to merge (keep existing presets)\n" +
-            "• Click Cancel to replace all presets"
-          );
-
-          const result = this.presetManager.importPresets(event.target.result, {
-            merge: shouldMerge,
-          });
-
-          if (result.success) {
-            alert(
-              `Successfully imported presets:\n` +
-              `• ${result.count} preset type(s) updated\n` +
-              `• Types: ${result.types.join(", ")}`
-            );
-            this.updatePresetDropdown(this.presetControls.selector);
-          } else {
-            alert(`Import failed: ${result.error || "Unknown error"}`);
-          }
-        };
-
-        reader.onerror = (error) => {
-          console.error("File reading error:", error);
-          alert("Failed to read file");
-        };
-
-        reader.readAsText(file);
-
-        // Remove the file input after use
-        document.body.removeChild(fileInput);
+      this.presetManager._pickImportFile(PresetManager.TYPES.MASTER, () => {
+        this.updatePresetDropdown(this.presetControls.selector);
       });
-
-      fileInput.click();
     });
 
     actionsContainer.appendChild(saveButton);

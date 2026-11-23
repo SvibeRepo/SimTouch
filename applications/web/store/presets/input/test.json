@@ -1,0 +1,23 @@
+{
+  "name": "Test",
+  "data": {
+    "enabled": true,
+    "sensitivity": 1,
+    "modulators": [
+      {
+        "type": "input",
+        "inputSource": "mic",
+        "enabled": true,
+        "frequencyBand": "lowMid",
+        "sensitivity": 0.97,
+        "smoothing": 0.7,
+        "threshold": 0,
+        "min": 0.01,
+        "max": 0.5,
+        "targetName": "FadOutSpd",
+        "customFreq": 1000,
+        "customWidth": 100
+      }
+    ]
+  }
+}

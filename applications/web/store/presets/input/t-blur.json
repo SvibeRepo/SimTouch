@@ -1,0 +1,25 @@
+{
+  "name": "T-Blur",
+  "data": {
+    "enabled": true,
+    "sensitivity": 5,
+    "modulators": [
+      {
+        "type": "input",
+        "inputSource": "mic",
+        "enabled": true,
+        "frequencyBand": "Mid",
+        "sensitivity": 0.55,
+        "smoothing": 0.7,
+        "attack": 0,
+        "release": 0.9,
+        "threshold": 0.28,
+        "min": 1.68,
+        "max": 0,
+        "targetName": "T-Blur",
+        "customFreq": 1000,
+        "customWidth": 100
+      }
+    ]
+  }
+}

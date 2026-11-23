@@ -1,0 +1,33 @@
+{
+  "name": "WaveShare | C | 240x240 | 338",
+  "data": {
+    "screen": {
+      "width": 240,
+      "height": 240,
+      "shape": "circular"
+    },
+    "gridSpecs": {
+      "targetCellCount": 338,
+      "gap": 1,
+      "aspectRatio": 1,
+      "scale": 1,
+      "allowCut": 3,
+      "centerOffsetX": 0,
+      "centerOffsetY": 0
+    },
+    "shadow": {
+      "shadowIntensity": 0.17,
+      "shadowThreshold": 0,
+      "blurAmount": 0.23
+    },
+    "flags": {
+      "showGridCells": true,
+      "showIndices": false,
+      "showCellCenters": false,
+      "showBoundary": false
+    },
+    "colors": {
+      "gradientPreset": "c0"
+    }
+  }
+}

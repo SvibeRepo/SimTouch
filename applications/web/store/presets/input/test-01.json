@@ -1,0 +1,51 @@
+{
+  "name": "Test_01",
+  "data": {
+    "enabled": true,
+    "sensitivity": 5.1,
+    "modulators": [
+      {
+        "type": "input",
+        "inputSource": "mic",
+        "enabled": true,
+        "frequencyBand": "custom",
+        "sensitivity": 1,
+        "smoothing": 0.88,
+        "threshold": 0,
+        "min": 0,
+        "max": 1,
+        "targetName": "T-RotSpd",
+        "customFreq": 2240,
+        "customWidth": 270
+      },
+      {
+        "type": "input",
+        "inputSource": "mic",
+        "enabled": true,
+        "frequencyBand": "bass",
+        "sensitivity": 0.5,
+        "smoothing": 0.33,
+        "threshold": 0,
+        "min": 10,
+        "max": 3.81,
+        "targetName": "Sensitivity",
+        "customFreq": 1000,
+        "customWidth": 100
+      },
+      {
+        "type": "input",
+        "inputSource": "mic",
+        "enabled": true,
+        "frequencyBand": "highMid",
+        "sensitivity": 1,
+        "smoothing": 0.7,
+        "threshold": 0,
+        "min": 1.19,
+        "max": 4,
+        "targetName": "SimSpeed",
+        "customFreq": 1000,
+        "customWidth": 100
+      }
+    ]
+  }
+}

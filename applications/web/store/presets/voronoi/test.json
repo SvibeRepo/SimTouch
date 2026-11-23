@@ -1,0 +1,13 @@
+{
+  "name": "Test",
+  "data": {
+    "controllers": {
+      "V-Strength": 5.27,
+      "V-CellSpeed": 2.04,
+      "V-EdgeWidth": 29.3412,
+      "V-Attract": 4.08,
+      "V-CellCount": 5,
+      "V-Decay": 0.946
+    }
+  }
+}

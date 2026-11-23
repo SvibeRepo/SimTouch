@@ -1,0 +1,57 @@
+{
+  "name": "Jarred",
+  "data": {
+    "enabled": true,
+    "sensitivity": 8.9,
+    "modulators": [
+      {
+        "type": "input",
+        "inputSource": "mic",
+        "enabled": true,
+        "frequencyBand": "Presence",
+        "sensitivity": 0.37,
+        "smoothing": 0.7,
+        "attack": 0.3,
+        "release": 0.7,
+        "threshold": 0,
+        "min": 7.59,
+        "max": 1.6,
+        "targetName": "Sensitivity",
+        "customFreq": 1000,
+        "customWidth": 100
+      },
+      {
+        "type": "input",
+        "inputSource": "mic",
+        "enabled": true,
+        "frequencyBand": "Custom",
+        "sensitivity": 0.3,
+        "smoothing": 0.7,
+        "attack": 0.56,
+        "release": 0,
+        "threshold": 0.47,
+        "min": 0,
+        "max": 1,
+        "targetName": "T-Phase",
+        "customFreq": 1000,
+        "customWidth": 100
+      },
+      {
+        "type": "input",
+        "inputSource": "mic",
+        "enabled": true,
+        "frequencyBand": "None",
+        "sensitivity": 1,
+        "smoothing": 0.7,
+        "attack": 0.3,
+        "release": 0.7,
+        "threshold": 0,
+        "min": 0,
+        "max": 10,
+        "targetName": "T-Strength",
+        "customFreq": 1000,
+        "customWidth": 100
+      }
+    ]
+  }
+}

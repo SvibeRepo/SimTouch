@@ -5,8 +5,9 @@
   "type": "module",
   "main": "src/main.js",
   "scripts": {
-    "start": "concurrently \"npm run server\" \"npm run client\"",
+    "start": "concurrently \"npm run server\" \"npm run store\" \"npm run client\"",
     "server": "node src/com/udp/server/server.js",
+    "store": "node src/com/store/storeServer.js",
     "client": "node scripts/link-javascript-core.mjs && live-server src --port=8080 --no-browser",
     "dev": "npm run start",
     "build:core": "node scripts/build-core.mjs"

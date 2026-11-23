@@ -36,8 +36,8 @@ export class MasterPresetHandler extends PresetBaseHandler {
         console.warn(`Could not capture initial state from ${key}`);
       }
     }
-    this.savePreset("Default", initialState);
-    if (this.db) console.log("Initial state captured and saved as Default preset");
+    this.initialState = initialState;
+    if (this.db) console.log("Initial state captured");
   }
 
   applyDefaultPreset() {

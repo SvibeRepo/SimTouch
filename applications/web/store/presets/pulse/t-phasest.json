@@ -1,0 +1,20 @@
+{
+  "name": "T-PhaseST",
+  "data": {
+    "modulators": [
+      {
+        "type": "sawtooth",
+        "enabled": false,
+        "frequency": 1,
+        "amplitude": 1,
+        "phase": 0,
+        "waveform": "sine",
+        "min": 0,
+        "max": 1,
+        "targetName": "T-Phase",
+        "beatDivision": "1",
+        "frequencyBpm": 60
+      }
+    ]
+  }
+}

@@ -43,7 +43,7 @@ export class UiManager {
     this.allTargets = {};
 
     this.initializeModulatorManager();
-    this.initializePresetManager();
+    this.presetReady = this.initializePresetManager();
 
     eventBus.on('uiControlChanged', ({ paramPath, value }) => {
       if (paramPath === "rendering.cellMode" || paramPath === "rendering.gridMode") {
@@ -138,7 +138,7 @@ export class UiManager {
     this.randomizerUi.initParameterTargets();
   }
 
-  initializePresetManager() {
+  async initializePresetManager() {
     // Create a collection of all UI components that can have presets
     const presetComponents = {
       paramUi: this.paramUi,
@@ -157,6 +157,7 @@ export class UiManager {
 
     // Create the preset manager with all components
     this.presetManager = new PresetManager(presetComponents);
+    await this.presetManager.loadStore();
 
     // Initialize UI components with preset manager
     this.turbulenceUi.initWithPresetManager(this.presetManager);

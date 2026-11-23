@@ -2,11 +2,12 @@ import { MasterPresetHandler } from "./masterPresetHandler.js";
 import { SimplePresetHandler } from "./simplePresetHandler.js";
 import { ModulatorPresetHandler } from "./modulatorPresetHandler.js";
 import { RandomizerPresetHandler } from "./randomizerPresetHandler.js";
-import { defaultPresets as factoryDefaultPresetsData } from './default/defaultPresets.js';
 import { askPresetName } from "./presetNameDialog.js";
 import { debugManager } from "../util/debugManager.js";
+import { presetFlags } from "./presetFlags.js";
+import { slugPresetName } from "./presetSlug.js";
+import { markLocalSplitDone } from "./presetBaseHandler.js";
 
-const factoryDefaultPresets = factoryDefaultPresetsData.presets;
 export class PresetManager {
   static TYPES = {
     MASTER: "master",
@@ -87,6 +88,20 @@ export class PresetManager {
     };
 
     this.handlers[PresetManager.TYPES.MASTER].setComponents(uiComponents);
+    this.storeReachable = false;
+  }
+
+  async loadStore() {
+    const results = await Promise.all(
+      Object.values(this.handlers).map((handler) => handler.loadFiles())
+    );
+    this.storeReachable = results.every(Boolean);
+    if (this.storeReachable) {
+      markLocalSplitDone();
+    } else {
+      console.warn("Preset store is unreachable.");
+    }
+    return this.storeReachable;
   }
 
   get db() {
@@ -135,6 +150,14 @@ export class PresetManager {
       this._handleDelete(presetType, presetSelect)
     );
 
+    const exportButton = this._createButton("Export", () => {
+      this.downloadSelected(presetType);
+    });
+
+    const importButton = this._createButton("Import", () => {
+      this._pickImportFile(presetType, () => this._updatePresetDropdown(presetType, presetSelect));
+    });
+
     presetSelect.addEventListener("change", (e) => {
       const value = e.target.value;
       if (this.db) console.log(`Preset selector for ${presetType} changed to:`, value);
@@ -146,6 +169,8 @@ export class PresetManager {
     container.appendChild(saveButton);
     container.appendChild(presetSelect);
     container.appendChild(deleteButton);
+    container.appendChild(exportButton);
+    container.appendChild(importButton);
 
     if (options.title) {
       const titleElement = document.createElement("div");
@@ -178,6 +203,8 @@ export class PresetManager {
       select: presetSelect,
       saveButton,
       deleteButton,
+      exportButton,
+      importButton,
       update: () => this._updatePresetDropdown(presetType, presetSelect),
     };
   }
@@ -212,6 +239,8 @@ export class PresetManager {
     if (success) {
       this._updateAllPresetDropdowns(presetType);
       alert(`Preset "${presetName}" saved.`);
+    } else if (!presetFlags.useLocalStorage) {
+      alert("Save refused. Working presets are off.");
     } else {
       alert("Failed to save preset.");
     }
@@ -404,27 +433,122 @@ export class PresetManager {
     return handler.deletePreset(presetName);
   }
 
-  exportPresets() {
-    const exportData = {
-      _meta: {
-        version: "1.0",
-        exportDate: new Date().toISOString(),
-        appName: "Svibe_FlipSim",
-      },
-      presets: {},
+  selectedPresetFile(type) {
+    const handler = this.getHandler(type);
+    if (!handler) return null;
+    const name = handler.getSelectedPreset();
+    if (!name || !Object.prototype.hasOwnProperty.call(handler.presets, name)) return null;
+    return {
+      name,
+      data: handler.presets[name],
+      filename: `${slugPresetName(name)}.json`,
     };
+  }
 
-    for (const type in this.handlers) {
-      const handler = this.handlers[type];
-      if (handler) {
-        exportData.presets[type] = handler.presets;
-      }
+  downloadSelected(type) {
+    const file = this.selectedPresetFile(type);
+    if (!file) {
+      alert("No preset selected.");
+      return false;
     }
+    const blob = new Blob([JSON.stringify({ name: file.name, data: file.data }, null, 2)], {
+      type: "application/json",
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = file.filename;
+    link.style.display = "none";
+    document.body.appendChild(link);
+    link.click();
+    setTimeout(() => {
+      URL.revokeObjectURL(url);
+      document.body.removeChild(link);
+    }, 100);
+    return true;
+  }
 
-    return JSON.stringify(exportData, null, 2);
+  _pickImportFile(type, onDone) {
+    const fileInput = document.createElement("input");
+    fileInput.type = "file";
+    fileInput.accept = ".json";
+    fileInput.style.display = "none";
+    document.body.appendChild(fileInput);
+    fileInput.addEventListener("change", (event) => {
+      const file = event.target.files && event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        const text = String(reader.result);
+        let parsed = null;
+        try {
+          parsed = JSON.parse(text);
+        } catch (error) {
+          alert("Failed to read file");
+          return;
+        }
+        if (parsed && parsed._meta && parsed.presets) {
+          const shouldMerge = confirm(
+            "Would you like to merge with existing presets?\n\n" +
+            "• Click OK to merge (keep existing presets)\n" +
+            "• Click Cancel to replace working presets"
+          );
+          const result = this.importPresets(text, { merge: shouldMerge });
+          if (result.success) {
+            alert(
+              `Successfully imported presets:\n` +
+              `• ${result.count} preset type(s) updated\n` +
+              `• Types: ${result.types.join(", ")}`
+            );
+          } else {
+            alert(`Import failed: ${result.error || "Unknown error"}`);
+          }
+        } else {
+          const result = this.importPresetFile(type, text);
+          if (result.success) {
+            alert(`Imported preset "${result.name}".`);
+          } else {
+            alert(`Import failed: ${result.error || "Unknown error"}`);
+          }
+        }
+        if (onDone) onDone();
+      };
+      reader.onerror = () => alert("Failed to read file");
+      reader.readAsText(file);
+      document.body.removeChild(fileInput);
+    });
+    fileInput.click();
+  }
+
+  importPresetFile(type, jsonText) {
+    if (!presetFlags.useLocalStorage) {
+      return { success: false, error: "Import refused. Working presets are off." };
+    }
+    let data;
+    try {
+      data = JSON.parse(jsonText);
+    } catch (error) {
+      return { success: false, error: "Invalid data format" };
+    }
+    if (!data || typeof data.name !== "string" || !("data" in data)) {
+      return { success: false, error: "Invalid data format" };
+    }
+    const handler = this.getHandler(type);
+    if (!handler) return { success: false, error: "Unknown preset type" };
+    if (handler.protectedPresets.includes(data.name)) {
+      return { success: false, error: `Cannot import protected preset: ${data.name}` };
+    }
+    if (!handler.savePreset(data.name, data.data)) {
+      return { success: false, error: "Failed to save preset." };
+    }
+    this._updateAllPresetDropdowns(type);
+    return { success: true, count: 1, types: [type], name: data.name };
   }
 
   importPresets(jsonData, options = { merge: false }) {
+    if (!presetFlags.useLocalStorage) {
+      return { success: false, error: "Import refused. Working presets are off.", count: 0 };
+    }
     try {
       const data = JSON.parse(jsonData);
 
@@ -439,36 +563,20 @@ export class PresetManager {
 
       for (const type in presetData) {
         const handler = this.handlers[type];
-        if (handler) {
-          if (!presetData[type] || typeof presetData[type] !== "object") {
-            console.warn(`Invalid preset data for type: ${type}`);
-            continue;
-          }
-
-          if (options.merge) {
-            const existingPresets = handler.presets;
-            handler.presets = { ...existingPresets, ...presetData[type] };
-
-            handler.protectedPresets.forEach((name) => {
-              if (existingPresets[name]) {
-                handler.presets[name] = existingPresets[name];
-              }
-            });
-          } else {
-            const protectedData = {};
-            handler.protectedPresets.forEach((name) => {
-              if (handler.presets[name]) {
-                protectedData[name] = handler.presets[name];
-              }
-            });
-            handler.presets = { ...presetData[type], ...protectedData };
-          }
-
-          handler.saveToStorage();
-          this._updateAllPresetDropdowns(type);
-          importCount++;
-          importedTypes.push(type);
+        if (!handler) continue;
+        if (!presetData[type] || typeof presetData[type] !== "object") {
+          console.warn(`Invalid preset data for type: ${type}`);
+          continue;
         }
+        const saved = options.merge
+          ? this._mergeLocalPresets(handler, presetData[type])
+          : handler.replaceLocal(presetData[type]);
+        if (!saved) {
+          return { success: false, error: "Failed to save preset.", count: importCount };
+        }
+        this._updateAllPresetDropdowns(type);
+        importCount++;
+        importedTypes.push(type);
       }
 
       return {
@@ -484,6 +592,14 @@ export class PresetManager {
         count: 0,
       };
     }
+  }
+
+  _mergeLocalPresets(handler, map) {
+    for (const [name, data] of Object.entries(map)) {
+      if (handler.protectedPresets.includes(name)) continue;
+      if (!handler.savePreset(name, data)) return false;
+    }
+    return true;
   }
 
   _validateImportData(data) {

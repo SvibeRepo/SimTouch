@@ -1,0 +1,36 @@
+{
+  "name": "Vex",
+  "data": {
+    "controllers": {
+      "T-AfPosition": false,
+      "T-AfScaleF": false,
+      "T-AfScale": true,
+      "T-Strength": 9.57,
+      "T-Scale": 2.3200000000000003,
+      "T-Speed": 1.386,
+      "T-Min Size": 0.008,
+      "T-Max Size": 0.028,
+      "T-Rot": 1.03672557568463,
+      "T-RotSpd": 0.076,
+      "T-Decay": 0.99,
+      "T-DirX": 0,
+      "T-DirY": 0,
+      "T-DomWarp": 0,
+      "T-DomWarpSp": 0,
+      "T-Pull Mode": -0.9778198072098548,
+      "T-PatternStyle": "fractal",
+      "T-Freq": 1.18,
+      "T-PhaseSp": -1,
+      "T-Phase": 0,
+      "T-Symmetry": 0,
+      "T-Blur": 0.68,
+      "T-OffsetX": 0.5,
+      "T-OffsetY": -0.5,
+      "T-BiasX Spd": 0,
+      "T-BiasY Spd": 0,
+      "T-Bias Amt": 0.3,
+      "T-Contrast": 0.5,
+      "T-Quantize": 0
+    }
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "name": " Joystick",
+  "data": {
+    "modulators": [
+      {
+        "type": "sine",
+        "enabled": true,
+        "frequency": 0.64,
+        "amplitude": 1,
+        "phase": 0,
+        "waveform": "sine",
+        "min": -1,
+        "max": 0.55,
+        "targetName": "Joystick X",
+        "sync": true
+      },
+      {
+        "type": "sine",
+        "enabled": true,
+        "frequency": 0.64,
+        "amplitude": 1,
+        "phase": 1.70902640355285,
+        "waveform": "sine",
+        "min": -1,
+        "max": 0.62,
+        "targetName": "Joystick Y",
+        "sync": true
+      }
+    ]
+  }
+}

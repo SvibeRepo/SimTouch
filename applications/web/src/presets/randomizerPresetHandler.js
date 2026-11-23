@@ -59,26 +59,6 @@ export class RandomizerPresetHandler extends PresetBaseHandler {
     return this.savePreset(presetName, data);
   }
 
-  deletePreset(presetName) {
-    if (this.protectedPresets.includes(presetName)) {
-      console.warn(`RandomizerPresetHandler: Cannot delete protected preset: ${presetName}`);
-      return false;
-    }
-
-    if (!this.presets[presetName]) {
-      console.warn(`RandomizerPresetHandler: Preset not found: ${presetName}`);
-      return false;
-    }
-
-    delete this.presets[presetName];
-    this.saveToStorage();
-
-    if (this.selectedPreset === presetName) {
-      this.selectedPreset = null;
-    }
-
-    return true;
-  }
 }
 
 

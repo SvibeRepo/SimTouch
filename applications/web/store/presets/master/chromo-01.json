@@ -1,0 +1,210 @@
+{
+  "name": "Chromo_01",
+  "data": {
+    "paramUi": {
+      "controllers": {
+        "Mode": "Proximity",
+        "Sensitivity": 0.66384,
+        "FadInSpd": 0.03074,
+        "FadOutSpd": 0.05809,
+        "Time Step": 0.016666666666666666,
+        "SimSpeed": 0.5,
+        "PicFlipRatio": 0
+      }
+    },
+    "particleUi": {
+      "controllers": {
+        "P-Count": 500,
+        "P-Size": 0.009,
+        "P-VeloMax": 1,
+        "P-VeloDamp": 0,
+        "P-Opacity": 0.1,
+        "P-Color": "FFFFFF"
+      }
+    },
+    "gravityUi": {
+      "controllers": {
+        "G-X": 0,
+        "G-Y": 0
+      }
+    },
+    "collisionUi": {
+      "controllers": {
+        "C-Repulse": 0.5,
+        "C-GridRez": 10,
+        "C-Bounce": 0.8,
+        "C-RestDens": 1.6
+      }
+    },
+    "boundaryUi": {
+      "controllers": {
+        "B-Mode": "BOUNCE",
+        "B-Scale": 1,
+        "B-Repulse": 0,
+        "B-Friction": 0.05,
+        "B-Bounce": 0.8
+      }
+    },
+    "pulseModUi": {
+      "modulators": []
+    },
+    "inputModUi": {
+      "enabled": true,
+      "sensitivity": 5,
+      "modulators": []
+    },
+    "turbulenceUi": {
+      "controllers": {
+        "T-AfPosition": true,
+        "T-AfScaleF": false,
+        "T-AfScale": false,
+        "T-Strength": 5.54,
+        "T-Scale": 3.7200000000000015,
+        "T-Speed": 1.386,
+        "T-Min Size": 0.008,
+        "T-Max Size": 0.017,
+        "T-Rot": 5.066792242351346,
+        "T-RotSpd": 0.189,
+        "T-Decay": 0.99,
+        "T-DirX": 0,
+        "T-DirY": 0,
+        "T-DomWarp": 0.205,
+        "T-DomWarpSp": 0,
+        "T-Pull Mode": 1,
+        "T-PatternStyle": "waves",
+        "T-Freq": 1.18,
+        "T-PhaseSp": -1,
+        "T-Phase": 0,
+        "T-Symmetry": 0,
+        "T-Blur": 2,
+        "T-OffsetX": 0,
+        "T-OffsetY": 0,
+        "T-BiasX Spd": -0.0037060546875,
+        "T-BiasY Spd": 0.0031585693359375,
+        "T-Bias Amt": 0.3,
+        "T-Contrast": 0.5,
+        "T-Quantize": 0
+      }
+    },
+    "voronoiUi": {
+      "controllers": {
+        "V-Strength": 0,
+        "V-CellSpeed": 0.2,
+        "V-EdgeWidth": 0.3,
+        "V-Attract": 1,
+        "V-CellCount": 10,
+        "V-Decay": 0.99,
+        "V-Pull Mode": false
+      }
+    },
+    "organicUi": {
+      "controllers": {
+        "O-Behavior": "None",
+        "O-Force": 5,
+        "O-Radius": 30,
+        "F-SurfaceT": 0.5,
+        "F-Visco": 0.2,
+        "F-Damp": 0.98,
+        "S-Cohesion": 1,
+        "S-Align": 0.7,
+        "S-Separation": 1.2,
+        "S-MaxSpeed": 0.5,
+        "A-Repulse": 0.8,
+        "A-Attract": 0.5,
+        "A-Threshold": 0.2,
+        "Ch-LinkDist": 0,
+        "Ch-LinkStr": 10,
+        "Ch-Align": 0.5,
+        "Ch-Branch": 2,
+        "Ch-MaxLinks": 10
+      }
+    },
+    "randomizerUi": {
+      "controllers": {
+        "Mode": false,
+        "Sensitivity": false,
+        "FadInSpd": false,
+        "FadOutSpd": false,
+        "SimSpeed": false,
+        "PicFlipRatio": false,
+        "P-Count": false,
+        "P-Size": false,
+        "P-VeloMax": false,
+        "P-VeloDamp": false,
+        "P-Opacity": false,
+        "P-Color": false,
+        "G-X": false,
+        "G-Y": false,
+        "C-Repulse": false,
+        "C-GridRez": false,
+        "C-Bounce": false,
+        "C-RestDens": false,
+        "B-Mode": false,
+        "B-Scale": false,
+        "B-Repulse": false,
+        "B-Friction": false,
+        "B-Bounce": false,
+        "T-AfPosition": false,
+        "T-AfScaleF": false,
+        "T-AfScale": false,
+        "T-Strength": false,
+        "T-Scale": false,
+        "T-Speed": false,
+        "T-Min Size": false,
+        "T-Max Size": false,
+        "T-Rot": false,
+        "T-RotSpd": false,
+        "T-Decay": false,
+        "T-DirX": false,
+        "T-DirY": false,
+        "T-DomWarp": false,
+        "T-DomWarpSp": false,
+        "T-Pull Mode": false,
+        "T-PatternStyle": false,
+        "T-Freq": false,
+        "T-PhaseSp": false,
+        "T-Phase": false,
+        "T-Symmetry": false,
+        "T-Blur": false,
+        "T-OffsetX": false,
+        "T-OffsetY": false,
+        "T-BiasX Spd": false,
+        "T-BiasY Spd": false,
+        "T-Bias Amt": false,
+        "T-Contrast": false,
+        "T-Quantize": false,
+        "V-Strength": false,
+        "V-CellSpeed": false,
+        "V-EdgeWidth": false,
+        "V-Attract": false,
+        "V-CellCount": false,
+        "V-Decay": false,
+        "V-Pull Mode": false,
+        "O-Behavior": false,
+        "O-Force": false,
+        "O-Radius": false,
+        "F-SurfaceT": false,
+        "F-Visco": false,
+        "F-Damp": false,
+        "S-Cohesion": false,
+        "S-Align": false,
+        "S-Separation": false,
+        "S-MaxSpeed": false,
+        "A-Repulse": false,
+        "A-Attract": false,
+        "A-Threshold": false,
+        "Ch-LinkDist": false,
+        "Ch-LinkStr": false,
+        "Ch-Align": false,
+        "Ch-Branch": false,
+        "Ch-MaxLinks": false,
+        "J-X": false,
+        "J-Y": false,
+        "J-G-Strength": false,
+        "J-T-BiasStrength": false,
+        "Enable External": false,
+        "Enable EMU": false
+      }
+    }
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "name": "Max",
+  "data": {
+    "controllers": {
+      "V-Strength": 10,
+      "V-CellSpeed": 4,
+      "V-EdgeWidth": 50,
+      "V-Attract": 8,
+      "V-CellCount": 10,
+      "V-Decay": 1
+    }
+  }
+}

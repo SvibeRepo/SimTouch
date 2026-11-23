@@ -1,0 +1,253 @@
+{
+  "name": "FluxCapacitor_02",
+  "data": {
+    "paramUi": {
+      "controllers": {
+        "Class": "particle",
+        "Cell Mode": "Velocity",
+        "Mode": "Velocity",
+        "Sensitivity": 0.95,
+        "FadInSpd": 0,
+        "FadOutSpd": 0.09597,
+        "Time Step": 0.016666666666666666,
+        "SimSpeed": 1,
+        "PicFlipRatio": 0
+      }
+    },
+    "particleUi": {
+      "controllers": {
+        "P-Count": 500,
+        "P-Size": 0.01,
+        "P-VeloMax": 1,
+        "P-VeloDamp": 0,
+        "P-Opacity": 1,
+        "P-Color": "FFFFFF"
+      }
+    },
+    "gravityUi": {
+      "controllers": {
+        "G-X": 0,
+        "G-Y": 0
+      }
+    },
+    "collisionUi": {
+      "controllers": {
+        "C-Enabled": true,
+        "C-Repulse": 0.5,
+        "C-GridRez": 10,
+        "C-Bounce": 0.8,
+        "C-Damping": 0.98,
+        "C-RestDens": 0
+      }
+    },
+    "boundaryUi": {
+      "controllers": {
+        "B-Mode": "BOUNCE",
+        "B-Scale": 1,
+        "B-Repulse": 0,
+        "B-Friction": 1,
+        "B-Bounce": 0.65
+      }
+    },
+    "pulseModUi": {
+      "modulators": []
+    },
+    "inputModUi": {
+      "enabled": true,
+      "sensitivity": 5,
+      "modulators": []
+    },
+    "turbulenceUi": {
+      "controllers": {
+        "T-AfPosition": true,
+        "T-AfScaleF": false,
+        "T-AfScale": true,
+        "T-Strength": 5.62,
+        "T-Scale": 0.67,
+        "T-Speed": 1.035,
+        "T-Min Size": 0.008,
+        "T-Max Size": 0.016,
+        "T-Rot": 0,
+        "T-RotSpd": 0,
+        "T-Decay": 0.9,
+        "T-DirX": 0,
+        "T-DirY": 0,
+        "T-DomWarp": 0,
+        "T-DomWarpSp": 0,
+        "T-Pull Mode": 0.898,
+        "T-PatternStyle": "checkerboard",
+        "T-Freq": 3.5,
+        "T-PhaseSp": -1,
+        "T-Phase": 0,
+        "T-Symmetry": 0.48,
+        "T-Blur": 0,
+        "T-OffsetX": 0.5,
+        "T-OffsetY": -0.5,
+        "T-BiasX Spd": 0,
+        "T-BiasY Spd": 0,
+        "T-Bias Amt": 0.3,
+        "T-Contrast": 0.5,
+        "T-Quantize": 0
+      }
+    },
+    "voronoiUi": {
+      "controllers": {
+        "V-Strength": 0,
+        "V-CellSpeed": 0.2,
+        "V-EdgeWidth": 0.3,
+        "V-Attract": 1,
+        "V-CellCount": 10,
+        "V-Decay": 0.99,
+        "V-Pull Mode": false
+      }
+    },
+    "organicUi": {
+      "controllers": {
+        "O-Behavior": "None",
+        "O-Force": 0.1,
+        "O-Radius": 30,
+        "F-SurfaceT": 0.5,
+        "F-Visco": 0.2,
+        "F-Damp": 0.98,
+        "S-Cohesion": 1,
+        "S-Align": 0.7,
+        "S-Separation": 1.2,
+        "S-MaxSpeed": 0.5,
+        "A-Repulse": 0.8,
+        "A-Attract": 0.5,
+        "A-Threshold": 0.2,
+        "Ch-LinkDist": 0,
+        "Ch-LinkStr": 10,
+        "Ch-Align": 0.5,
+        "Ch-Branch": 2,
+        "Ch-MaxLinks": 10
+      }
+    },
+    "randomizerUi": {
+      "controllers": {
+        "Class": false,
+        "Cell Mode": false,
+        "C-Enabled": false,
+        "Enable External": false,
+        "Enable EMU": false,
+        "Mode": false,
+        "Sensitivity": false,
+        "FadInSpd": false,
+        "FadOutSpd": false,
+        "SimSpeed": false,
+        "PicFlipRatio": false,
+        "P-Count": false,
+        "P-Size": false,
+        "P-VeloMax": false,
+        "P-VeloDamp": false,
+        "P-Opacity": false,
+        "P-Color": false,
+        "G-X": false,
+        "G-Y": false,
+        "C-Repulse": false,
+        "C-GridRez": false,
+        "C-Bounce": false,
+        "C-Damping": false,
+        "C-RestDens": false,
+        "B-Mode": false,
+        "B-Scale": false,
+        "B-Repulse": false,
+        "B-Friction": false,
+        "B-Bounce": false,
+        "T-AfPosition": false,
+        "T-AfScaleF": false,
+        "T-AfScale": false,
+        "T-Strength": false,
+        "T-Scale": false,
+        "T-Speed": false,
+        "T-Min Size": false,
+        "T-Max Size": false,
+        "T-Rot": false,
+        "T-RotSpd": false,
+        "T-Decay": false,
+        "T-DirX": false,
+        "T-DirY": false,
+        "T-DomWarp": false,
+        "T-DomWarpSp": false,
+        "T-Pull Mode": false,
+        "T-PatternStyle": false,
+        "T-Freq": false,
+        "T-PhaseSp": false,
+        "T-Phase": false,
+        "T-Symmetry": false,
+        "T-Blur": false,
+        "T-OffsetX": false,
+        "T-OffsetY": false,
+        "T-BiasX Spd": false,
+        "T-BiasY Spd": false,
+        "T-Bias Amt": false,
+        "T-Contrast": false,
+        "T-Quantize": false,
+        "V-Strength": false,
+        "V-CellSpeed": false,
+        "V-EdgeWidth": false,
+        "V-Attract": false,
+        "V-CellCount": false,
+        "V-Decay": false,
+        "V-Pull Mode": false,
+        "O-Behavior": false,
+        "O-Force": false,
+        "O-Radius": false,
+        "F-SurfaceT": false,
+        "F-Visco": false,
+        "F-Damp": false,
+        "S-Cohesion": false,
+        "S-Align": false,
+        "S-Separation": false,
+        "S-MaxSpeed": false,
+        "A-Repulse": false,
+        "A-Attract": false,
+        "A-Threshold": false,
+        "Ch-LinkDist": false,
+        "Ch-LinkStr": false,
+        "Ch-Align": false,
+        "Ch-Branch": false,
+        "Ch-MaxLinks": false,
+        "J-X": false,
+        "J-Y": false,
+        "J-G-Strength": false,
+        "J-T-BiasStrength": false
+      }
+    },
+    "gridUi": {
+      "screen": {
+        "width": 240,
+        "height": 240,
+        "shape": "circular"
+      },
+      "gridSpecs": {
+        "targetCellCount": 341,
+        "gap": 1,
+        "aspectRatio": 1,
+        "scale": 1,
+        "allowCut": 3,
+        "centerOffsetX": 0,
+        "centerOffsetY": 0
+      },
+      "shadow": {
+        "shadowIntensity": 0.17,
+        "shadowThreshold": 0,
+        "blurAmount": 0.23
+      },
+      "flags": {
+        "showGridCells": true,
+        "showIndices": false,
+        "showCellCenters": false,
+        "showBoundary": false
+      },
+      "colors": {
+        "gradientPreset": "c0",
+        "gridBackgroundColor": [
+          0,
+          0,
+          0
+        ]
+      }
+    }
+  }
+}

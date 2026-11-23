@@ -1,0 +1,19 @@
+{
+  "name": "T-PatternStyle",
+  "data": {
+    "modulators": [
+      {
+        "type": "triangle",
+        "enabled": true,
+        "frequency": 1,
+        "amplitude": 1,
+        "phase": 0,
+        "waveform": "sine",
+        "min": 0,
+        "max": 14,
+        "targetName": "T-PatternStyle",
+        "sync": true
+      }
+    ]
+  }
+}
