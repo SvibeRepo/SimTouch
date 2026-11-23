@@ -127,7 +127,7 @@ function packSpline(mode, contours) {
   const out = [SPLINE_MODE[mode] ?? 0, contours.length];
   for (const contour of contours) {
     const pts = contour.points || [];
-    out.push(pts.length, contour.closed ? 1 : 0);
+    out.push(pts.length, contour.closed ? (contour.evenodd ? 2 : 1) : 0);
     for (const p of pts) out.push(p.x, p.y);
   }
   return out;

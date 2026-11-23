@@ -75,6 +75,11 @@
   pointer-events: none;
 }
 
+/* Space after the pattern scale/frequency pair, before rotation. */
+.controller-section-gap {
+  margin-bottom: 16px !important;
+}
+
 /* Added styles for time influence toggle buttons */
 .time-influence-toggle-buttons {
   display: flex;

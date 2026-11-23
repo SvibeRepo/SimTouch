@@ -207,9 +207,6 @@ export class TurbulenceUi extends BaseUi {
     this.turbulenceStrengthController = this.gui.add(turbulenceParams, "strength", 0, 10).name("T-Strength")
       .onChange(value => eventBus.emit('uiControlChanged', { paramPath: 'turbulence.strength', value }));
 
-    this.turbulenceScaleController = this.gui.add(turbulenceParams, "scale", 0.1, 10, 0.01).name("T-Scale")
-      .onChange(value => eventBus.emit('uiControlChanged', { paramPath: 'turbulence.scale', value }));
-
     this.turbulenceSpeedController = this.gui.add(turbulenceParams, "speed", 0, 3).name("T-Speed")
       .onChange(value => eventBus.emit('uiControlChanged', { paramPath: 'turbulence.speed', value }));
 
@@ -346,6 +343,13 @@ export class TurbulenceUi extends BaseUi {
     this.turbulencePatternStyleController.domElement.classList.add("full-width");
     this.turbulencePatternStyleController.setValue("checkerboard");
 
+    this.turbulenceScaleController = patternControlsFolder.add(turbulenceParams, "scale", 0.1, 10, 0.01).name("T-Scale")
+      .onChange(value => eventBus.emit('uiControlChanged', { paramPath: 'turbulence.scale', value }));
+
+    this.turbulencePatternFrequencyController = patternControlsFolder.add(turbulenceParams, "patternFrequency", 0, 10).name("T-Freq")
+      .onChange(value => eventBus.emit('uiControlChanged', { paramPath: 'turbulence.patternFrequency', value }));
+    this.turbulencePatternFrequencyController.domElement.classList.add("controller-section-gap");
+
     // Bind rotation controls to simParams
     this.turbulenceRotationController = patternControlsFolder.add(turbulenceParams, "rotation", 0, Math.PI * 2).name("T-Rot")
       .onChange(value => eventBus.emit('uiControlChanged', { paramPath: 'turbulence.rotation', value }));
@@ -371,10 +375,6 @@ export class TurbulenceUi extends BaseUi {
     // Bind bias strength to simParams
     this.turbulenceBiasStrengthController = biasFolder.add(turbulenceParams, "biasStrength", 0, 2).name("T-Bias Amt")
       .onChange(value => eventBus.emit('uiControlChanged', { paramPath: 'turbulence.biasStrength', value }));
-
-    // Bind patternFrequency to simParams
-    this.turbulencePatternFrequencyController = patternControlsFolder.add(turbulenceParams, "patternFrequency", 0, 10).name("T-Freq")
-      .onChange(value => eventBus.emit('uiControlChanged', { paramPath: 'turbulence.patternFrequency', value }));
 
     // Move Pattern Offset folder under Direction Bias and close it
     const patternOffsetFolder = biasFolder.addFolder("Pattern Offset");
@@ -855,23 +855,16 @@ export class TurbulenceUi extends BaseUi {
       });
 
     const fileRow = document.createElement("div");
-    fileRow.className = "spline-file-row";
-    fileRow.style.display = "flex";
-    fileRow.style.gap = "6px";
-    fileRow.style.alignItems = "center";
-    fileRow.style.margin = "6px 0";
+    fileRow.className = "preset-controls-container spline-file-row";
 
     const select = document.createElement("select");
-    select.className = "spline-file-select";
-    select.style.flex = "1";
-    const emptyOpt = document.createElement("option");
-    emptyOpt.value = "";
-    emptyOpt.textContent = "(store file)";
-    select.appendChild(emptyOpt);
+    select.className = "preset-select spline-file-select";
     this.splineFileSelect = select;
 
     const openButton = document.createElement("button");
     openButton.type = "button";
+    openButton.className = "preset-control-button";
+    openButton.style.flex = "1";
     openButton.textContent = "Open";
     this.splineOpenButton = openButton;
 
@@ -897,8 +890,12 @@ export class TurbulenceUi extends BaseUi {
 
     select.addEventListener("change", async () => {
       const name = select.value;
-      const chosen = select.selectedOptions[0];
-      if (!name || chosen?.dataset.disk === "1") return;
+      if (!name) return;
+      const library = this._readSplineLibrary();
+      if (typeof library[name] === "string") {
+        this._applySplineSvg(library[name], name, true);
+        return;
+      }
       const loadId = this._beginSplineLoad();
       turbulenceField.setSpline({ file: name, contours: [] });
       try {
@@ -926,14 +923,15 @@ export class TurbulenceUi extends BaseUi {
       }
     });
 
-    this._refreshSplineFileList(turbulenceParams.splineFile);
     const session = this._readSplineSession();
     const storedSvg = turbulenceParams.splineSvg || session.svg;
-    if (storedSvg) {
-      const name = turbulenceParams.splineFile || session.name || session.file || "";
-      this._applySplineSvg(storedSvg, name, !turbulenceParams.splineFile && !session.file);
+    const storedName = turbulenceParams.splineFile || session.name || session.file || "";
+    if (storedSvg && storedName) {
+      this._applySplineSvg(storedSvg, storedName, !session.file && !turbulenceParams.splineFile);
     } else if (turbulenceParams.splineFile) {
       this._loadStoreSpline(turbulenceParams.splineFile);
+    } else {
+      this._refreshSplineFileList("");
     }
   }
 
@@ -941,16 +939,43 @@ export class TurbulenceUi extends BaseUi {
     const params = this.main?.simParams?.turbulence;
     if (!params) return;
     params.splineSvg = svg || "";
-    params.splineFile = disk ? "" : (file || "");
+    params.splineFile = file || "";
+    if (disk && file && svg) this._saveSplineToLibrary(file, svg);
     try {
       localStorage.setItem("svibeSpline", JSON.stringify({
-        file: params.splineFile,
+        file: disk ? "" : (file || ""),
         name: file || "",
         svg: params.splineSvg,
         mode: params.splineMode || "bands",
       }));
     } catch (error) {
       console.warn("Could not store spline SVG", error);
+    }
+  }
+
+  _readSplineLibrary() {
+    try {
+      const raw = localStorage.getItem("svibeSplineLibrary");
+      const parsed = raw ? JSON.parse(raw) : {};
+      const library = parsed && typeof parsed === "object" ? { ...parsed } : {};
+      const session = this._readSplineSession();
+      if (session.name && session.svg && typeof library[session.name] !== "string") {
+        library[session.name] = session.svg;
+      }
+      return library;
+    } catch {
+      return {};
+    }
+  }
+
+  _saveSplineToLibrary(name, svg) {
+    if (!name || !svg) return;
+    const library = this._readSplineLibrary();
+    library[name] = svg;
+    try {
+      localStorage.setItem("svibeSplineLibrary", JSON.stringify(library));
+    } catch (error) {
+      console.warn("Could not store spline library", error);
     }
   }
 
@@ -968,33 +993,26 @@ export class TurbulenceUi extends BaseUi {
   _applySplineSvg(svg, file, disk) {
     const params = this.main?.simParams?.turbulence;
     const field = this.main?.turbulenceField;
-    if (!params || !field) return;
+    if (!params || !field || !file) return;
     const contours = svg ? flattenSvg(svg) : [];
     this._rememberSplineSvg(svg, file, disk);
-    field.setSpline({ file: params.splineFile, contours });
-    this._showSplineChoice(file || "svg", { disk: !!disk });
+    field.setSpline({ file, contours });
+    this._refreshSplineFileList(file);
     this._drawSplinePreview();
-    eventBus.emit("uiControlChanged", { paramPath: "turbulence.splineFile", value: params.splineFile });
+    eventBus.emit("uiControlChanged", { paramPath: "turbulence.splineFile", value: file });
   }
 
-  _showSplineChoice(name, { disk } = { disk: false }) {
+  _showSplineChoice(name) {
     const select = this.splineFileSelect;
-    if (!select) return;
-    if (!name) {
-      select.value = "";
-      this._setDiskLabel("");
-      return;
-    }
+    if (!select || !name) return;
     let opt = [...select.options].find((o) => o.value === name);
     if (!opt) {
       opt = document.createElement("option");
       opt.value = name;
+      opt.textContent = name;
       select.appendChild(opt);
     }
-    opt.textContent = disk ? `${name} (this session)` : name;
-    opt.dataset.disk = disk ? "1" : "";
     select.value = name;
-    this._setDiskLabel(disk ? name : "");
   }
 
   _setDiskLabel(name) {
@@ -1007,23 +1025,30 @@ export class TurbulenceUi extends BaseUi {
   async _refreshSplineFileList(selected) {
     if (!this.splineFileSelect) return;
     const select = this.splineFileSelect;
-    const current = select.selectedOptions[0];
-    const keepDisk = current?.dataset.disk === "1" ? current.value : "";
-    const keep = keepDisk || selected || (current && current.value) || "";
-    while (select.options.length > 1) select.remove(1);
+    const keep = selected || select.value || "";
+    this._splineListId = (this._splineListId || 0) + 1;
+    const listId = this._splineListId;
+    const names = [];
     try {
-      const names = await loadSplineList(presetFlags.storeOrigin);
-      for (const name of names) {
-        const opt = document.createElement("option");
-        opt.value = name;
-        opt.textContent = name;
-        select.appendChild(opt);
-      }
+      const storeNames = await loadSplineList(presetFlags.storeOrigin);
+      if (listId !== this._splineListId) return;
+      for (const name of storeNames) names.push(name);
     } catch (error) {
+      if (listId !== this._splineListId) return;
       console.warn("Spline store list unavailable", error);
     }
-    if (keepDisk) this._showSplineChoice(keepDisk, { disk: true });
-    else if (keep) this._showSplineChoice(keep, { disk: false });
+    for (const name of Object.keys(this._readSplineLibrary())) {
+      if (name && !names.includes(name)) names.push(name);
+    }
+    if (keep && !names.includes(keep)) names.push(keep);
+    select.replaceChildren();
+    for (const name of names) {
+      const opt = document.createElement("option");
+      opt.value = name;
+      opt.textContent = name;
+      select.appendChild(opt);
+    }
+    if (keep) select.value = keep;
   }
 
   _beginSplineLoad() {

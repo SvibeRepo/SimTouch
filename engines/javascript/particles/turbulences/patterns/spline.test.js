@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { value } from "./spline.js";
+import { exact as value } from "./spline.js";
 
 const square = [{
   closed: true,

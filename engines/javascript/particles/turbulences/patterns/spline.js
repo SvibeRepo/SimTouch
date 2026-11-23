@@ -60,17 +60,25 @@ function winding(x, y, contours) {
   return w;
 }
 
+function filled(x, y, contours) {
+  const w = winding(x, y, contours);
+  if (contours.some((c) => c.evenodd)) return Math.abs(w) % 2 === 1;
+  return w !== 0;
+}
+
 function smooth(t) {
   const c = Math.max(0, Math.min(1, t));
   return c * c * (3 - 2 * c);
 }
 
-export function value(x, y, _centerX, _centerY, freq, field) {
+const GRID = 64;
+
+export function exact(x, y, _centerX, _centerY, freq, field) {
   const mode = field && field.splineMode;
   const contours = (field && field.splineContours) || [];
   if (contours.length === 0) return 0;
   if (mode === "fill") {
-    if (winding(x, y, contours) === 0) {
+    if (!filled(x, y, contours)) {
       const hit = nearest(x, y, contours.filter((c) => c.closed));
       if (!hit || hit.dist >= EDGE) return 0;
       return 0.5 * smooth(0.5 - hit.dist / EDGE);
@@ -87,4 +95,48 @@ export function value(x, y, _centerX, _centerY, freq, field) {
     return Math.sin(hit.arc * freq * PI * 0.3);
   }
   return 0;
+}
+
+function sampleGrid(grid, x, y) {
+  if (x < 0 || y < 0 || x > 1 || y > 1) return 0;
+  const u = Math.min(GRID - 1.001, Math.max(0, x * GRID - 0.5));
+  const v = Math.min(GRID - 1.001, Math.max(0, y * GRID - 0.5));
+  const x0 = Math.floor(u);
+  const y0 = Math.floor(v);
+  const x1 = Math.min(x0 + 1, GRID - 1);
+  const y1 = Math.min(y0 + 1, GRID - 1);
+  const tx = u - x0;
+  const ty = v - y0;
+  const i00 = grid[y0 * GRID + x0];
+  const i10 = grid[y0 * GRID + x1];
+  const i01 = grid[y1 * GRID + x0];
+  const i11 = grid[y1 * GRID + x1];
+  const a = i00 * (1 - tx) + i10 * tx;
+  const b = i01 * (1 - tx) + i11 * tx;
+  return a * (1 - ty) + b * ty;
+}
+
+export function value(x, y, centerX, centerY, freq, field) {
+  const contours = (field && field.splineContours) || [];
+  if (contours.length === 0 || !field || field._splineExact) {
+    return exact(x, y, centerX, centerY, freq, field);
+  }
+  const key = `${field.splineRevision || 0}|${field.splineMode}|${freq}`;
+  if (field._splineKey !== key) {
+    const grid = new Float32Array(GRID * GRID);
+    const probe = {
+      splineMode: field.splineMode,
+      splineContours: contours,
+      _splineExact: true,
+    };
+    for (let j = 0; j < GRID; j++) {
+      const py = (j + 0.5) / GRID;
+      for (let i = 0; i < GRID; i++) {
+        grid[j * GRID + i] = exact((i + 0.5) / GRID, py, 0, 0, freq, probe);
+      }
+    }
+    field._splineGrid = grid;
+    field._splineKey = key;
+  }
+  return sampleGrid(field._splineGrid, x, y);
 }

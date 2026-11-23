@@ -14,23 +14,33 @@ struct Seg {
 
 struct Contour {
     closed: bool,
+    evenodd: bool,
     segs: Vec<Seg>,
 }
+
+const GRID: usize = 64;
 
 struct Store {
     mode: u8,
     contours: Vec<Contour>,
+    grid: Vec<f32>,
+    grid_freq: f32,
+    grid_ready: bool,
 }
 
 static STORE: Mutex<Store> = Mutex::new(Store {
     mode: 0,
     contours: Vec::new(),
+    grid: Vec::new(),
+    grid_freq: 0.0,
+    grid_ready: false,
 });
 
 pub fn set_buffer(data: &[f32]) {
     let mut store = STORE.lock().expect("spline store");
     store.mode = 0;
     store.contours.clear();
+    store.grid_ready = false;
     if data.len() < 2 {
         return;
     }
@@ -42,7 +52,9 @@ pub fn set_buffer(data: &[f32]) {
             break;
         }
         let n = data[i] as usize;
-        let closed = data[i + 1] != 0.0;
+        let flag = data[i + 1];
+        let closed = flag != 0.0;
+        let evenodd = flag >= 1.5;
         i += 2;
         if i + n * 2 > data.len() {
             break;
@@ -69,7 +81,7 @@ pub fn set_buffer(data: &[f32]) {
             });
             cum += len;
         }
-        store.contours.push(Contour { closed, segs });
+        store.contours.push(Contour { closed, evenodd, segs });
     }
 }
 
@@ -128,15 +140,15 @@ fn smooth(t: f32) -> f32 {
     c * c * (3.0 - 2.0 * c)
 }
 
-pub(crate) fn value(x: f32, y: f32, _cx: f32, _cy: f32, freq: f32) -> f32 {
-    let store = STORE.lock().expect("spline store");
-    if store.contours.is_empty() {
+fn exact_at(x: f32, y: f32, freq: f32, mode: u8, contours: &[Contour]) -> f32 {
+    if contours.is_empty() {
         return 0.0;
     }
-    let mode = store.mode;
     if mode == 1 {
-        let inside = winding(x, y, &store.contours) != 0;
-        let hit = nearest(x, y, &store.contours, true);
+        let w = winding(x, y, contours);
+        let evenodd = contours.iter().any(|c| c.evenodd);
+        let inside = if evenodd { w.abs() % 2 == 1 } else { w != 0 };
+        let hit = nearest(x, y, contours, true);
         let signed = match hit {
             Some((dist, _)) if inside => -dist,
             Some((dist, _)) => dist,
@@ -147,7 +159,7 @@ pub(crate) fn value(x: f32, y: f32, _cx: f32, _cy: f32, freq: f32) -> f32 {
         }
         return 0.5 * smooth(0.5 - signed / EDGE);
     }
-    let Some((dist, arc)) = nearest(x, y, &store.contours, false) else {
+    let Some((dist, arc)) = nearest(x, y, contours, false) else {
         return 0.0;
     };
     if mode == 0 {
@@ -160,6 +172,61 @@ pub(crate) fn value(x: f32, y: f32, _cx: f32, _cy: f32, freq: f32) -> f32 {
         return (arc * freq * std::f32::consts::PI * 0.3).sin();
     }
     0.0
+}
+
+fn raster(contours: &[Contour], mode: u8, freq: f32) -> Vec<f32> {
+    let mut grid = vec![0.0; GRID * GRID];
+    let n = GRID as f32;
+    for j in 0..GRID {
+        let y = (j as f32 + 0.5) / n;
+        for i in 0..GRID {
+            let x = (i as f32 + 0.5) / n;
+            grid[j * GRID + i] = exact_at(x, y, freq, mode, contours);
+        }
+    }
+    grid
+}
+
+fn sample_grid(grid: &[f32], x: f32, y: f32) -> f32 {
+    if !(0.0..=1.0).contains(&x) || !(0.0..=1.0).contains(&y) {
+        return 0.0;
+    }
+    let n = GRID as f32;
+    let u = (x * n - 0.5).clamp(0.0, n - 1.001);
+    let v = (y * n - 0.5).clamp(0.0, n - 1.001);
+    let x0 = u.floor() as usize;
+    let y0 = v.floor() as usize;
+    let x1 = (x0 + 1).min(GRID - 1);
+    let y1 = (y0 + 1).min(GRID - 1);
+    let tx = u - x0 as f32;
+    let ty = v - y0 as f32;
+    let i00 = grid[y0 * GRID + x0];
+    let i10 = grid[y0 * GRID + x1];
+    let i01 = grid[y1 * GRID + x0];
+    let i11 = grid[y1 * GRID + x1];
+    let a = i00 * (1.0 - tx) + i10 * tx;
+    let b = i01 * (1.0 - tx) + i11 * tx;
+    a * (1.0 - ty) + b * ty
+}
+
+pub(crate) fn value(x: f32, y: f32, _cx: f32, _cy: f32, freq: f32) -> f32 {
+    let mut store = STORE.lock().expect("spline store");
+    if store.contours.is_empty() {
+        return 0.0;
+    }
+    if !store.grid_ready || store.grid_freq != freq {
+        let grid = raster(&store.contours, store.mode, freq);
+        store.grid = grid;
+        store.grid_freq = freq;
+        store.grid_ready = true;
+    }
+    sample_grid(&store.grid, x, y)
+}
+
+#[cfg(test)]
+fn exact(x: f32, y: f32, freq: f32) -> f32 {
+    let store = STORE.lock().expect("spline store");
+    exact_at(x, y, freq, store.mode, &store.contours)
 }
 
 #[cfg(test)]
@@ -179,8 +246,8 @@ mod tests {
         let mut buf = square();
         buf[0] = 1.0;
         set_buffer(&buf);
-        assert!((value(0.5, 0.5, 0.5, 0.5, 2.0) - 0.5).abs() < 1e-5);
-        assert!(value(0.1, 0.1, 0.5, 0.5, 2.0).abs() < 1e-5);
+        assert!((exact(0.5, 0.5, 2.0) - 0.5).abs() < 1e-5);
+        assert!(exact(0.1, 0.1, 2.0).abs() < 1e-5);
     }
 
     #[test]
@@ -190,7 +257,7 @@ mod tests {
         buf[0] = 0.0;
         set_buffer(&buf);
         let expected = (0.3_f32 * 2.0 * std::f32::consts::PI * 0.3).sin();
-        let got = value(0.5, 0.5, 0.5, 0.5, 2.0);
+        let got = exact(0.5, 0.5, 2.0);
         assert!((got - expected).abs() < 1e-5, "{got} vs {expected}");
     }
 
@@ -201,9 +268,9 @@ mod tests {
         buf[0] = 2.0;
         set_buffer(&buf);
         let expected = (0.3_f32 * 2.0 * std::f32::consts::PI * 0.3).sin();
-        let got = value(0.5, 0.2, 0.5, 0.5, 2.0);
+        let got = exact(0.5, 0.2, 2.0);
         assert!((got - expected).abs() < 1e-5, "{got} vs {expected}");
-        assert!(value(0.5, 0.5, 0.5, 0.5, 2.0).abs() < 1e-5);
+        assert!(exact(0.5, 0.5, 2.0).abs() < 1e-5);
     }
 
     #[test]

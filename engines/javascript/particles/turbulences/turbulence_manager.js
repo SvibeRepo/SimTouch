@@ -367,8 +367,10 @@ export class TurbulenceField {
     if (Array.isArray(contours)) {
       this.splineContours = contours.map((contour) => ({
         closed: !!contour.closed,
+        evenodd: !!contour.evenodd,
         points: (contour.points || []).map((p) => ({ x: p.x, y: p.y })),
       }));
+      this.splineRevision = (this.splineRevision || 0) + 1;
     }
   }
 
