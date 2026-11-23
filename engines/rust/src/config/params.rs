@@ -135,6 +135,7 @@ pub mod pattern {
     pub const FRACTAL: u8 = 12;
     pub const VORTEX: u8 = 13;
     pub const BUBBLES: u8 = 14;
+    pub const SPLINE: u8 = 15;
 }
 
 pub mod behavior {
@@ -437,7 +438,7 @@ impl Params {
         self.turb_pull = g(id::TURB_PULL);
         self.turb_decay = g(id::TURB_DECAY);
         self.turb_freq = g(id::TURB_FREQ);
-        self.turb_pattern = u8_clamped(g(id::TURB_PATTERN), 14);
+        self.turb_pattern = u8_clamped(g(id::TURB_PATTERN), 15);
         self.turb_contrast = g(id::TURB_CONTRAST);
         self.turb_separation = g(id::TURB_SEPARATION);
         self.turb_warp = g(id::TURB_WARP);

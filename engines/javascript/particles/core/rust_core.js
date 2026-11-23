@@ -117,7 +117,7 @@ export const PARAM = {
 const PATTERNS = [
   "checkerboard", "waves", "spiral", "grid", "circles", "diamonds",
   "ripples", "dots", "water", "classicdrop", "cells", "voronoi",
-  "fractal", "vortex", "bubbles",
+  "fractal", "vortex", "bubbles", "spline",
 ];
 
 const BEHAVIORS = ["None", "Fluid", "Swarm", "Automata", "Chain"];

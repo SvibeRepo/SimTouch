@@ -53,7 +53,7 @@ particles/
     pattern_control/  blur, contrast, domain_warp, force, phase, symmetry
     patterns/         checkerboard, waves, spiral, grid, circles, diamonds,
                       ripples, dots, water, classic_drop, cells, voronoi,
-                      fractal, vortex, bubbles
+                      fractal, vortex, bubbles, spline
   render_modes/     particle_render_manager, p_shared,
                     p_noise, p_proximity, p_proximity_b, p_velocity, p_velocity_c,
                     p_density, p_pressure, p_collision, p_overlap, p_vorticity

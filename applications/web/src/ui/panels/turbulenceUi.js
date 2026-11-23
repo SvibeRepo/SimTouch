@@ -301,7 +301,8 @@ export class TurbulenceUi extends BaseUi {
         "Voronoi": "voronoi",
         "Fractal": "fractal",
         "Vortex": "vortex",
-        "Bubbles": "bubbles"
+        "Bubbles": "bubbles",
+        "Spline": "spline"
       })
       .onChange((value) => {
         eventBus.emit('uiControlChanged', { paramPath: 'turbulence.patternStyle', value });

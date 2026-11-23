@@ -176,6 +176,7 @@ pub fn pattern_value(kind: u8, x: f32, y: f32, cx: f32, cy: f32, p: &Params, tim
         pattern::FRACTAL => patterns::fractal::value(x, y, cx, cy, freq, p, time),
         pattern::VORTEX => patterns::vortex::value(x, y, cx, cy, freq, p, time),
         pattern::BUBBLES => patterns::bubbles::value(x, y, cx, cy, freq, p, time),
+        pattern::SPLINE => patterns::spline::value(x, y, cx, cy, freq),
         _ => patterns::checkerboard::value(x, y, cx, cy, freq, p, time),
     }
 }
@@ -197,6 +198,21 @@ pub fn sample_analytic(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn spline_index_is_15_and_empty_store_returns_0_without_changing_checkerboard() {
+        use crate::particles::turbulences::patterns::spline;
+        let mut p = Params::default();
+        p.turb_freq = 2.0;
+        spline::set_buffer(&[]);
+        p.turb_pattern = pattern::SPLINE;
+        let got = pattern_value(pattern::SPLINE, 0.5, 0.5, 0.5, 0.5, &p, 0.0);
+        assert!(got.abs() < 1e-6, "empty spline {got}");
+        let checker = pattern_value(pattern::CHECKERBOARD, 0.3, 0.2, 0.5, 0.5, &p, 0.0);
+        let expected = (0.3_f32 * 2.0).sin() * (0.2_f32 * 2.0).sin();
+        assert!((checker - expected).abs() < 1e-6);
+        assert_eq!(pattern::SPLINE, 15);
+    }
 
     #[test]
     fn analytic_checkerboard_matches_javascript_phase() {
@@ -594,5 +610,101 @@ mod tests {
             let samples = start.elapsed().as_secs_f64() * 1000.0 / frames as f64;
             eprintln!("[pattern-bench] {name:14} grid {fill:5.2} ms | 500 samples {samples:5.2} ms");
         }
+    }
+
+    /// 3000 particles, particle-class Noise. Lab defaults otherwise.
+    /// Prints a step with pieces switched off, plus the theme pass.
+    ///
+    /// `cargo test --release bench_particle_noise_frame -- --ignored --nocapture`
+    #[test]
+    #[ignore]
+    fn bench_particle_noise_frame() {
+        use crate::grid::{MODE_NOISE, MODE_PROXIMITY};
+        use crate::particles::core::ParticleSystem;
+        use std::f32::consts::TAU;
+        use std::time::Instant;
+
+        fn spread(ps: &mut ParticleSystem, n: usize) {
+            let rings = (n as f32).sqrt().ceil() as usize;
+            let per = ((n as f32) / rings as f32).ceil() as usize;
+            let spawn = 0.5 * 0.95;
+            let mut i = 0usize;
+            for ring in 0..rings {
+                if i >= n {
+                    break;
+                }
+                let radius = spawn * (ring + 1) as f32 / rings as f32;
+                let count = ((per * (ring + 1)) / 2).min(n - i).max(1);
+                for k in 0..count {
+                    let ang = k as f32 / count as f32 * TAU;
+                    ps.x[i] = 0.5 + ang.cos() * radius;
+                    ps.y[i] = 0.5 + ang.sin() * radius;
+                    i += 1;
+                }
+            }
+        }
+
+        fn lab(kind: u8, blur: f32) -> Params {
+            let mut p = Params::default();
+            p.collision_enabled = true;
+            p.collision_grid = 10;
+            p.collision_repulsion = 0.5;
+            p.collision_restitution = 0.8;
+            p.boundary_damping = 0.8;
+            p.boundary_restitution = 1.0;
+            p.turb_strength = 4.0;
+            p.turb_scale = 3.0;
+            p.turb_speed = 1.0;
+            p.turb_pull = 1.0;
+            p.turb_freq = 2.0;
+            p.turb_pattern = kind;
+            p.turb_contrast = 0.5;
+            p.turb_blur = blur;
+            p.turb_phase_speed = -1.0;
+            p.turb_affect_scale = true;
+            p.turb_min_scale = 0.008;
+            p.turb_max_scale = 0.03;
+            p.flip_ratio = 0.0;
+            p.flip_iterations = 20;
+            p.flip_grid = 32;
+            p.render_width = 960.0;
+            p.render_height = 960.0;
+            p
+        }
+
+        fn frames(label: &str, kind: u8, blur: f32, mode: u32, collision: bool, flip: f32) -> f64 {
+            let n = 3000usize;
+            let mut ps = ParticleSystem::new(n);
+            ps.set_count(n);
+            ps.set_grid_mode(mode);
+            ps.params = lab(kind, blur);
+            ps.params.collision_enabled = collision;
+            ps.params.flip_ratio = flip;
+            spread(&mut ps, n);
+            for _ in 0..5 {
+                ps.step(1.0 / 60.0);
+            }
+            let start = Instant::now();
+            let frames = 30u32;
+            for _ in 0..frames {
+                ps.step(1.0 / 60.0);
+            }
+            let step_ms = start.elapsed().as_secs_f64() * 1000.0 / frames as f64;
+            let start = Instant::now();
+            for _ in 0..frames {
+                ps.particle_eval(MODE_NOISE, 1.0, 1.0);
+            }
+            let theme_ms = start.elapsed().as_secs_f64() * 1000.0 / frames as f64;
+            eprintln!("[particle-bench] {label:28} step {step_ms:5.2} ms | noise theme {theme_ms:5.2} ms");
+            step_ms
+        }
+
+        frames("checker blur0 noise", pattern::CHECKERBOARD, 0.0, MODE_NOISE, true, 0.0);
+        frames("checker blur0 proximity", pattern::CHECKERBOARD, 0.0, MODE_PROXIMITY, true, 0.0);
+        frames("checker no collision", pattern::CHECKERBOARD, 0.0, MODE_NOISE, false, 0.0);
+        frames("checker flip off", pattern::CHECKERBOARD, 0.0, MODE_NOISE, true, -1.0);
+        frames("checker blur0.8 noise", pattern::CHECKERBOARD, 0.8, MODE_NOISE, true, 0.0);
+        frames("classic blur0 noise", pattern::CLASSIC_DROP, 0.0, MODE_NOISE, true, 0.0);
+        frames("classic blur0.8 noise", pattern::CLASSIC_DROP, 0.8, MODE_NOISE, true, 0.0);
     }
 }

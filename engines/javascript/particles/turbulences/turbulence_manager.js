@@ -19,6 +19,7 @@ import { value as voronoiPattern } from "./patterns/voronoi.js";
 import { value as fractal } from "./patterns/fractal.js";
 import { value as vortex } from "./patterns/vortex.js";
 import { value as bubbles } from "./patterns/bubbles.js";
+import { value as spline } from "./patterns/spline.js";
 
 const patternFns = {
   checkerboard,
@@ -36,6 +37,7 @@ const patternFns = {
   fractal,
   vortex,
   bubbles,
+  spline,
 };
 
 import { eventBus } from '../../../util/eventManager.js'; // Added import
@@ -158,6 +160,7 @@ export class TurbulenceField {
       "fractal": [0.5, -0.5],
       "vortex": [0, 0],
       "bubbles": [0, 0],
+      "spline": [0, 0],
       "water": [0, 0],
       "classicdrop": [0, 0]
     };
