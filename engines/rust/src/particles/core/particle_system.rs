@@ -49,8 +49,9 @@ pub struct ParticleSystem {
     org_link_count: Vec<u16>,
     org_links: Vec<u16>,
     grid: Grid,
-    /// Active lab cell mode. Used to skip the 128² fill when turbulence is idle
-    /// and the mode is not NOISE. Set from the host before step.
+    /// Active lab cell mode. The 128² fill runs only when blur is on and this
+    /// mode is NOISE, or turbulence is driving particles. Set from the host
+    /// before step.
     grid_mode: u32,
     /// Per-particle theme levels for the particle output class (visual only).
     particle_values: Vec<f32>,
@@ -191,7 +192,10 @@ impl ParticleSystem {
         let turb_on = self.params.turb_affect_position
             || self.params.turb_affect_scale
             || self.params.turb_scale_field;
-        if turb_on || self.grid_mode == MODE_NOISE {
+        // The 128² raster is the blur ring. Blur 0 is a direct sample, and
+        // painting Classic Drop across the grid costs the whole frame
+        // (~6 ms) while the lab only needs the live particles or cells.
+        if self.params.turb_blur > 0.0 && (turb_on || self.grid_mode == MODE_NOISE) {
             turbulence::fill_field(
                 &mut self.field,
                 &mut self.field_aux,
@@ -487,6 +491,18 @@ impl ParticleSystem {
         collision_grid: u32,
     ) {
         self.grid_mode = mode;
+        if mode == MODE_NOISE && self.params.turb_blur <= 0.0 {
+            self.grid.eval_noise_analytic(
+                width,
+                height,
+                &self.params,
+                self.time,
+                self.rotation,
+                self.bias_x,
+                self.bias_y,
+            );
+            return;
+        }
         let count = self.count;
         self.grid.eval(
             mode,
@@ -515,6 +531,21 @@ impl ParticleSystem {
     /// `max_velocity` is the lab P-VeloMax cap used by Velocity / VelocityC.
     pub fn particle_eval(&mut self, mode: u32, max_density: f32, max_velocity: f32) {
         let count = self.count;
+        if mode == MODE_NOISE && self.params.turb_blur <= 0.0 {
+            crate::particles::render_modes::eval_noise_analytic(
+                &self.x,
+                &self.y,
+                count,
+                max_density,
+                &self.params,
+                self.time,
+                self.rotation,
+                self.bias_x,
+                self.bias_y,
+                &mut self.particle_values,
+            );
+            return;
+        }
         crate::particles::render_modes::eval(
             mode,
             &self.x,
@@ -1155,5 +1186,86 @@ mod tests {
         ps.step(1.0 / 60.0);
         assert!(ps.vx[0] < 0.0, "left particle should move away, vx={}", ps.vx[0]);
         assert!(ps.vx[1] > 0.0, "right particle should move away, vx={}", ps.vx[1]);
+    }
+
+    /// Lab default: Classic Drop, blur 0, Size on, Proximity. The 128² paint
+    /// is what dropped the frame; forces already sample at the particle.
+    #[test]
+    fn classic_drop_blur_zero_skips_the_grid() {
+        use crate::config::params::pattern;
+        use crate::grid::MODE_PROXIMITY;
+        use crate::particles::turbulences::turbulence_manager::sample_analytic;
+
+        let mut ps = ParticleSystem::new(500);
+        ps.set_count(500);
+        ps.set_grid_mode(MODE_PROXIMITY);
+        ps.params.turb_strength = 4.0;
+        ps.params.turb_scale = 3.0;
+        ps.params.turb_speed = 1.0;
+        ps.params.turb_pull = 1.0;
+        ps.params.turb_freq = 2.0;
+        ps.params.turb_pattern = pattern::CLASSIC_DROP;
+        ps.params.turb_contrast = 0.5;
+        ps.params.turb_blur = 0.0;
+        ps.params.turb_phase_speed = -1.0;
+        ps.params.turb_affect_position = false;
+        ps.params.turb_affect_scale = true;
+        ps.params.turb_min_scale = 0.008;
+        ps.params.turb_max_scale = 0.03;
+        ps.params.collision_enabled = false;
+        for i in 0..500 {
+            ps.x[i] = (i % 25) as f32 / 25.0;
+            ps.y[i] = (i / 25) as f32 / 20.0;
+            ps.radius[i] = 0.01;
+        }
+        ps.step(1.0 / 60.0);
+        assert!(
+            ps.field().iter().all(|v| *v == 0.0),
+            "blur 0 must not rasterize classic drop"
+        );
+        let mut lo = f32::MAX;
+        let mut hi = f32::MIN;
+        for r in ps.radius.iter().take(500) {
+            lo = lo.min(*r);
+            hi = hi.max(*r);
+        }
+        assert!(
+            hi - lo > 1e-4,
+            "size should still follow the direct sample, span {lo}..{hi}"
+        );
+
+        ps.x[0] = 0.2;
+        ps.y[0] = 0.8;
+        ps.set_cells(&[10.0, 10.0, 20.0, 20.0]);
+        ps.grid_eval(MODE_NOISE, 100.0, 100.0, 0.01, 1.0, true, 10);
+        let sample = sample_analytic(
+            &ps.params,
+            0.2,
+            0.8,
+            ps.time,
+            ps.rotation,
+            ps.bias_x,
+            ps.bias_y,
+        );
+        let cell = ps.grid_values()[0];
+        assert!(
+            (cell - sample * 2.2).abs() < 1e-4,
+            "noise cell {cell} should be the direct sample {sample}"
+        );
+        ps.particle_eval(MODE_NOISE, 1.0, 1.0);
+        let level = ps.particle_values()[0];
+        let expect = (sample * 2.2).clamp(0.0, 1.0);
+        assert!(
+            (level - expect).abs() < 1e-4,
+            "particle theme {level} should be the direct sample {expect}"
+        );
+
+        ps.params.turb_blur = 0.8;
+        ps.set_grid_mode(MODE_PROXIMITY);
+        ps.step(1.0 / 60.0);
+        assert!(
+            ps.field().iter().any(|v| v.abs() > 1e-4),
+            "blur above 0 still paints the ring grid"
+        );
     }
 }

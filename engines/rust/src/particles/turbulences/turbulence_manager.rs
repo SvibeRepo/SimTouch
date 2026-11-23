@@ -532,4 +532,67 @@ mod tests {
             "negative T-Pull should reverse the shove, dot {same_way}"
         );
     }
+
+    /// Time one 128² fill and 500 direct samples for every pattern.
+    /// Lab defaults: frequency 2, blur 0. Prints only; it does not assert a budget.
+    ///
+    /// `cargo test --release bench_pattern_fills -- --ignored --nocapture`
+    #[test]
+    #[ignore]
+    fn bench_pattern_fills() {
+        use std::time::Instant;
+        let names = [
+            (pattern::CHECKERBOARD, "checkerboard"),
+            (pattern::WAVES, "waves"),
+            (pattern::SPIRAL, "spiral"),
+            (pattern::GRID, "grid"),
+            (pattern::CIRCLES, "circles"),
+            (pattern::DIAMONDS, "diamonds"),
+            (pattern::RIPPLES, "ripples"),
+            (pattern::DOTS, "dots"),
+            (pattern::WATER, "water"),
+            (pattern::CLASSIC_DROP, "classic drop"),
+            (pattern::CELLS, "cells"),
+            (pattern::VORONOI, "voronoi"),
+            (pattern::FRACTAL, "fractal"),
+            (pattern::VORTEX, "vortex"),
+            (pattern::BUBBLES, "bubbles"),
+        ];
+        let frames = 20u32;
+        for (kind, name) in names {
+            let mut p = Params::default();
+            p.turb_pattern = kind;
+            p.turb_freq = 2.0;
+            p.turb_speed = 1.0;
+            p.turb_scale = 3.0;
+            p.turb_blur = 0.0;
+            p.turb_phase_speed = -1.0;
+            let mut field = vec![0.0; FIELD_AREA];
+            let mut aux = vec![0.0; FIELD_AREA];
+            let start = Instant::now();
+            for i in 0..frames {
+                fill_field(&mut field, &mut aux, &p, i as f32 * 0.016, 0.0, 0.0, 0.0);
+            }
+            let fill = start.elapsed().as_secs_f64() * 1000.0 / frames as f64;
+            let start = Instant::now();
+            let mut sink = 0.0f32;
+            for frame in 0..frames {
+                let time = frame as f32 * 0.016;
+                for i in 0..500 {
+                    sink += sample_analytic(
+                        &p,
+                        (i % 25) as f32 / 25.0,
+                        (i / 25) as f32 / 20.0,
+                        time,
+                        0.0,
+                        0.0,
+                        0.0,
+                    );
+                }
+            }
+            std::hint::black_box(sink);
+            let samples = start.elapsed().as_secs_f64() * 1000.0 / frames as f64;
+            eprintln!("[pattern-bench] {name:14} grid {fill:5.2} ms | 500 samples {samples:5.2} ms");
+        }
+    }
 }

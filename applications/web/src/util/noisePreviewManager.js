@@ -650,7 +650,11 @@ export class NoisePreviewManager {
                 Math.max(1, Math.floor(2 / dynamicScaleFactor));
 
             const rustCore = this.main?.rustCore;
+            // Blur 0 does not paint the 128² field (Classic Drop cannot afford it).
+            // Sample the live pattern the same way the JavaScript tick does.
+            const blur = this.turbulenceField?.blurAmount ?? 0;
             const useWasmField =
+                blur > 0 &&
                 this.main?.simParams?.simulation?.engine === "rust" &&
                 !!rustCore?.ready;
             const field = useWasmField ? rustCore.fieldView() : null;
