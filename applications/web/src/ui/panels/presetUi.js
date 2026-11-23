@@ -286,7 +286,10 @@ export class PresetUi extends BaseUi {
     options.forEach((preset) => {
       const option = document.createElement("option");
       option.value = preset;
-      option.textContent = preset;
+      option.textContent = this.presetManager.presetOptionLabel(
+        PresetManager.TYPES.MASTER,
+        preset
+      );
       selectElement.appendChild(option);
     });
 

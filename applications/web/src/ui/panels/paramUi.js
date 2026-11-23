@@ -46,14 +46,29 @@ export class ParamUi extends BaseUi {
         eventBus.emit("uiControlChanged", { paramPath: "rendering.outputClass", value });
       });
 
+    // User dropdown only. Preset setValue updates the select without a change event.
+    this.outputClassController.domElement.querySelector("select")?.addEventListener("change", () => {
+      if (this.outputClassController.getValue() !== "particle") return;
+      this.maxDensityController?.setValue(1);
+      this.main.ui?.particleUi?.particleOpacityController?.setValue(1);
+    });
+
     this.fieldTypeController = this.gui
       .add(this.main.simParams.rendering, "cellMode", Object.values(GridField))
-      .name("Cell Mode")
+      .name("Mode")
       .onChange((value) => {
         eventBus.emit("uiControlChanged", { paramPath: "rendering.cellMode", value });
       });
 
-    this.fieldTypeController.domElement.classList.add("full-width");
+    const classModeRow = document.createElement("div");
+    classModeRow.className = "class-mode-row";
+    classModeRow.appendChild(this.outputClassController.domElement);
+    classModeRow.appendChild(this.fieldTypeController.domElement);
+    const guiChildren = this.gui.domElement.querySelector(".children");
+    const pauseEl = this.pauseButtonController.domElement;
+    if (guiChildren && pauseEl) {
+      guiChildren.insertBefore(classModeRow, pauseEl.nextSibling);
+    }
 
     // Gain: 0 = dim, 1 = bright. Converted to engine divisor at apply edge.
     this.maxDensityController = this.gui.add(this.main.simParams.rendering, "maxDensity", 0, 1, 0.01)

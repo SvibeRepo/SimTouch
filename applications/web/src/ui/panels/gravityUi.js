@@ -17,10 +17,9 @@ export class GravityUi extends BaseUi {
 
   //#region Physics
   initGravityControls() {
-    // Wider range for X and Y to control both direction and strength
     this.gravityXController = this.gui
       // Bind to simParams
-      .add(this.main.simParams.gravity, "directionX", -10, 10, 0.5)
+      .add(this.main.simParams.gravity, "directionX", -2, 2, 0.1)
       .name("G-X")
       .onChange((value) => {
         // Emit event
@@ -29,7 +28,7 @@ export class GravityUi extends BaseUi {
 
     this.gravityYController = this.gui
       // Bind to simParams
-      .add(this.main.simParams.gravity, "directionY", -10, 10, 0.5)
+      .add(this.main.simParams.gravity, "directionY", -2, 2, 0.1)
       .name("G-Y")
       .onChange((value) => {
         // Emit event

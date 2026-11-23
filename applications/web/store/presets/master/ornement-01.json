@@ -19,7 +19,7 @@
         "P-Count": 1571,
         "P-Size": 0.01,
         "P-VeloMax": 1,
-        "P-VeloDamp": 0,
+        "P-VeloDamp": 0.168,
         "P-Opacity": 1,
         "P-Color": "FFFFFF"
       }
@@ -37,7 +37,7 @@
         "C-GridRez": 10,
         "C-Bounce": 0.8,
         "C-Damping": 0.98,
-        "C-RestDens": 21.2
+        "C-RestDens": 28
       }
     },
     "boundaryUi": {
@@ -65,8 +65,8 @@
         "T-Strength": 0,
         "T-Scale": 2.67,
         "T-Speed": 0.825,
-        "T-Min Size": 0.005,
-        "T-Max Size": 0.011,
+        "T-Min Size": 0.003,
+        "T-Max Size": 0.013,
         "T-Rot": 0,
         "T-RotSpd": 0,
         "T-Decay": 1,
@@ -82,8 +82,8 @@
         "T-Phase": 0,
         "T-Symmetry": 0,
         "T-Blur": 0,
-        "T-OffsetX": 0.1,
-        "T-OffsetY": -0.12,
+        "T-OffsetX": 0.17,
+        "T-OffsetY": -0.21,
         "T-BiasX Spd": 0,
         "T-BiasY Spd": 0,
         "T-Bias Amt": 0.3,

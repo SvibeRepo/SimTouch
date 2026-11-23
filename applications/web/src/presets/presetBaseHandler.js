@@ -3,6 +3,55 @@ import { presetFlags } from './presetFlags.js';
 
 const SPLIT_FLAG = 'presetStoreLocalSplit';
 
+function collectModulatorTargets(data, into) {
+  if (!data || typeof data !== 'object') return;
+  const lists = [];
+  if (Array.isArray(data.modulators)) lists.push(data.modulators);
+  if (Array.isArray(data.pulseModUi?.modulators)) lists.push(data.pulseModUi.modulators);
+  if (Array.isArray(data.inputModUi?.modulators)) lists.push(data.inputModUi.modulators);
+  for (const list of lists) {
+    for (const mod of list) {
+      if (mod && typeof mod.targetName === 'string' && mod.targetName) into.add(mod.targetName);
+    }
+  }
+}
+
+function omitModulatedControllers(data, targets) {
+  if (!data || typeof data !== 'object' || targets.size === 0) return data;
+  const copy = JSON.parse(JSON.stringify(data));
+  const walk = (node) => {
+    if (!node || typeof node !== 'object') return;
+    if (node.controllers && typeof node.controllers === 'object' && !Array.isArray(node.controllers)) {
+      for (const name of targets) delete node.controllers[name];
+    }
+    for (const value of Object.values(node)) {
+      if (value && typeof value === 'object') walk(value);
+    }
+  };
+  walk(copy);
+  return copy;
+}
+
+function stableValue(value) {
+  if (Array.isArray(value)) return value.map(stableValue);
+  if (value && typeof value === 'object') {
+    const out = {};
+    for (const key of Object.keys(value).sort()) out[key] = stableValue(value[key]);
+    return out;
+  }
+  return value;
+}
+
+/** Save and export sample a modulator target at different instants. Those values are not an edit. */
+function presetDataMatches(localData, fileData) {
+  const targets = new Set();
+  collectModulatorTargets(localData, targets);
+  collectModulatorTargets(fileData, targets);
+  const local = stableValue(omitModulatedControllers(localData, targets));
+  const file = stableValue(omitModulatedControllers(fileData, targets));
+  return JSON.stringify(local) === JSON.stringify(file);
+}
+
 function getTypeFromStorageKey(key) {
   if (!key) return null;
   const match = key.match(/^saved([A-Z][a-zA-Z]*)Presets$/);
@@ -205,6 +254,16 @@ export class PresetBaseHandler {
 
   getPresetOptions() {
     return Object.keys(this.presets);
+  }
+
+  /**
+   * True when the dropdown is showing a local copy that is not the store file:
+   * a name with no file, or a file whose saved data differs.
+   */
+  isLocalChange(presetName) {
+    if (!Object.prototype.hasOwnProperty.call(this.localPresets, presetName)) return false;
+    if (!Object.prototype.hasOwnProperty.call(this.filePresets, presetName)) return true;
+    return !presetDataMatches(this.localPresets[presetName], this.filePresets[presetName]);
   }
 
   getSelectedPreset() {

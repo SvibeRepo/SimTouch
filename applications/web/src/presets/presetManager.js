@@ -274,7 +274,7 @@ export class PresetManager {
     options.forEach((preset) => {
       const option = document.createElement("option");
       option.value = preset;
-      option.textContent = preset;
+      option.textContent = this.presetOptionLabel(presetType, preset);
       selectElement.appendChild(option);
     });
 
@@ -299,6 +299,12 @@ export class PresetManager {
   getPresetOptions(type) {
     const handler = this.getHandler(type);
     return handler ? handler.getPresetOptions() : [];
+  }
+
+  presetOptionLabel(type, name) {
+    const handler = this.getHandler(type);
+    if (handler?.isLocalChange?.(name)) return `${name}*`;
+    return name;
   }
 
   getSelectedPreset(type) {

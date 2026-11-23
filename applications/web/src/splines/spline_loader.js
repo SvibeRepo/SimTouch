@@ -253,7 +253,141 @@ function flattenWithDom(svgText) {
   }
 }
 
+const PATH_TOKEN = /[MmLlHhVvCcSsQqTtZz]|[-+]?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?/g;
+
+function addCubic(points, p0, p1, p2, p3) {
+  const steps = 6;
+  for (let s = 1; s <= steps; s++) {
+    const t = s / steps;
+    const u = 1 - t;
+    points.push({
+      x: u * u * u * p0.x + 3 * u * u * t * p1.x + 3 * u * t * t * p2.x + t * t * t * p3.x,
+      y: u * u * u * p0.y + 3 * u * u * t * p1.y + 3 * u * t * t * p2.y + t * t * t * p3.y,
+    });
+  }
+}
+
+function parseLineContours(d, evenodd) {
+  const tokens = d.match(PATH_TOKEN);
+  if (!tokens) return null;
+  const contours = [];
+  let i = 0;
+  let cx = 0;
+  let cy = 0;
+  let sx = 0;
+  let sy = 0;
+  let cur = null;
+  const isCmd = (token) => token.length === 1 && /[A-Za-z]/.test(token);
+  while (i < tokens.length) {
+    const cmd = tokens[i++];
+    if (!isCmd(cmd)) return null;
+    if ("Aa".includes(cmd)) return null;
+    if (cmd === "M" || cmd === "m") {
+      if (cur && cur.points.length >= 2) contours.push(cur);
+      let x = parseFloat(tokens[i++]);
+      let y = parseFloat(tokens[i++]);
+      if (cmd === "m") { cx += x; cy += y; } else { cx = x; cy = y; }
+      sx = cx;
+      sy = cy;
+      cur = { closed: false, evenodd, points: [{ x: cx, y: cy }] };
+      while (i < tokens.length && !isCmd(tokens[i])) {
+        x = parseFloat(tokens[i++]);
+        y = parseFloat(tokens[i++]);
+        if (cmd === "m") { cx += x; cy += y; } else { cx = x; cy = y; }
+        cur.points.push({ x: cx, y: cy });
+      }
+    } else if (cmd === "L" || cmd === "l") {
+      if (!cur) return null;
+      while (i < tokens.length && !isCmd(tokens[i])) {
+        let x = parseFloat(tokens[i++]);
+        let y = parseFloat(tokens[i++]);
+        if (cmd === "l") { cx += x; cy += y; } else { cx = x; cy = y; }
+        cur.points.push({ x: cx, y: cy });
+      }
+    } else if (cmd === "H" || cmd === "h") {
+      if (!cur) return null;
+      while (i < tokens.length && !isCmd(tokens[i])) {
+        const x = parseFloat(tokens[i++]);
+        cx = cmd === "h" ? cx + x : x;
+        cur.points.push({ x: cx, y: cy });
+      }
+    } else if (cmd === "V" || cmd === "v") {
+      if (!cur) return null;
+      while (i < tokens.length && !isCmd(tokens[i])) {
+        const y = parseFloat(tokens[i++]);
+        cy = cmd === "v" ? cy + y : y;
+        cur.points.push({ x: cx, y: cy });
+      }
+    } else if (cmd === "C" || cmd === "c" || cmd === "S" || cmd === "s") {
+      if (!cur) return null;
+      const smooth = cmd === "S" || cmd === "s";
+      const relative = cmd === "c" || cmd === "s";
+      while (i < tokens.length && !isCmd(tokens[i])) {
+        let c1x;
+        let c1y;
+        if (smooth) {
+          c1x = cx;
+          c1y = cy;
+        } else {
+          c1x = parseFloat(tokens[i++]);
+          c1y = parseFloat(tokens[i++]);
+          if (relative) { c1x += cx; c1y += cy; }
+        }
+        let c2x = parseFloat(tokens[i++]);
+        let c2y = parseFloat(tokens[i++]);
+        let x = parseFloat(tokens[i++]);
+        let y = parseFloat(tokens[i++]);
+        if (relative) { c2x += cx; c2y += cy; x += cx; y += cy; }
+        addCubic(cur.points, { x: cx, y: cy }, { x: c1x, y: c1y }, { x: c2x, y: c2y }, { x, y });
+        cx = x;
+        cy = y;
+      }
+    } else if (cmd === "Z" || cmd === "z") {
+      if (!cur) continue;
+      cur.closed = true;
+      const first = cur.points[0];
+      const last = cur.points[cur.points.length - 1];
+      if (first && last && first.x === last.x && first.y === last.y) cur.points.pop();
+      if (cur.points.length >= 3) contours.push(cur);
+      cur = null;
+      cx = sx;
+      cy = sy;
+    } else {
+      return null;
+    }
+  }
+  if (cur && cur.points.length >= 2) contours.push(cur);
+  return contours;
+}
+
+function lineContoursFromSvg(svgText) {
+  if (/<(circle|ellipse|polygon|polyline|rect)\b/i.test(svgText)) return null;
+  const paths = [...svgText.matchAll(/<path\b([^>]*)\/?>/gi)];
+  if (!paths.length) return null;
+  const vb = parseViewBox(svgText, "");
+  const evenoddFile = /fill-rule\s*=\s*["']evenodd["']/i.test(svgText);
+  const contours = [];
+  for (const match of paths) {
+    const attrs = match[1];
+    const d = (attrs.match(/\bd\s*=\s*["']([^"']*)["']/i) || [])[1];
+    if (!d) return null;
+    const evenodd = evenoddFile || /fill-rule\s*=\s*["']evenodd["']/i.test(attrs);
+    const parsed = parseLineContours(d, evenodd);
+    if (!parsed) return null;
+    for (const contour of parsed) {
+      contours.push({
+        closed: contour.closed,
+        evenodd: contour.evenodd,
+        points: contour.points.map((p) => normalizePoint(p.x, p.y, vb)),
+      });
+    }
+  }
+  return contours;
+}
+
 export function flattenSvg(svgText) {
+  const lines = lineContoursFromSvg(svgText);
+  if (lines && lines.length) return lines;
   if (typeof globalThis.DOMParser === "function") {
     return flattenWithDom(svgText);
   }
