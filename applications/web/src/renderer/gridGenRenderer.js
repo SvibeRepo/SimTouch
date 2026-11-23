@@ -731,6 +731,8 @@ export class GridGenRenderer extends BaseRenderer {
   draw() {
     if (this.db) console.log(`GridGenRenderer.draw() called. showGridCells: ${this.grid?.flags?.showGridCells}`); // Keep log
 
+    this.clearBackground();
+
     const numInstances = this.instanceData.count;
     if (numInstances === 0 && !this.particleOutput()) return;
 
@@ -760,6 +762,13 @@ export class GridGenRenderer extends BaseRenderer {
       this.overlayManager.clearCellCenters();
     }
     // --- End Update Overlays ---
+  }
+
+  clearBackground() {
+    const gl = this.gl;
+    const color = this.grid?.colors?.gridBackgroundColor || [0, 0, 0];
+    gl.clearColor(color[0] || 0, color[1] || 0, color[2] || 0, 1);
+    gl.clear(gl.COLOR_BUFFER_BIT);
   }
   // --- End draw method ---
 

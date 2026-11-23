@@ -22,9 +22,11 @@ On `engines/cpp`, the sample follows the same order: blur 0 is the phase sample;
 
 New behaviour is authored and watched in the pattern lab (`applications/web`, JS + Rust ticks) before it lands on the suit or `engines/cpp` panel. The lab is the testing ground. Suit/panel ports follow a proven lab path.
 
-## Next (2026-11-21)
+## Next (2026-11-22)
 
-Cell class / particle class in the lab (JS + Rust): rename `gridMode` → `cellMode`, exclusive `outputClass`, particle proximity/noise visual-only. C++ panel already has the mirror (`engines/cpp` `db1c833`); lab catches up.
+JavaScript and Rust file stems match. The lock is `doc/migration/engine-alignment-ledger.md` section 0. C++ file names are the later stem pass.
+
+Cell class / particle class in the lab (JS + Rust): `cellMode`, exclusive `outputClass`, particle modes under `particles/render_modes/`, cell modes under `grid/render_modes/`. C++ panel already has the mirror (`engines/cpp` `db1c833`) as `grid/particle_modes` and `grid/grid_modes`.
 
 Developer-preset projection onto the suit mask is done. The mask, the rectangular domain, the Rust pack slots, and today's `STP1` bag stay as they are.
 

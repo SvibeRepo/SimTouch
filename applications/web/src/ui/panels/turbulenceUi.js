@@ -346,16 +346,8 @@ export class TurbulenceUi extends BaseUi {
     this.turbulenceBiasStrengthController = biasFolder.add(turbulenceParams, "biasStrength", 0, 2).name("T-Bias Amt")
       .onChange(value => eventBus.emit('uiControlChanged', { paramPath: 'turbulence.biasStrength', value }));
 
-    // Bind contrast to simParams
-    this.turbulenceContrastController = patternControlsFolder.add(turbulenceParams, "contrast", 0, 1).name("T-Contrast")
-      .onChange(value => eventBus.emit('uiControlChanged', { paramPath: 'turbulence.contrast', value }));
-
-    // Bind separation (quantization) to simParams
-    this.turbulenceSeparationController = patternControlsFolder.add(turbulenceParams, "separation", 0, 1).name("T-Quantize")
-      .onChange(value => eventBus.emit('uiControlChanged', { paramPath: 'turbulence.separation', value }));
-
     // Bind patternFrequency to simParams
-    this.turbulencePatternFrequencyController = patternControlsFolder.add(turbulenceParams, "patternFrequency", 0.1, 10).name("T-Freq")
+    this.turbulencePatternFrequencyController = patternControlsFolder.add(turbulenceParams, "patternFrequency", 0, 10).name("T-Freq")
       .onChange(value => eventBus.emit('uiControlChanged', { paramPath: 'turbulence.patternFrequency', value }));
 
     // Move Pattern Offset folder under Direction Bias and close it
@@ -518,11 +510,6 @@ export class TurbulenceUi extends BaseUi {
       .name("T-Symmetry")
       .onChange(value => eventBus.emit('uiControlChanged', { paramPath: 'turbulence.symmetryAmount', value }));
 
-    // Pattern frequency control (always visible)
-    this.turbulencePatternFrequencyController = patternControlsFolder.add(turbulenceParams, "patternFrequency", 0.01, 4, 0.01)
-      .name("T-Freq")
-      .onChange(value => eventBus.emit('uiControlChanged', { paramPath: 'turbulence.patternFrequency', value }));
-
     // Add static phase control
     this.turbulenceStaticPhaseController = patternControlsFolder.add(turbulenceParams, "phase", 0, 1, 0.01)
       .name("T-Phase")
@@ -533,12 +520,21 @@ export class TurbulenceUi extends BaseUi {
       .name("T-PhaseSp")
       .onChange(value => eventBus.emit('uiControlChanged', { paramPath: 'turbulence.phaseSpeed', value }));
 
-    // Add blur control
+    // Add blur control. Contrast and quantize run only inside the blur sample.
     this.turbulenceBlurController = patternControlsFolder.add(turbulenceParams, "blurAmount", 0, 2, 0.01)
       .name("T-Blur")
       .onChange((value) => {
+        this.syncContrastQuantizeVisibility(value);
         eventBus.emit('uiControlChanged', { paramPath: 'turbulence.blurAmount', value });
       });
+
+    this.turbulenceContrastController = patternControlsFolder.add(turbulenceParams, "contrast", 0, 1).name("T-Contrast")
+      .onChange(value => eventBus.emit('uiControlChanged', { paramPath: 'turbulence.contrast', value }));
+
+    this.turbulenceSeparationController = patternControlsFolder.add(turbulenceParams, "separation", 0, 1).name("T-Quantize")
+      .onChange(value => eventBus.emit('uiControlChanged', { paramPath: 'turbulence.separation', value }));
+
+    this.syncContrastQuantizeVisibility(turbulenceParams.blurAmount);
 
     // Handle folder open/close events
     previewsFolder.domElement.addEventListener('click', (e) => {
@@ -781,6 +777,15 @@ export class TurbulenceUi extends BaseUi {
     safeUpdateDisplay(this.turbulenceContrastController);
     safeUpdateDisplay(this.turbulenceSeparationController);
     safeUpdateDisplay(this.turbulenceBlurController);
+    if (turbulenceParams) {
+      this.syncContrastQuantizeVisibility(turbulenceParams.blurAmount);
+    }
+  }
+
+  syncContrastQuantizeVisibility(blurAmount) {
+    const visible = blurAmount > 0;
+    this.turbulenceContrastController?.show(visible);
+    this.turbulenceSeparationController?.show(visible);
   }
 
   getData() {

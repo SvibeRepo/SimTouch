@@ -31,11 +31,11 @@ These documents provide essential context about the project structure, current s
 
 ## Engine alignment
 
-Before a plan or edit touches more than one engine, write a three-column path table (JavaScript, Rust, C++). The path under `engines/<lang>/` matches ledger section 0 (`core/`, `forces/`, `behaviors/`, `grid/`). Same stem, same job.
+Before a plan or edit touches more than one engine, write a three-column path table (JavaScript, Rust, C++). The path matches `doc/migration/engine-alignment-ledger.md` section 0. JavaScript and Rust share `particles/` and `grid/render_modes/`. Same stem, same job. C++ stays on `src/core`, `src/forces`, and `src/grid` until the later stem pass.
 
-Particle theme modes share one directory: `grid/particle/` under `engines/javascript/`, `engines/rust/src/`, and `engines/cpp/src/`. Same file stem per mode (`noise`, `proximity`, `shared`, …). Rust is already there. `engines/javascript/particle/` and `engines/cpp/src/grid/particle_modes.*` are drift; do not add files there. The move is `doc/migration/2026-11-22-particle-theme-alignment.md`.
+Particle theme modes are `particles/render_modes/p_<mode>` on JavaScript and Rust. Cell modes are `grid/render_modes/g_<mode>`. Same mode stem (`noise`, `proximity`, `shared`, …). Mode math stays in the mode file. Smoothing stays in the JavaScript managers. The landed layout is `doc/migration/2026-11-22-particle-theme-alignment.md`.
 
-"Lab only" or "C++ later" still reserves the C++ path. JavaScript and Rust use that path now. Host-only glue (browser smoothing, wasm bind) is named in one line. Mode math is never host-only.
+"Lab only" or "C++ later" still reserves the C++ path in ledger section 0. JavaScript and Rust use the shared path now. Host-only glue is the table in that section (`rust_core.js`, `mic.js`, `emu.js`, `grid/lattice/`, Rust `config/`, `wasm_api.rs`, `bin/slice_step.rs`). Do not add an empty twin for those. Mode math is never host-only.
 
 If the plan's file list disagrees with the ledger, rewrite the plan. Do not implement the disagreement. A phase check includes "paths still match the table" before any visual check. Stop for confirmation. Do not start the next phase until asked.
 

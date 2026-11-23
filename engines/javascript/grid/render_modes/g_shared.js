@@ -13,7 +13,7 @@ export const GridField = {
   VELOCITY_C: "VelocityC",
 };
 
-/** Mode ids match `Object.values(GridField)` and engines/rust/src/grid/grid.rs. */
+/** Mode ids match `Object.values(GridField)` and `engines/rust/src/grid/render_modes/g_shared.rs`. */
 export const GRID_MODE_IDS = Object.values(GridField);
 
 /** Lab FadIn/FadOut duration: 0 = instant, max = slowest catch-up. */

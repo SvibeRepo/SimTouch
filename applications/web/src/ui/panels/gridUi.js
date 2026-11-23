@@ -94,6 +94,18 @@ export class GridUi extends BaseUi {
       });
     this.themeController.domElement.classList.add("full-width");
 
+    this.backgroundColorUi = {
+      color: rgbToHex(this.uiGridParams.colors.gridBackgroundColor)
+    };
+    this.backgroundColorController = this.gui
+      .addColor(this.backgroundColorUi, "color")
+      .name("Background")
+      .onChange((hex) => {
+        const rgb = hexToRgb(hex);
+        this.uiGridParams.colors.gridBackgroundColor = rgb;
+        eventBus.emit('gridChanged', { paramPath: 'colors.gridBackgroundColor', value: rgb });
+      });
+
 
     // --- SCREEN CONFIGURATION ---
 
@@ -293,6 +305,7 @@ export class GridUi extends BaseUi {
   getControlTargets() {
     const targets = {};
     targets["Theme"] = this.themeController;
+    targets["Background"] = this.backgroundColorController;
     targets["Screen Width"] = this.screenRezControllerWidth;
     targets["Screen Height"] = this.screenRezControllerHeight;
     targets["Center X Offset"] = this.centerOffsetXController;
@@ -339,7 +352,9 @@ export class GridUi extends BaseUi {
       }
     };
 
+    this.syncBackgroundSwatch();
     safeUpdateDisplay(this.themeController);
+    safeUpdateDisplay(this.backgroundColorController);
     safeUpdateDisplay(this.screenRezControllerWidth);
     safeUpdateDisplay(this.screenRezControllerHeight);
     safeUpdateDisplay(this.centerOffsetXController);
@@ -408,6 +423,11 @@ export class GridUi extends BaseUi {
     }
     if (newGridParams.colors) {
       Object.assign(this.uiGridParams.colors, newGridParams.colors);
+      if (Array.isArray(newGridParams.colors.gridBackgroundColor)) {
+        this.uiGridParams.colors.gridBackgroundColor = newGridParams.colors.gridBackgroundColor.slice(0, 3);
+      }
+      this.syncBackgroundSwatch();
+      this.backgroundColorController?.updateDisplay();
     }
     // --- END REFACTOR ---
 
@@ -446,7 +466,10 @@ export class GridUi extends BaseUi {
       gridSpecs: { ...this.uiGridParams.gridSpecs },
       shadow: { ...this.uiGridParams.shadow },
       flags: { ...this.uiGridParams.flags },
-      colors: { gradientPreset: this.uiGridParams.colors.gradientPreset }
+      colors: {
+        gradientPreset: this.uiGridParams.colors.gradientPreset,
+        gridBackgroundColor: [...(this.uiGridParams.colors.gridBackgroundColor || [0, 0, 0])]
+      }
     };
     if (this.db) console.log("GridUi.getData() returning:", JSON.parse(JSON.stringify(presetData)));
     return presetData;
@@ -475,8 +498,14 @@ export class GridUi extends BaseUi {
       if (presetData.flags) {
         Object.assign(this.uiGridParams.flags, presetData.flags);
       }
-      if (presetData.colors && presetData.colors.gradientPreset) {
-        this.uiGridParams.colors.gradientPreset = presetData.colors.gradientPreset;
+      if (presetData.colors) {
+        if (presetData.colors.gradientPreset) {
+          this.uiGridParams.colors.gradientPreset = presetData.colors.gradientPreset;
+        }
+        const savedBackground = presetData.colors.gridBackgroundColor;
+        this.uiGridParams.colors.gridBackgroundColor = Array.isArray(savedBackground) && savedBackground.length >= 3
+          ? [savedBackground[0], savedBackground[1], savedBackground[2]]
+          : [0, 0, 0];
       }
 
       // Refresh displays of all controllers/buttons
@@ -488,6 +517,7 @@ export class GridUi extends BaseUi {
       eventBus.emit('gridChanged', { paramPath: 'shadow', value: this.uiGridParams.shadow });
       eventBus.emit('gridChanged', { paramPath: 'flags', value: this.uiGridParams.flags });
       eventBus.emit('gridChanged', { paramPath: 'colors.gradientPreset', value: this.uiGridParams.colors.gradientPreset });
+      eventBus.emit('gridChanged', { paramPath: 'colors.gridBackgroundColor', value: this.uiGridParams.colors.gridBackgroundColor });
 
       return true;
     } catch (error) {
@@ -495,4 +525,25 @@ export class GridUi extends BaseUi {
       return false;
     }
   }
+
+  syncBackgroundSwatch() {
+    if (!this.backgroundColorUi) return;
+    this.backgroundColorUi.color = rgbToHex(this.uiGridParams.colors.gridBackgroundColor);
+  }
+}
+
+function rgbToHex(rgb = [0, 0, 0]) {
+  const channel = (value) => Math.max(0, Math.min(255, Math.round((value || 0) * 255)));
+  const r = channel(rgb[0]);
+  const g = channel(rgb[1]);
+  const b = channel(rgb[2]);
+  return `${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1).toUpperCase()}`;
+}
+
+function hexToRgb(hex) {
+  const raw = String(hex).trim().replace(/^#/, "");
+  const expanded = raw.length === 3 ? raw.split("").map((channel) => channel + channel).join("") : raw;
+  const packed = Number.parseInt(expanded, 16);
+  if (!Number.isFinite(packed) || expanded.length !== 6) return [0, 0, 0];
+  return [((packed >> 16) & 255) / 255, ((packed >> 8) & 255) / 255, (packed & 255) / 255];
 }

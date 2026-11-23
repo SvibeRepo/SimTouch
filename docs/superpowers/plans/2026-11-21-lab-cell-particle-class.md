@@ -1,5 +1,7 @@
 # Lab cell class / particle class
 
+**Status:** Done. Mode files now live in `particles/render_modes/p_<mode>` and `grid/render_modes/g_<mode>` (ledger section 0). The paths in the task list below are the paths this plan created, before that move.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Mirror the C++ `cellMode` / `outputClass` / `ParticleModes` design in the pattern lab (JavaScript + Rust). Lab is the testing ground; new features land here first.

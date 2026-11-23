@@ -33,38 +33,64 @@ Status: **§0–§9 LOCKED and executed.** Pass 2 code for a row waits until tha
 | Particle system type/file | **`particle_system`** (not `ps`; not camelCase file stem) |
 | Particle system instance | **`ps`** |
 | C++ entry | **`sim_core` → `particle_system`** (parity) |
-| Collision | under **`core/`**, file **`collision`** (JS: drop `System`) |
-| Boundary | inside **`core/`** |
+| Collision | under **`particles/core/`**, file **`collision`** |
+| Boundary | **`particles/boundary/`** on JS and Rust (`base_boundary`, `circular_boundary`, `rectangular_boundary`). C++ still one `core/boundary` |
 | PIC/FLIP files | **B:** **`velocity_grid`** (splat / sample / pressure) + **`pic_flip`** (blend only) |
-| Rust layout | real folders (not flat); split `field.rs` into forces |
-| JS grid/noise | move into `engines/javascript/grid/` (incl. lattice pieces from web) |
-| `behaviors/` / organic | all three engines (C++ will get it too) |
+| Rust layout | same stems as JavaScript under `particles/` and `grid/render_modes/` |
+| JS grid/noise | cell modes in `grid/render_modes/`; particle modes in `particles/render_modes/` |
+| `behaviors/` / organic | JS and Rust now; C++ later |
 | This pass scope | **rename/move only** — **no formula edits** (formulas = later pass) |
 
-**LOCKED tree:**
+**LOCKED tree (JS / Rust, 2026-11-22):** same relative path under `engines/javascript/` and `engines/rust/src/`. Rust `mod.rs` files are the module declarations for those folders.
 
 ```
-engines/
-  javascript/
-    core/       particle_system, collision, boundary/, velocity_grid, pic_flip
-    forces/     turbulence, gravity, voronoi, touch/mouse, …
-    behaviors/  organic, …
-    grid/       modes, geometry, noise readers
-  rust/src/
-    core/       particle_system, collision, boundary, velocity_grid, pic_flip
-    forces/     turbulence (from field.rs), touch, voronoi, …
-    behaviors/  organic
-    grid/
-    config/     params
-  cpp/src/
-    core/       particle_system (from sim_core), collision, boundary, velocity_grid, pic_flip
-    forces/     touch (apply inside step); gravity_forces / touch_forces names still deferred
-    behaviors/  (organic later)
-    grid/
-    config/ session/ paint/ arduino/   (host glue stays)
+particles/
+  core/             particle_system, collision, collision_scales, velocity_grid, pic_flip
+  forces/           gravity, touch, voronoi, organic
+  behaviors/        organic, neighbor_search, automata_rules, chain
+  boundary/         base_boundary, circular_boundary, rectangular_boundary
+  turbulences/      turbulence_manager
+    pattern_control/  blur, contrast, domain_warp, force, phase, symmetry
+    patterns/         checkerboard, waves, spiral, grid, circles, diamonds,
+                      ripples, dots, water, classic_drop, cells, voronoi,
+                      fractal, vortex, bubbles
+  render_modes/     particle_render_manager, p_shared,
+                    p_noise, p_proximity, p_proximity_b, p_velocity, p_velocity_c,
+                    p_density, p_pressure, p_collision, p_overlap, p_vorticity
+grid/
+  render_modes/     grid_render_manager, g_shared,
+                    g_noise, g_proximity, g_proximity_b, g_velocity,
+                    g_density, g_pressure, g_collision, g_overlap, g_vorticity
 ```
 
-**Lock:** LOCKED — structure pass executed (rename/move only). Formula rows still open.
+Mode math stays in the mode file (`p_<mode>`, `g_<mode>`). `particle_render_manager` and `grid_render_manager` dispatch. The JavaScript managers also smooth and choose the engine. Rust managers dispatch only.
+
+**Host-only (no twin):**
+
+| Side | Path | Job |
+|------|------|-----|
+| JavaScript | `particles/core/rust_core.js` | Wasm adapter. Stays next to `ParticleSystem` |
+| JavaScript | `particles/forces/mic.js` | Browser microphone |
+| JavaScript | `particles/forces/emu.js` | Browser joystick |
+| JavaScript | `grid/lattice/` | Page canvas size, wall shapes, cell rectangles (`boundary_manager`, `dimension_manager`, `grid_geometry`, `boundary/*_boundary_shape`) |
+| JavaScript | `g_shared.js` fade and density-gain helpers | Lab slider remap. Rust `g_shared.rs` is the mode ids |
+| Rust | `config/params.rs` | Param pack |
+| Rust | `wasm_api.rs` | Bindgen export |
+| Rust | `bin/slice_step.rs` | Fixture runner |
+
+`boundary_utils.js` was unused lab shape conversion and is removed. Do not add an empty Rust file for the host rows.
+
+**C++ (later stem pass, not this lock):**
+
+```
+cpp/src/
+  core/       particle_system, collision, collision_metric.h, boundary, velocity_grid, pic_flip
+  forces/     gravity_forces, touch_forces, turbulence
+  grid/       grid_modes, particle_modes, point_modes, grid_geometry
+  config/ session/ paint/ arduino/
+```
+
+**Lock:** JS / Rust stems LOCKED 2026-11-22. C++ names stay as in the block above until that pass. Formula rows still open.
 
 ---
 
@@ -265,6 +291,8 @@ Mass “split every large file” is **not** a separate pass. Structure is **§0
 
 ## Structure pass status
 
+The folder names in this status block are the 2026-11-16 pass. The live JavaScript / Rust tree is section 0.
+
 **Executed** (rename/move only; no formula edits):
 
 | Done | Detail |
@@ -277,11 +305,13 @@ Mass “split every large file” is **not** a separate pass. Structure is **§0
 
 **Verified:** Rust lib tests (35), C++ `simcore_test`, `compare-slice` gravity + noise, `check-fields` (33).
 
-**Still deferred (naming only, not formula):**
-- C++ force files still `gravity_forces` / `touch_forces` (tree wants `gravity` / `touch`)
-- Wasm bindgen export still `SimCore` (keeps `sim_core.js` glue)
-- JS class names still CamelCase (`TurbulenceField`, …); file stems are snake_case
-- C++ `behaviors/` folder not created yet (organic later)
+**Still deferred (naming only, not formula):** live JS / Rust stems are the lock at the top of this file. C++ is the remaining stem pass.
+
+- C++ `gravity_forces` / `touch_forces` / `collision_metric.h` (JS / Rust: `gravity`, `touch`, `collision_scales`)
+- C++ `boundary` is one file; `turbulence` is one file; cell and particle modes are `grid_modes` and `particle_modes`
+- C++ `behaviors/` not created yet (organic later)
+- Wasm bindgen export still `SimCore` (`particles/core/rust_core.js` is the lab adapter)
+- JS class names still CamelCase (`TurbulenceField`, `MouseForces`, …); file stems are snake_case
 
 ---
 
