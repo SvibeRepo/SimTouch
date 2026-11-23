@@ -9,6 +9,7 @@ pub(crate) mod fractal;
 pub(crate) mod grid;
 pub(crate) mod ripples;
 pub(crate) mod spiral;
+pub(crate) mod spline;
 pub(crate) mod voronoi;
 pub(crate) mod vortex;
 pub(crate) mod water;
