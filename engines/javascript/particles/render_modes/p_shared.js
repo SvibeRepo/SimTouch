@@ -1,8 +1,27 @@
-import { densityGainToEngineMax } from "../../grid/render_modes/grid_render_manager.js";
+import { densityGainToEngineMax } from "../../grid/render_modes/g_shared.js";
 
 /** Beyond 4 sigma a neighbour adds < 0.1 LSB (same cutoff as C++ ParticleModes). */
 export const CUTOFF = 16.0;
+/** Field scale shared with cell Noise. Separate from `TUNE.noise`. */
 export const NOISE_TUNE = 2.2;
+
+/**
+ * Particle-class numerator for the 0–1 Sensitivity slider.
+ * Level is raw × tune / divisor. Proximity and Pressure are calibrated.
+ * Pressure applies its tune before the square. Vorticity applies its tune before the 0.75 power.
+ */
+export const TUNE = {
+  noise: 1,
+  proximity: 50,
+  velocity: 10,
+  pressure: 5,
+  collision: 1,
+  proximityB: 1,
+  density: 0.1,
+  vorticity: 100,
+  overlap: 1,
+  velocityC: 1,
+};
 /** Below this count, neighbour modes use O(N²); above, a spatial hash. */
 export const BRUTE_FORCE_LIMIT = 64;
 

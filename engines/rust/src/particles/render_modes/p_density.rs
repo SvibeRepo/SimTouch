@@ -1,5 +1,5 @@
 use crate::particles::render_modes::p_shared::{
-    clamp01, fallback_radius, for_each_candidate, gaussian_hash, CUTOFF,
+    clamp01, fallback_radius, for_each_candidate, gaussian_hash, tune, CUTOFF,
 };
 
 /// Neighbour count inside the Gaussian cutoff, Sensitivity-scaled.
@@ -31,6 +31,6 @@ pub fn compute(
             }
             near += 1.0;
         });
-        out[i] = clamp01(near / max_density);
+        out[i] = clamp01(near * tune::DENSITY / max_density);
     }
 }

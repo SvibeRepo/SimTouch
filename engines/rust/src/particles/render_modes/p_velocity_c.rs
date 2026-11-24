@@ -1,5 +1,5 @@
 use crate::particles::render_modes::p_shared::{
-    fallback_radius, for_each_candidate, gaussian_hash, speed_norm, CUTOFF,
+    fallback_radius, for_each_candidate, gaussian_hash, speed_norm, tune, CUTOFF,
 };
 
 pub fn compute(
@@ -38,7 +38,7 @@ pub fn compute(
             speed_sum += speed * w;
         });
         out[i] = if w_sum > 0.0 {
-            speed_norm(speed_sum / w_sum, max_velocity, max_density)
+            speed_norm(speed_sum / w_sum * tune::VELOCITY_C, max_velocity, max_density)
         } else {
             0.0
         };

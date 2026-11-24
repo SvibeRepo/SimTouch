@@ -1,5 +1,6 @@
 import {
   CUTOFF,
+  TUNE,
   engineMaxDensity,
   fallbackRadius,
   forEachCandidate,
@@ -45,7 +46,7 @@ export function compute(ctx, particleSystem, count) {
       ctx.targetValues[i] = 0;
       continue;
     }
-    const scaled = Math.abs(curl / wSum) / denom;
+    const scaled = (TUNE.vorticity * Math.abs(curl / wSum)) / denom;
     ctx.targetValues[i] = Math.min(1, Math.max(0, Math.pow(scaled, 0.75)));
   }
 }

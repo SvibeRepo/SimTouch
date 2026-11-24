@@ -443,10 +443,14 @@ export class Main {
       // the interleaved buffer, and getParticles prefers x/y while they are set,
       // so the picture stays on the last Rust frame until those views are dropped.
       if (this.rustCore?.ready) this.rustCore.detach(this.ps);
-      // Touch apply lives inside ps.step (apply_touch).
-      this.emuForces.apply(this.ps.timeStep);
-      this.turbulenceField.update(this.ps.timeStep);
-      this.voronoiField.update(this.ps.timeStep);
+      // Noise and voronoi clocks advance once inside ps.step:
+      // physics_dt = timeStep * SimSpeed, then noise time += physics_dt * T-Speed.
+      // Touch apply also lives inside ps.step (apply_touch).
+      const timeStep = sim.timeStep ?? this.ps.timeStep;
+      const timeScale = sim.timeScale ?? this.ps.timeScale ?? 1;
+      this.ps.timeStep = timeStep;
+      this.ps.timeScale = timeScale;
+      this.emuForces.apply(timeStep * timeScale);
       this.ps.step();
       this.gridGenRenderer.draw();
       this.drawParticles();

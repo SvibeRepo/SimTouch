@@ -1,5 +1,6 @@
 import {
   CUTOFF,
+  TUNE,
   engineMaxDensity,
   fallbackRadius,
   forEachCandidate,
@@ -29,6 +30,6 @@ export function compute(ctx, particleSystem, count) {
       if (e > CUTOFF) return;
       nNear += 1;
     });
-    ctx.targetValues[i] = Math.min(1, Math.max(0, nNear / maxDensity));
+    ctx.targetValues[i] = Math.min(1, Math.max(0, (nNear * TUNE.density) / maxDensity));
   }
 }

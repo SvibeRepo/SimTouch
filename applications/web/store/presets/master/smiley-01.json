@@ -1,0 +1,272 @@
+{
+  "name": "Smiley_01",
+  "data": {
+    "paramUi": {
+      "controllers": {
+        "Class": "particle",
+        "Cell Mode": "Velocity",
+        "Mode": "Velocity",
+        "Sensitivity": 0.95,
+        "FadInSpd": 0.04,
+        "FadOutSpd": 0.02,
+        "Time Step": 0.023,
+        "SimSpeed": 1,
+        "PicFlipRatio": 0.33
+      }
+    },
+    "particleUi": {
+      "controllers": {
+        "P-Count": 2396,
+        "P-Size": 0.012,
+        "P-VeloMax": 1,
+        "P-VeloDamp": 0.105,
+        "P-Opacity": 1,
+        "P-Color": "FFFFFF"
+      }
+    },
+    "gravityUi": {
+      "controllers": {
+        "G-X": 0,
+        "G-Y": 0
+      }
+    },
+    "collisionUi": {
+      "controllers": {
+        "C-Enabled": true,
+        "C-Repulse": 1.06,
+        "C-GridRez": 8,
+        "C-Bounce": 1,
+        "C-Damping": 0.85,
+        "C-RestDens": 5.7
+      }
+    },
+    "boundaryUi": {
+      "controllers": {
+        "B-Mode": "BOUNCE",
+        "B-Scale": 1,
+        "B-Repulse": 0,
+        "B-Friction": 0,
+        "B-Bounce": 1
+      }
+    },
+    "pulseModUi": {
+      "modulators": [
+        {
+          "type": "random",
+          "enabled": false,
+          "frequency": 1,
+          "amplitude": 1,
+          "phase": 0,
+          "waveform": "sine",
+          "min": 0.2,
+          "max": 0.72,
+          "targetName": "T-Phase",
+          "beatDivision": "1",
+          "frequencyBpm": 40
+        }
+      ]
+    },
+    "inputModUi": {
+      "enabled": true,
+      "sensitivity": 5,
+      "modulators": []
+    },
+    "turbulenceUi": {
+      "controllers": {
+        "T-AfPosition": true,
+        "T-AfScaleF": true,
+        "T-AfScale": true,
+        "T-Strength": 2.9,
+        "T-Scale": 1.17,
+        "T-Speed": 0,
+        "T-Min Size": 0.005,
+        "T-Max Size": 0.008,
+        "T-Rot": 0,
+        "T-RotSpd": 0,
+        "T-Decay": 1,
+        "T-DirX": 0,
+        "T-DirY": 0,
+        "T-DomWarp": 0,
+        "T-DomWarpSp": 0,
+        "T-Pull Mode": -1,
+        "T-PatternStyle": "spline",
+        "T-SplineLook": "fill",
+        "T-Freq": 2,
+        "T-PhaseSp": -1,
+        "T-Phase": 0.6545037617032012,
+        "T-Symmetry": 0,
+        "T-Blur": 0,
+        "T-OffsetX": 0,
+        "T-OffsetY": 0.01,
+        "T-BiasX Spd": 0,
+        "T-BiasY Spd": 0,
+        "T-Bias Amt": 0.3,
+        "T-Contrast": 0.5,
+        "T-Quantize": 0,
+        "T-SplineFile": "smiley.svg"
+      },
+      "splineFile": "smiley.svg",
+      "splineSvg": "<svg width=\"440\" height=\"440\" viewBox=\"0 0 440 440\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\">\n<path d=\"M217.005 379.961C313.802 381.536 371.111 334.956 403.338 291.824C422.523 266.146 395.833 240.014 365.909 251.502C315.401 270.893 251.624 292.334 217.005 292.133C182.566 291.934 121.06 270.755 72.301 251.56C42.7389 239.923 16.024 265.303 34.8227 290.915C65.6039 332.852 121.037 378.399 217.005 379.961Z\" fill=\"white\"/>\n<circle cx=\"315\" cy=\"110\" r=\"50\" fill=\"#D9D9D9\"/>\n<circle cx=\"115\" cy=\"110\" r=\"50\" fill=\"#D9D9D9\"/>\n</svg>\n"
+    },
+    "voronoiUi": {
+      "controllers": {
+        "V-Strength": 0,
+        "V-CellSpeed": 0.2,
+        "V-EdgeWidth": 0.3,
+        "V-Attract": 1,
+        "V-CellCount": 10,
+        "V-Decay": 0.99,
+        "V-Pull Mode": false
+      }
+    },
+    "organicUi": {
+      "controllers": {
+        "O-Behavior": "None",
+        "O-Force": 0.1,
+        "O-Radius": 30,
+        "F-SurfaceT": 0.5,
+        "F-Visco": 0.2,
+        "F-Damp": 0.98,
+        "S-Cohesion": 1,
+        "S-Align": 0.7,
+        "S-Separation": 1.2,
+        "S-MaxSpeed": 0.5,
+        "A-Repulse": 0.8,
+        "A-Attract": 0.5,
+        "A-Threshold": 0.2,
+        "Ch-LinkDist": 0,
+        "Ch-LinkStr": 10,
+        "Ch-Align": 0.5,
+        "Ch-Branch": 2,
+        "Ch-MaxLinks": 10
+      }
+    },
+    "randomizerUi": {
+      "controllers": {
+        "Class": false,
+        "Cell Mode": false,
+        "C-Enabled": false,
+        "T-SplineLook": false,
+        "Enable External": false,
+        "Enable EMU": false,
+        "Mode": false,
+        "Sensitivity": false,
+        "FadInSpd": false,
+        "FadOutSpd": false,
+        "SimSpeed": false,
+        "PicFlipRatio": false,
+        "P-Count": false,
+        "P-Size": false,
+        "P-VeloMax": false,
+        "P-VeloDamp": false,
+        "P-Opacity": false,
+        "P-Color": false,
+        "G-X": false,
+        "G-Y": false,
+        "C-Repulse": false,
+        "C-GridRez": false,
+        "C-Bounce": false,
+        "C-Damping": false,
+        "C-RestDens": false,
+        "B-Mode": false,
+        "B-Scale": false,
+        "B-Repulse": false,
+        "B-Friction": false,
+        "B-Bounce": false,
+        "T-AfPosition": false,
+        "T-AfScaleF": false,
+        "T-AfScale": false,
+        "T-Strength": false,
+        "T-Scale": false,
+        "T-Speed": false,
+        "T-Min Size": false,
+        "T-Max Size": false,
+        "T-Rot": false,
+        "T-RotSpd": false,
+        "T-Decay": false,
+        "T-DirX": false,
+        "T-DirY": false,
+        "T-DomWarp": false,
+        "T-DomWarpSp": false,
+        "T-Pull Mode": false,
+        "T-PatternStyle": false,
+        "T-Freq": false,
+        "T-PhaseSp": false,
+        "T-Phase": false,
+        "T-Symmetry": false,
+        "T-Blur": false,
+        "T-OffsetX": false,
+        "T-OffsetY": false,
+        "T-BiasX Spd": false,
+        "T-BiasY Spd": false,
+        "T-Bias Amt": false,
+        "T-Contrast": false,
+        "T-Quantize": false,
+        "V-Strength": false,
+        "V-CellSpeed": false,
+        "V-EdgeWidth": false,
+        "V-Attract": false,
+        "V-CellCount": false,
+        "V-Decay": false,
+        "V-Pull Mode": false,
+        "O-Behavior": false,
+        "O-Force": false,
+        "O-Radius": false,
+        "F-SurfaceT": false,
+        "F-Visco": false,
+        "F-Damp": false,
+        "S-Cohesion": false,
+        "S-Align": false,
+        "S-Separation": false,
+        "S-MaxSpeed": false,
+        "A-Repulse": false,
+        "A-Attract": false,
+        "A-Threshold": false,
+        "Ch-LinkDist": false,
+        "Ch-LinkStr": false,
+        "Ch-Align": false,
+        "Ch-Branch": false,
+        "Ch-MaxLinks": false,
+        "J-X": false,
+        "J-Y": false,
+        "J-G-Strength": false,
+        "J-T-BiasStrength": false
+      }
+    },
+    "gridUi": {
+      "screen": {
+        "width": 240,
+        "height": 240,
+        "shape": "circular"
+      },
+      "gridSpecs": {
+        "targetCellCount": 341,
+        "gap": 1,
+        "aspectRatio": 1,
+        "scale": 1,
+        "allowCut": 3,
+        "centerOffsetX": 0,
+        "centerOffsetY": 0
+      },
+      "shadow": {
+        "shadowIntensity": 0.17,
+        "shadowThreshold": 0,
+        "blurAmount": 0.23
+      },
+      "flags": {
+        "showGridCells": true,
+        "showIndices": false,
+        "showCellCenters": false,
+        "showBoundary": false
+      },
+      "colors": {
+        "gradientPreset": "c0",
+        "gridBackgroundColor": [
+          0,
+          0,
+          0
+        ]
+      }
+    }
+  }
+}

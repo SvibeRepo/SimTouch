@@ -1,5 +1,5 @@
 use crate::config::params::Params;
-use crate::particles::render_modes::p_shared::{clamp01, NOISE_TUNE};
+use crate::particles::render_modes::p_shared::{clamp01, tune, NOISE_TUNE};
 use crate::particles::turbulences::turbulence_manager::{
     bilinear_sample, sample_analytic, FIELD_N,
 };
@@ -7,7 +7,7 @@ use crate::particles::turbulences::turbulence_manager::{
 pub fn compute(x: &[f32], y: &[f32], n: usize, max_density: f32, field: &[f32], out: &mut [f32]) {
     for i in 0..n {
         let noise01 = bilinear_sample(field, FIELD_N, x[i], y[i]);
-        out[i] = clamp01(noise01 * NOISE_TUNE / max_density);
+        out[i] = clamp01(noise01 * NOISE_TUNE * tune::NOISE / max_density);
     }
 }
 
@@ -31,6 +31,6 @@ pub fn compute_analytic(
     }
     for i in 0..n {
         let noise = sample_analytic(p, x[i], y[i], time, rotation, bias_x, bias_y);
-        out[i] = clamp01(noise * NOISE_TUNE / max_density);
+        out[i] = clamp01(noise * NOISE_TUNE * tune::NOISE / max_density);
     }
 }

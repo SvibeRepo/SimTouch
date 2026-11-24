@@ -1,5 +1,5 @@
 use crate::particles::render_modes::p_shared::{
-    clamp01, fallback_radius, for_each_candidate, overlap_hash,
+    clamp01, fallback_radius, for_each_candidate, overlap_hash, tune,
 };
 
 /// Sum of 1D contact overlaps with neighbours.
@@ -35,6 +35,6 @@ pub fn compute(
             let dist = (dx * dx + dy * dy).sqrt();
             total += (min_dist - dist).max(0.0);
         });
-        out[i] = clamp01(total / (scale * max_density));
+        out[i] = clamp01(total * tune::OVERLAP / (scale * max_density));
     }
 }

@@ -1,5 +1,6 @@
 import {
   CUTOFF,
+  TUNE,
   fallbackRadius,
   forEachCandidate,
   gaussianHash,
@@ -32,6 +33,6 @@ export function compute(ctx, particleSystem, count) {
       wSum += w;
       speedSum += particleSpeed(particleSystem, j) * w;
     });
-    ctx.targetValues[i] = wSum > 0 ? speedNorm(speedSum / wSum, ctx.simParams) : 0;
+    ctx.targetValues[i] = wSum > 0 ? speedNorm((speedSum / wSum) * TUNE.velocityC, ctx.simParams) : 0;
   }
 }

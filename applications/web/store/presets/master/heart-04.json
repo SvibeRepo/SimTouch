@@ -6,7 +6,7 @@
         "Class": "particle",
         "Cell Mode": "Velocity",
         "Mode": "Velocity",
-        "Sensitivity": 1,
+        "Sensitivity": 0.94,
         "FadInSpd": 0.03,
         "FadOutSpd": 0.05,
         "Time Step": 0.016666666666666666,
@@ -106,7 +106,7 @@
         "T-SplineLook": "fill",
         "T-Freq": 0.2645084382826479,
         "T-PhaseSp": -1,
-        "T-Phase": 0.40186140482898114,
+        "T-Phase": 0.397813684849198,
         "T-Symmetry": 0,
         "T-Blur": 0,
         "T-OffsetX": 0,
@@ -253,7 +253,7 @@
         "shape": "circular"
       },
       "gridSpecs": {
-        "targetCellCount": 1380,
+        "targetCellCount": 341,
         "gap": 1,
         "aspectRatio": 1,
         "scale": 1,

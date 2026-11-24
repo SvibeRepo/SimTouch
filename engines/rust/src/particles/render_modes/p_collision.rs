@@ -1,5 +1,5 @@
 use crate::particles::render_modes::p_shared::{
-    fallback_radius, for_each_candidate, overlap_hash, speed_norm,
+    fallback_radius, for_each_candidate, overlap_hash, speed_norm, tune,
 };
 
 /// Sum of closing relative speeds with overlapping neighbours.
@@ -47,6 +47,6 @@ pub fn compute(
                 approach += closing;
             }
         });
-        out[i] = speed_norm(approach, max_velocity, max_density);
+        out[i] = speed_norm(approach * tune::COLLISION, max_velocity, max_density);
     }
 }

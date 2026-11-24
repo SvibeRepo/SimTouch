@@ -1,5 +1,5 @@
 use crate::particles::render_modes::p_shared::{
-    clamp01, fallback_radius, for_each_candidate, gaussian_hash, CUTOFF,
+    clamp01, fallback_radius, for_each_candidate, gaussian_hash, tune, CUTOFF,
 };
 
 pub fn compute(
@@ -30,6 +30,6 @@ pub fn compute(
             }
             density += (-e).exp();
         });
-        out[i] = clamp01(density / max_density);
+        out[i] = clamp01(density * tune::PROXIMITY / max_density);
     }
 }

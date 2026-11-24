@@ -1,4 +1,5 @@
 import {
+  TUNE,
   fallbackRadius,
   forEachCandidate,
   maxVelocity,
@@ -40,7 +41,7 @@ export function compute(ctx, particleSystem, count) {
       const closing = -(rvx * nx + rvy * ny);
       if (closing > 0) approach += closing;
     });
-    ctx.targetValues[i] = speedNorm(approach, ctx.simParams);
+    ctx.targetValues[i] = speedNorm(approach * TUNE.collision, ctx.simParams);
     // speedNorm already folds maxV * Sensitivity; clamp again if approach >> maxV.
     if (!(ctx.targetValues[i] >= 0)) ctx.targetValues[i] = 0;
     void vCap;

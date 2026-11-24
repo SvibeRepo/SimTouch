@@ -49,7 +49,6 @@ export class ParamUi extends BaseUi {
     // User dropdown only. Preset setValue updates the select without a change event.
     this.outputClassController.domElement.querySelector("select")?.addEventListener("change", () => {
       if (this.outputClassController.getValue() !== "particle") return;
-      this.maxDensityController?.setValue(1);
       this.main.ui?.particleUi?.particleOpacityController?.setValue(1);
     });
 

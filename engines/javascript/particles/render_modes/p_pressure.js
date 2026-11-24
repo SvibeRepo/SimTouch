@@ -1,4 +1,5 @@
 import {
+  TUNE,
   engineMaxDensity,
   fallbackRadius,
   forEachCandidate,
@@ -29,7 +30,7 @@ export function compute(ctx, particleSystem, count) {
       if (overlap <= 0) return;
       total += overlap / minDist;
     });
-    const packed = total / maxDensity;
+    const packed = (total * TUNE.pressure) / maxDensity;
     ctx.targetValues[i] = Math.min(1, Math.max(0, packed * packed));
   }
 }

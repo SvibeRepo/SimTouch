@@ -4,7 +4,24 @@ use std::collections::HashMap;
 
 /// Beyond 4 sigma a neighbour adds < 0.1 LSB (same cutoff as C++).
 pub const CUTOFF: f32 = 16.0;
+/// Field scale shared with cell Noise. Separate from `tune::NOISE`.
 pub const NOISE_TUNE: f32 = 2.2;
+
+/// Particle-class numerator for the 0–1 Sensitivity slider.
+/// Level is raw × tune / divisor. Proximity and Pressure are calibrated.
+/// Pressure applies its tune before the square. Vorticity applies its tune before the 0.75 power.
+pub mod tune {
+    pub const NOISE: f32 = 1.0;
+    pub const PROXIMITY: f32 = 50.0;
+    pub const VELOCITY: f32 = 10.0;
+    pub const PRESSURE: f32 = 5.0;
+    pub const COLLISION: f32 = 1.0;
+    pub const PROXIMITY_B: f32 = 1.0;
+    pub const DENSITY: f32 = 0.1;
+    pub const VORTICITY: f32 = 100.0;
+    pub const OVERLAP: f32 = 1.0;
+    pub const VELOCITY_C: f32 = 1.0;
+}
 /// Below this count, neighbour modes use O(N²); above, a spatial hash.
 pub const BRUTE_FORCE_LIMIT: usize = 64;
 

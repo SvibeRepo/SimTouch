@@ -6,7 +6,7 @@
         "Class": "particle",
         "Cell Mode": "Velocity",
         "Mode": "Velocity",
-        "Sensitivity": 0.95,
+        "Sensitivity": 0.49,
         "FadInSpd": 0,
         "FadOutSpd": 0.09597,
         "Time Step": 0.016666666666666666,
@@ -76,6 +76,7 @@
         "T-DomWarpSp": 0,
         "T-Pull Mode": 0.898,
         "T-PatternStyle": "checkerboard",
+        "T-SplineLook": "fill",
         "T-Freq": 3.5,
         "T-PhaseSp": -1,
         "T-Phase": 0,
@@ -87,8 +88,11 @@
         "T-BiasY Spd": 0,
         "T-Bias Amt": 0.3,
         "T-Contrast": 0.5,
-        "T-Quantize": 0
-      }
+        "T-Quantize": 0,
+        "T-SplineFile": ""
+      },
+      "splineFile": "",
+      "splineSvg": ""
     },
     "voronoiUi": {
       "controllers": {
@@ -128,6 +132,7 @@
         "Class": false,
         "Cell Mode": false,
         "C-Enabled": false,
+        "T-SplineLook": false,
         "Enable External": false,
         "Enable EMU": false,
         "Mode": false,

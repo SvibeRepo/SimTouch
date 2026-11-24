@@ -101,6 +101,71 @@ mod tests {
     use crate::particles::turbulences::turbulence_manager::FIELD_N;
 
     #[test]
+    fn proximity_diameter_contact_uses_scale() {
+        // One diameter apart: exp(-4) ≈ 0.0183. Scale 40 / divisor 2.1 ≈ 0.349.
+        let x = [0.5, 0.6];
+        let y = [0.5, 0.5];
+        let vx = [0.0, 0.0];
+        let vy = [0.0, 0.0];
+        let r = [0.05, 0.05];
+        let mut out = [0.0; 2];
+        let field = [0.0f32; FIELD_N * FIELD_N];
+        eval(
+            MODE_PROXIMITY,
+            &x,
+            &y,
+            &vx,
+            &vy,
+            &r,
+            2,
+            0.05,
+            2.1,
+            1.0,
+            &field,
+            &mut out,
+        );
+        let expected = 40.0 * (-4.0f32).exp() / 2.1;
+        assert!(
+            (out[0] - expected).abs() < 1e-4,
+            "got {} want {}",
+            out[0],
+            expected
+        );
+    }
+
+    #[test]
+    fn pressure_overlap_scaled_before_square() {
+        // dist 0.05, minDist 0.10 → overlap fraction 0.5.
+        // Scale 5, divisor 10: (5 * 0.5 / 10)^2 = 0.0625.
+        let x = [0.5, 0.55];
+        let y = [0.5, 0.5];
+        let vx = [0.0, 0.0];
+        let vy = [0.0, 0.0];
+        let r = [0.05, 0.05];
+        let mut out = [0.0; 2];
+        let field = [0.0f32; FIELD_N * FIELD_N];
+        eval(
+            MODE_PRESSURE,
+            &x,
+            &y,
+            &vx,
+            &vy,
+            &r,
+            2,
+            0.05,
+            10.0,
+            1.0,
+            &field,
+            &mut out,
+        );
+        assert!(
+            (out[0] - 0.0625).abs() < 1e-4,
+            "got {}",
+            out[0]
+        );
+    }
+
+    #[test]
     fn proximity_self_excluded_and_neighbour_adds() {
         let x = [0.5, 0.51];
         let y = [0.5, 0.5];
@@ -258,7 +323,7 @@ mod tests {
             &r,
             n,
             0.05,
-            1.0,
+            100.0,
             1.0,
             &field,
             &mut out,

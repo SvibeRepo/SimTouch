@@ -1,0 +1,272 @@
+{
+  "name": "Adidas_02",
+  "data": {
+    "paramUi": {
+      "controllers": {
+        "Class": "particle",
+        "Cell Mode": "Velocity",
+        "Mode": "Velocity",
+        "Sensitivity": 0.97,
+        "FadInSpd": 0.04,
+        "FadOutSpd": 0.02,
+        "Time Step": 0.023,
+        "SimSpeed": 1,
+        "PicFlipRatio": 0.33
+      }
+    },
+    "particleUi": {
+      "controllers": {
+        "P-Count": 2396,
+        "P-Size": 0.012,
+        "P-VeloMax": 1,
+        "P-VeloDamp": 0.105,
+        "P-Opacity": 1,
+        "P-Color": "FFFFFF"
+      }
+    },
+    "gravityUi": {
+      "controllers": {
+        "G-X": 0,
+        "G-Y": 0
+      }
+    },
+    "collisionUi": {
+      "controllers": {
+        "C-Enabled": true,
+        "C-Repulse": 1.06,
+        "C-GridRez": 8,
+        "C-Bounce": 1,
+        "C-Damping": 0.85,
+        "C-RestDens": 0
+      }
+    },
+    "boundaryUi": {
+      "controllers": {
+        "B-Mode": "BOUNCE",
+        "B-Scale": 1,
+        "B-Repulse": 0,
+        "B-Friction": 0,
+        "B-Bounce": 1
+      }
+    },
+    "pulseModUi": {
+      "modulators": [
+        {
+          "type": "triangle",
+          "enabled": false,
+          "frequency": 1,
+          "amplitude": 1,
+          "phase": 0,
+          "waveform": "sine",
+          "min": 0.82,
+          "max": 0.38,
+          "targetName": "T-Phase",
+          "beatDivision": "8",
+          "frequencyBpm": 40
+        }
+      ]
+    },
+    "inputModUi": {
+      "enabled": true,
+      "sensitivity": 5,
+      "modulators": []
+    },
+    "turbulenceUi": {
+      "controllers": {
+        "T-AfPosition": true,
+        "T-AfScaleF": true,
+        "T-AfScale": true,
+        "T-Strength": 4.69,
+        "T-Scale": 1.09,
+        "T-Speed": 0,
+        "T-Min Size": 0.005,
+        "T-Max Size": 0.013,
+        "T-Rot": 0,
+        "T-RotSpd": 0,
+        "T-Decay": 0.9,
+        "T-DirX": 0,
+        "T-DirY": 0,
+        "T-DomWarp": 0,
+        "T-DomWarpSp": 0,
+        "T-Pull Mode": -1,
+        "T-PatternStyle": "spline",
+        "T-SplineLook": "fill",
+        "T-Freq": 2,
+        "T-PhaseSp": -1,
+        "T-Phase": 0.5007066668913717,
+        "T-Symmetry": 0,
+        "T-Blur": 0,
+        "T-OffsetX": 0,
+        "T-OffsetY": 0.04,
+        "T-BiasX Spd": 0,
+        "T-BiasY Spd": 0,
+        "T-Bias Amt": 0.3,
+        "T-Contrast": 0.5,
+        "T-Quantize": 0,
+        "T-SplineFile": "adidas2.svg"
+      },
+      "splineFile": "adidas2.svg",
+      "splineSvg": "<svg width=\"800\" height=\"800\" viewBox=\"0 0 800 800\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\">\n<path d=\"M346.111 611.778H213.567C253.177 636.289 299.532 652.555 352.27 663.474L346.111 611.778ZM447.18 611.894L439.278 660.448C492.253 650.691 538.952 635.36 579.497 611.894H447.18ZM431.957 611.661L359.123 611.773C369.345 633.031 382.36 650.923 397.227 668.002C411.865 650.575 421.622 632.571 431.957 611.661ZM627.939 579.368L164.311 579.131C148.859 566.817 138.404 560.43 125.974 544.048H666.848C654.771 557.296 640.95 569.257 627.939 579.368ZM697.05 503.857L97.8596 504.089C89.8454 492.937 80.6648 477.257 74.9747 464.827H719.944C713.905 478.764 705.766 491.659 697.05 503.857ZM268.276 422.307L59.0582 422.423C39.892 378.16 27.8105 332.506 22 275.817C129.809 294.983 212.986 339.246 268.276 422.307ZM482.611 422.656H310.564C306.729 311.946 337.4 199.609 396.646 132C456.821 197.87 487.957 309.738 482.611 422.656ZM737.599 422.423L524.31 422.539C583.207 339.711 667.778 292.896 777.326 276.282C770.478 331.697 757.695 378.741 737.599 422.423Z\" fill-rule=\"evenodd\" clip-rule=\"evenodd\" fill=\"black\"/>\n</svg>\n"
+    },
+    "voronoiUi": {
+      "controllers": {
+        "V-Strength": 0,
+        "V-CellSpeed": 0.2,
+        "V-EdgeWidth": 0.3,
+        "V-Attract": 1,
+        "V-CellCount": 10,
+        "V-Decay": 0.99,
+        "V-Pull Mode": false
+      }
+    },
+    "organicUi": {
+      "controllers": {
+        "O-Behavior": "None",
+        "O-Force": 0.1,
+        "O-Radius": 30,
+        "F-SurfaceT": 0.5,
+        "F-Visco": 0.2,
+        "F-Damp": 0.98,
+        "S-Cohesion": 1,
+        "S-Align": 0.7,
+        "S-Separation": 1.2,
+        "S-MaxSpeed": 0.5,
+        "A-Repulse": 0.8,
+        "A-Attract": 0.5,
+        "A-Threshold": 0.2,
+        "Ch-LinkDist": 0,
+        "Ch-LinkStr": 10,
+        "Ch-Align": 0.5,
+        "Ch-Branch": 2,
+        "Ch-MaxLinks": 10
+      }
+    },
+    "randomizerUi": {
+      "controllers": {
+        "Class": false,
+        "Cell Mode": false,
+        "C-Enabled": false,
+        "T-SplineLook": false,
+        "Enable External": false,
+        "Enable EMU": false,
+        "Mode": false,
+        "Sensitivity": false,
+        "FadInSpd": false,
+        "FadOutSpd": false,
+        "SimSpeed": false,
+        "PicFlipRatio": false,
+        "P-Count": false,
+        "P-Size": false,
+        "P-VeloMax": false,
+        "P-VeloDamp": false,
+        "P-Opacity": false,
+        "P-Color": false,
+        "G-X": false,
+        "G-Y": false,
+        "C-Repulse": false,
+        "C-GridRez": false,
+        "C-Bounce": false,
+        "C-Damping": false,
+        "C-RestDens": false,
+        "B-Mode": false,
+        "B-Scale": false,
+        "B-Repulse": false,
+        "B-Friction": false,
+        "B-Bounce": false,
+        "T-AfPosition": false,
+        "T-AfScaleF": false,
+        "T-AfScale": false,
+        "T-Strength": false,
+        "T-Scale": false,
+        "T-Speed": false,
+        "T-Min Size": false,
+        "T-Max Size": false,
+        "T-Rot": false,
+        "T-RotSpd": false,
+        "T-Decay": false,
+        "T-DirX": false,
+        "T-DirY": false,
+        "T-DomWarp": false,
+        "T-DomWarpSp": false,
+        "T-Pull Mode": false,
+        "T-PatternStyle": false,
+        "T-Freq": false,
+        "T-PhaseSp": false,
+        "T-Phase": false,
+        "T-Symmetry": false,
+        "T-Blur": false,
+        "T-OffsetX": false,
+        "T-OffsetY": false,
+        "T-BiasX Spd": false,
+        "T-BiasY Spd": false,
+        "T-Bias Amt": false,
+        "T-Contrast": false,
+        "T-Quantize": false,
+        "V-Strength": false,
+        "V-CellSpeed": false,
+        "V-EdgeWidth": false,
+        "V-Attract": false,
+        "V-CellCount": false,
+        "V-Decay": false,
+        "V-Pull Mode": false,
+        "O-Behavior": false,
+        "O-Force": false,
+        "O-Radius": false,
+        "F-SurfaceT": false,
+        "F-Visco": false,
+        "F-Damp": false,
+        "S-Cohesion": false,
+        "S-Align": false,
+        "S-Separation": false,
+        "S-MaxSpeed": false,
+        "A-Repulse": false,
+        "A-Attract": false,
+        "A-Threshold": false,
+        "Ch-LinkDist": false,
+        "Ch-LinkStr": false,
+        "Ch-Align": false,
+        "Ch-Branch": false,
+        "Ch-MaxLinks": false,
+        "J-X": false,
+        "J-Y": false,
+        "J-G-Strength": false,
+        "J-T-BiasStrength": false
+      }
+    },
+    "gridUi": {
+      "screen": {
+        "width": 240,
+        "height": 240,
+        "shape": "circular"
+      },
+      "gridSpecs": {
+        "targetCellCount": 341,
+        "gap": 1,
+        "aspectRatio": 1,
+        "scale": 1,
+        "allowCut": 3,
+        "centerOffsetX": 0,
+        "centerOffsetY": 0
+      },
+      "shadow": {
+        "shadowIntensity": 0.17,
+        "shadowThreshold": 0,
+        "blurAmount": 0.23
+      },
+      "flags": {
+        "showGridCells": true,
+        "showIndices": false,
+        "showCellCenters": false,
+        "showBoundary": false
+      },
+      "colors": {
+        "gradientPreset": "c0",
+        "gridBackgroundColor": [
+          0,
+          0,
+          0
+        ]
+      }
+    }
+  }
+}

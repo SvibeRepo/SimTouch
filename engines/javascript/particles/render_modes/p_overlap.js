@@ -1,4 +1,5 @@
 import {
+  TUNE,
   engineMaxDensity,
   fallbackRadius,
   forEachCandidate,
@@ -27,6 +28,6 @@ export function compute(ctx, particleSystem, count) {
       const dist = Math.hypot(xi - xj, yi - yj);
       total += Math.max(0, minDist - dist);
     });
-    ctx.targetValues[i] = Math.min(1, Math.max(0, total / (scale * maxDensity)));
+    ctx.targetValues[i] = Math.min(1, Math.max(0, (total * TUNE.overlap) / (scale * maxDensity)));
   }
 }

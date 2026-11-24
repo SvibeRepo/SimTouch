@@ -1,4 +1,4 @@
-use crate::particles::render_modes::p_shared::speed_norm;
+use crate::particles::render_modes::p_shared::{speed_norm, tune};
 
 pub fn compute(
     vx: &[f32],
@@ -10,6 +10,6 @@ pub fn compute(
 ) {
     for i in 0..n {
         let speed = (vx[i] * vx[i] + vy[i] * vy[i]).sqrt();
-        out[i] = speed_norm(speed, max_velocity, max_density);
+        out[i] = speed_norm(speed * tune::VELOCITY, max_velocity, max_density);
     }
 }

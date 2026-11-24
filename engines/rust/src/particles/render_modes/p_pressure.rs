@@ -1,5 +1,5 @@
 use crate::particles::render_modes::p_shared::{
-    clamp01, fallback_radius, for_each_candidate, overlap_hash,
+    clamp01, fallback_radius, for_each_candidate, overlap_hash, tune,
 };
 
 /// Squared soft-overlap packing.
@@ -41,7 +41,7 @@ pub fn compute(
             }
             total += overlap / min_dist;
         });
-        let packed = total / max_density;
+        let packed = total * tune::PRESSURE / max_density;
         out[i] = clamp01(packed * packed);
     }
 }

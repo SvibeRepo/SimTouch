@@ -6,7 +6,7 @@
         "Class": "particle",
         "Cell Mode": "Velocity",
         "Mode": "Velocity",
-        "Sensitivity": 1,
+        "Sensitivity": 0.93,
         "FadInSpd": 0.08,
         "FadOutSpd": 0.5,
         "Time Step": 0.016666666666666666,

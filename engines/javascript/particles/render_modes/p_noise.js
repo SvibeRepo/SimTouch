@@ -1,4 +1,4 @@
-import { NOISE_TUNE, engineMaxDensity, particleXy } from "./p_shared.js";
+import { NOISE_TUNE, TUNE, engineMaxDensity, particleXy } from "./p_shared.js";
 
 /** Theme level from turbulence sample at the particle. */
 export function compute(ctx, particleSystem, count) {
@@ -12,6 +12,6 @@ export function compute(ctx, particleSystem, count) {
   for (let i = 0; i < count; i++) {
     const [xi, yi] = particleXy(particleSystem, i);
     const noise01 = turbulence.noise2D(xi, yi, turbulence.time, true);
-    ctx.targetValues[i] = Math.min(1, Math.max(0, (noise01 * NOISE_TUNE) / maxDensity));
+    ctx.targetValues[i] = Math.min(1, Math.max(0, (noise01 * NOISE_TUNE * TUNE.noise) / maxDensity));
   }
 }

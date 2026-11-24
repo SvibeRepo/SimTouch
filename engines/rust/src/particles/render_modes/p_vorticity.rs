@@ -1,5 +1,5 @@
 use crate::particles::render_modes::p_shared::{
-    clamp01, fallback_radius, for_each_candidate, gaussian_hash, CUTOFF,
+    clamp01, fallback_radius, for_each_candidate, gaussian_hash, tune, CUTOFF,
 };
 
 /// Gaussian-weighted neighbour curl proxy.
@@ -44,7 +44,7 @@ pub fn compute(
             out[i] = 0.0;
             continue;
         }
-        let scaled = (curl / w_sum).abs() / denom;
+        let scaled = tune::VORTICITY * (curl / w_sum).abs() / denom;
         out[i] = clamp01(scaled.powf(0.75));
     }
 }

@@ -1,5 +1,5 @@
 use crate::particles::render_modes::p_shared::{
-    clamp01, fallback_radius, for_each_candidate, overlap_hash,
+    clamp01, fallback_radius, for_each_candidate, overlap_hash, tune,
 };
 
 /// Soft overlap kernel: sum of (r_i+r_j - dist)+ / (r_i+r_j).
@@ -41,6 +41,6 @@ pub fn compute(
             }
             total += overlap / min_dist;
         });
-        out[i] = clamp01(total / max_density);
+        out[i] = clamp01(total * tune::PROXIMITY_B / max_density);
     }
 }

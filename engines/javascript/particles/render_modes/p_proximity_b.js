@@ -1,4 +1,5 @@
 import {
+  TUNE,
   engineMaxDensity,
   fallbackRadius,
   forEachCandidate,
@@ -29,6 +30,6 @@ export function compute(ctx, particleSystem, count) {
       if (overlap <= 0) return;
       total += overlap / minDist;
     });
-    ctx.targetValues[i] = Math.min(1, Math.max(0, total / maxDensity));
+    ctx.targetValues[i] = Math.min(1, Math.max(0, (total * TUNE.proximityB) / maxDensity));
   }
 }
